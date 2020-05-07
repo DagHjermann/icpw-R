@@ -1,0 +1,148 @@
+---
+title: "100_Get_data"
+author: "DHJ"
+date: "7 5 2020"
+output: html_document
+---
+
+
+
+## 1. Libraries  
+```{r}
+
+# All of these packages cn be loaded at once using library(tidyverse). (I just like to be specific.)
+library(dplyr)
+library(readr)
+library(readxl)
+library(lubridate)
+# library(ggplot2)
+library(tidyr)
+library(forcats)
+
+```
+
+## 2. Chemistry  
+
+### Data on long format  
+```{r}
+
+# Data on broad format
+# Didn't use this one because of all the unpractical column names (e.g. "NH4-N_µg/l N") 
+if (FALSE){
+
+df_chem <- readr::read_csv(
+  "K:/Prosjekter/JES/ICPW/Thematic_Trends_Report_2020/data_matrices/all_icpw_samples_wide.csv",
+  col_types = 
+    cols(
+      .default = col_double(),
+      station_code = col_character(),
+      station_name = col_character(),
+      sample_date = col_datetime(format = "")
+    )
+)
+
+}
+
+df_long <- readr::read_csv(
+  "K:/Prosjekter/JES/ICPW/Thematic_Trends_Report_2020/data_matrices/all_icpw_samples_long.csv",
+  col_types = 
+    cols(
+      station_id = col_double(),
+      station_code = col_character(),
+      station_name = col_character(),
+      sample_date = col_datetime(format = ""),
+      depth1 = col_double(),
+      depth2 = col_double(),
+      parameter = col_character(),
+      unit = col_character(),
+      value = col_double()
+    ))
+
+```
+
+### Wide format  
+```{r}
+
+check <- df_long %>%
+  distinct(parameter, unit) %>%
+  count(parameter) %>%
+  filter(n > 1) %>%
+  nrow()
+
+if (check > 0){
+  cat("Warning! Units vary! \n")
+}
+
+df_wide <- df_long %>%
+  tidyr::pivot_wider(names_from = "parameter", values_from = "value")
+
+```
+
+### Save as rds  
+```{r}
+
+saveRDS(df_wide, "Data/100_Chemistry_wide.rds")
+
+```
+
+## 3. Deposition  
+```{r}
+
+df_deposition <- read_csv(
+  "K:/Prosjekter/langtransporterte forurensninger/O-23300 - ICP-WATERS - HWI/Faglige rapporter/2020 report/Deposition data/Processed/dep_TOTN.csv")
+
+saveRDS(df_wide, "Data/100_Deposition.rds")
+
+```
+
+## 4. Station metadata  
+Land/region, coordinates, catchment area, altitude, land cover  
+```{r}
+
+df_station <- read_excel(
+  "K:/Prosjekter/langtransporterte forurensninger/O-23300 - ICP-WATERS - HWI/Faglige rapporter/2020 report/Land cover/ICPW_All_Stations_2020_2020_05_04.xlsx")
+
+saveRDS(df_station, "Data/100_Stations.rds")
+
+```
+
+## 5. Selection of stations   
+**Note: we keep only the station_id column, since the other 'metadata' is updated in the 'land cover' file**  
+```{r}
+
+# dir("K:/Prosjekter/JES/ICPW/Thematic_Trends_Report_2020")
+
+folder1 <- "K:/Prosjekter/JES/ICPW/Thematic_Trends_Report_2020/trends_1992-2016_no3"
+folder2 <- "K:/Prosjekter/JES/ICPW/Thematic_Trends_Report_2020/trends_1992-2016_toc_totn_no3_relax_italy"
+folder3 <- "K:/Prosjekter/JES/ICPW/Thematic_Trends_Report_2020/trends_2000-2016_totn_no3"
+  
+fn1 <- dir(folder1, pattern = "stations.csv")
+fn2 <- dir(folder2, pattern = "stations.csv")
+fn3 <- dir(folder3, pattern = "stations.csv")
+
+column_types <- cols(
+  station_id = col_double(),
+  station_code = col_character(),
+  station_name = col_character(),
+  latitude = col_double(),
+  longitude = col_double(),
+  altitude = col_double(),
+  continent = col_character(),
+  country = col_character(),
+  region = col_character(),
+  group = col_character()
+)
+
+stations_1 <- read_csv(paste0(folder1, "/", fn1), col_types = column_types) %>% pull(station_id)
+stations_2 <- read_csv(paste0(folder2, "/", fn2), col_types = column_types) %>% pull(station_id)
+stations_3 <- read_csv(paste0(folder3, "/", fn3), col_types = column_types) %>% pull(station_id)
+
+station_selection <- list(
+  trends_1992_2016_no3 = stations_1,
+  trends_1992_2016_toc_totn_no3_relax_italy = stations_2,
+  trends_2000_2016_totn_no3 = stations_3
+)
+
+saveRDS(station_selection, "Data/100_Stations_selection.rds")
+
+```
