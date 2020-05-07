@@ -234,8 +234,8 @@ dat_annual <- dat_annual %>%
 ## 5. Save  
 ```{r}
 
-saveRDS(model_season, "Data/110_model_season.rmd")
-saveRDS(dat_annual, "Data/110_dat_annual_season_adjusted.rmd")
+saveRDS(model_season, "Data/110_model_season.rds")
+saveRDS(dat_annual, "Data/110_dat_annual_season_adjusted.rds")
 
 
 ```
