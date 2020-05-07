@@ -57,6 +57,35 @@ library(forcats)
 
 ## 2. Chemistry  
 
+### Wide format
+```{r}
+
+df_wide <- readr::read_csv(
+  "K:/Prosjekter/JES/ICPW/Thematic_Trends_Report_2020/data_matrices/all_icpw_samples_wide.csv",
+  col_types = 
+    cols(
+      .default = col_double(),
+      station_code = col_character(),
+      station_name = col_character(),
+      sample_date = col_datetime(format = "")
+    )
+)
+
+names(df_wide)
+```
+
+### Check
+```{r}
+
+df <- df_wide %>%
+  filter(!is.na(`NO3-N_µg/l N`))
+
+apply(!is.na(df), 2, sum) %>% sort() %>% rev()
+
+```
+
+
+### Long format
 ```{r}
 
 df1 <- readr::read_csv(
