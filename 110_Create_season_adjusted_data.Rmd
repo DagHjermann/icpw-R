@@ -1,0 +1,268 @@
+---
+title: "110 Season-adjusted annual data"
+author: "DHJ"
+date: "7 5 2020"
+output: html_document
+---
+
+
+
+## 1. Libraries  
+```{r}
+
+# All of tehse packages cn be loaded at once using library(tidyverse). (I just like to be specific.)
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+library(tidyr)
+library(forcats)
+library(mgcv)
+
+```
+
+
+## 2. Data  
+
+### Read data
+```{r}
+
+dat <- readRDS("Data/100_Chemistry_wide.rds") %>%
+  mutate(year = year(sample_date),
+         month = month(sample_date),
+         day_number = yday(sample_date))
+
+df_deposition <- readRDS("Data/100_Deposition.rds")
+df_stations <- readRDS("Data/100_Stations.rds")
+
+station_selection <- readRDS("Data/100_Stations_selection.rds")
+
+```
+
+### Check which columns occur together with NO3   
+NH4 and TOTN  
+```{r}
+
+df <- dat %>%
+  filter(!is.na(NO3))
+
+apply(!is.na(df), 2, sum) %>% sort() %>% rev()
+
+```
+
+
+## 3. Seasonal patterns  
+
+### Seasonal distribution of data  
+```{r}
+
+# Seasonal distribution
+gg <- dat %>%
+  left_join(df_stations %>% select(station_id, country), by = "station_id") %>%
+  ggplot(aes(day_number)) +
+  geom_histogram(binwidth = 10)
+
+gg
+gg + facet_wrap(vars(country), scales = "free_y")
+
+dat %>%
+  left_join(df_stations %>% select(station_id, country), by = "station_id") %>%
+  filter(country %in% c("Norway", "Poland", "Slovakia", "Sweden")) %>%
+  ggplot(aes(day_number)) +
+  geom_histogram(binwidth = 10) +
+  facet_wrap(vars(country), scales = "free_y")
+
+# Norway has a peak at 290, Slovakia + Poland 260-270, Sweden 280-290
+
+```
+### Check seasonal patterns  
+```{r}
+
+df <- dat %>%
+  filter(!is.na(NO3)) %>%
+  left_join(df_stations %>% select(station_id, country), by = "station_id") %>%
+  group_by(country) %>%
+  mutate(n = n()) %>%    # pull(n) %>% unique() %>% sort()    # for finding cut-off value = 1000
+  filter(n > 1000)
+
+gg <- ggplot(df, aes(x = factor(month), y = NO3)) +
+  geom_boxplot() +
+  facet_wrap(vars(country)) 
+
+gg
+
+# Zero values
+mean(df$NO3 >= 0)  # 99.8%
+table(df$NO3 > 0)  # 2634 not over zero
+table(df$NO3 == 0) # 2473 equal zero
+range(df$NO3)  # -5.6 11200.0
+
+# For including zero values in box plot
+tr <- scales::trans_new("", transform = function(x) log(x+0.1), inverse = function(x) exp(x)-0.1)
+
+# Lot with log axis
+gg + 
+  scale_y_continuous(
+    trans = tr, 
+    breaks = c(0,1,10, 100, 1000),
+    labels = function(lab) round(lab,0)
+  )
+
+
+```
+
+
+### Test analysis of seasonal patterns   
+Using log values  
+```{r}
+dat <- dat %>%
+  mutate(station_id_f = factor(station_id),
+         year_f = factor(year))
+
+# Number of obs. per station
+df <- dat %>%
+  filter(!is.na(NO3) & NO3 > 0) %>%
+  count(station_id)
+
+ggplot(df, aes(n)) +
+  geom_histogram(binwidth = 50)
+
+# Sample 50 stations with n = 100-500
+sample_stations <- df %>%
+  filter(n > 100 & n < 500) %>%
+  sample_n(50) %>%
+  pull(station_id)
+
+dat_sample <- dat %>%
+  filter(!is.na(NO3) & station_id %in% sample_stations) %>%
+  mutate(log_NO3 = log10(NO3 + 0.1))
+
+m1 <- gam(log_NO3 ~ station_id_f + year_f + s(day_number, bs = "cc"), 
+           data = dat_sample) 
+
+# summary(m1$gam)
+plot(m1)
+
+
+```
+
+### Seasonal pattern for all stations with at least 50 observations   
+I.e., we assume same pattern (on log scale) for all stations  
+A minute computing time or so  
+```{r}
+
+# Pick stations with n >= 50
+pick_stations <- df %>%
+  filter(n >= 50) %>%
+  pull(station_id)
+
+dat2 <- dat %>% 
+  filter(!is.na(NO3) & station_id %in% pick_stations & year >= 1992) %>%
+  mutate(log_NO3 = log10(NO3 + 0.1)) %>%
+  filter(is.finite(log_NO3))
+  
+model_season <- gam(log_NO3 ~ station_id_f + year_f + s(day_number, bs = "cc"), 
+           data = dat2) 
+
+plot(model_season)
+
+```
+
+### Normalize all data to 15. October  
+Day 288  
+```{r}
+
+yday(ymd("2019-10-15"))
+
+# Add row number (for later left_join)
+dat2 <- dat2 %>%
+  mutate(row_no = 1:nrow(dat2))
+
+# Predict NO2 given the actual data except that day_number = 288
+df_for_predict <- dat2 %>%
+  select(station_id_f, year_f, row_no) %>%
+  mutate(day_number = 288)
+pred <- predict.gam(model_season, newdata = df_for_predict)
+
+# Add back the residuals
+df_for_predict <- df_for_predict %>%
+  mutate(log_NO3_adj = pred + residuals(model_season))
+
+# Add log_NO3_adj column to our data set
+dat2 <- dat2 %>%
+  left_join(df_for_predict %>% select(row_no, log_NO3_adj), by = "row_no")
+                       
+```
+
+### Reproduce plot above using season-adjusted data  
+Some residual seasonal variation left - should be looked into?
+```{r}
+
+gg <- dat2 %>%
+  left_join(df_stations %>% select(station_id, country), by = "station_id") %>%
+  ggplot(aes(x = factor(month), y = log_NO3_adj)) +
+  geom_boxplot() +
+  facet_wrap(vars(country)) 
+gg
+
+```
+
+## 4. Data on annual level  
+Simply using medians  
+```{r}
+
+dat_annual <- dat2 %>%
+  group_by(station_id, year) %>%
+  summarize(log_NO3_madj = median(log_NO3_adj)) %>%
+  ungroup()
+
+```
+
+
+
+### Add deposition and metadata 
+```{r}
+
+dat_annual <- dat_annual %>%
+  left_join(df_deposition, by = c("station_id", "year")) %>%
+  left_join(df_stations %>% select(station_id:altitude, country, coniferous, deciduous, 
+                                   heathlands, lake, mixed_forest, wetland)) %>%
+  mutate(station_id = factor(station_id))
+
+
+```
+
+## 5. Save  
+```{r}
+
+saveRDS(model_season, "Data/110_model_season.rmd")
+saveRDS(dat_annual, "Data/110_dat_annual_season_adjusted.rmd")
+
+
+```
+
+
+## 5. Analysis  
+```{r}
+
+# Random intercept
+m1 <- lme(log_NO3_madj ~ TOTN_dep,
+          random = ~1 | station_id, 
+          data = dat_annual)
+summary(m1)
+
+# Random intercept and slope
+m2 <- lme(log_NO3_madj ~ TOTN_dep,
+          random = ~1 + TOTN_dep | station_id, 
+          data = dat_annual)
+summary(m2)
+
+# Random effects
+m3 <- lme(log_NO3_madj ~ 1,
+          random = ~1 | station_id, 
+          data = dat_annual)
+
+summary(m3)
+
+
+```
+
