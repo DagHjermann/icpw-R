@@ -15,9 +15,7 @@ library(dplyr)
 library(readr)
 library(readxl)
 library(lubridate)
-# library(ggplot2)
 library(tidyr)
-library(forcats)
 
 ```
 
@@ -91,7 +89,7 @@ saveRDS(df_wide, "Data/100_Chemistry_wide.rds")
 df_deposition <- read_csv(
   "K:/Prosjekter/langtransporterte forurensninger/O-23300 - ICP-WATERS - HWI/Faglige rapporter/2020 report/Deposition data/Processed/dep_TOTN.csv")
 
-saveRDS(df_wide, "Data/100_Deposition.rds")
+saveRDS(df_deposition, "Data/100_Deposition.rds")
 
 ```
 
