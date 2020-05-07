@@ -24,11 +24,32 @@ library(tidyr)
 ### Data on long format  
 ```{r}
 
-# Data on broad format
-# Didn't use this one because of all the unpractical column names (e.g. "NH4-N_µg/l N") 
-if (FALSE){
 
-df_chem <- readr::read_csv(
+# Didn't use this one because of when we "widened" it, we lost may associations between parameters
+# (Got many lines with NO3 only)
+if (FALSE){
+  df_long <- readr::read_csv(
+    "K:/Prosjekter/JES/ICPW/Thematic_Trends_Report_2020/data_matrices/all_icpw_samples_long.csv",
+    col_types = 
+      cols(
+        station_id = col_double(),
+        station_code = col_character(),
+        station_name = col_character(),
+        sample_date = col_datetime(format = ""),
+        depth1 = col_double(),
+        depth2 = col_double(),
+        parameter = col_character(),
+        unit = col_character(),
+        value = col_double()
+      ))
+  
+  df_wide <- df_long %>%
+    tidyr::pivot_wider(names_from = "parameter", values_from = "value")
+
+}
+
+# Data on broad format
+df_wide <- readr::read_csv(
   "K:/Prosjekter/JES/ICPW/Thematic_Trends_Report_2020/data_matrices/all_icpw_samples_wide.csv",
   col_types = 
     cols(
@@ -39,42 +60,25 @@ df_chem <- readr::read_csv(
     )
 )
 
-}
+# names(df_wide)
 
-df_long <- readr::read_csv(
-  "K:/Prosjekter/JES/ICPW/Thematic_Trends_Report_2020/data_matrices/all_icpw_samples_long.csv",
-  col_types = 
-    cols(
-      station_id = col_double(),
-      station_code = col_character(),
-      station_name = col_character(),
-      sample_date = col_datetime(format = ""),
-      depth1 = col_double(),
-      depth2 = col_double(),
-      parameter = col_character(),
-      unit = col_character(),
-      value = col_double()
-    ))
+# Change some of the names
 
-```
-
-### Wide format  
-```{r}
-
-check <- df_long %>%
-  distinct(parameter, unit) %>%
-  count(parameter) %>%
-  filter(n > 1) %>%
-  nrow()
-
-if (check > 0){
-  cat("Warning! Units vary! \n")
-}
-
-df_wide <- df_long %>%
-  tidyr::pivot_wider(names_from = "parameter", values_from = "value")
+df_wide <- df_wide %>%
+  rename(
+    NH4 = `NH4-N_µg/l N`,
+    NO3 = `NO3-N_µg/l N`,
+    SiO2 = `SiO2_mg SiO2/l`,
+    DOC = `DOC_mg/L C`,
+    TOC = `TOC_mg C/l`,
+    TOTN = `TOTN_µg/l N`,
+    TOTP = `TOTP_µg/l P`,
+    Temp = Temp_oC,
+    pH = pH_,
+    ALK = `ALK-E_µEq/l`)
 
 ```
+
 
 ### Save as rds  
 ```{r}
