@@ -239,31 +239,56 @@ gg
 
 ## 4. Separate pattern by country and altitude  
 
-### Data
+### Data (dat3)
 ```{r}
+
+altitude_limits <- c(0, 200, 500, 2400)
 
 dat3 <- dat %>%
   filter(!is.na(NO3) & year >= 1992) %>%
   mutate(log_NO3 = log10(NO3 + 0.1)) %>%
-  left_join(df_stations %>% select(station_id, country, altitude), by = "station_id")
+  left_join(df_stations %>% select(station_id, country, altitude), by = "station_id") %>%
+  mutate(altitude_f = cut(altitude, breaks = altitude_limits),
+         label = paste(country, altitude_f, sep = "_")) 
+
+# Set missing leve,s to "(missing)"
+dat3$altitude_f <- fct_explicit_na(dat3$altitude_f)
+
   
 ```
 
 ### Check patterns  
 ```{r, fig.height=4, fig.width = 9}
 
-quantile(df_stations$altitude, na.rm = TRUE)
-
-altitude_limits <- c(0, 200, 500, 2400)
-
 df <- dat3 %>%
-  mutate(altitude_f = cut(altitude, breaks = altitude_limits)) %>%
   filter(country %in% c("Norway", "Sweden", "Finland", "Germany", "United Kingdom", "Canada", "United States"))
 
 # For including zero values in box plot
 tr <- scales::trans_new("", transform = function(x) log(x+0.1), inverse = function(x) exp(x)-0.1)
 
 gg <- ggplot(df, aes(x = factor(month), y = NO3)) +
+  geom_boxplot() +
+  scale_y_continuous(
+    trans = tr, 
+    breaks = c(0,1,10, 100, 1000),
+    labels = function(lab) round(lab,0)
+  ) +
+  facet_grid(rows = vars(altitude_f), cols = vars(country))
+
+gg
+
+```
+
+### Check patterns, TOC  
+```{r, fig.height=4, fig.width = 9}
+
+df <- dat3 %>%
+  filter(country %in% c("Norway", "Sweden", "Finland", "Germany", "United Kingdom", "Canada", "United States"))
+
+# For including zero values in box plot
+tr <- scales::trans_new("", transform = function(x) log(x+0.1), inverse = function(x) exp(x)-0.1)
+
+gg <- ggplot(df, aes(x = factor(month), y = TOC)) +
   geom_boxplot() +
   scale_y_continuous(
     trans = tr, 
@@ -360,13 +385,6 @@ extract_day_effect <- function(model, data, plot = FALSE){
 ### Select data for modelling  
 ```{r, fig.width = 9, fig.height = 7}
 
-altitude_limits <- c(0, 200, 500, 2400)
-
-dat3 <- dat3 %>%
-  mutate(altitude_f = cut(altitude, breaks = altitude_limits)) 
-
-# Set missing leve,s to "(missing)"
-dat3$altitude_f <- fct_explicit_na(dat3$altitude_f)
 
 # Check missing altitude by coutry
 xtabs(~is.na(altitude) + country, dat3)
@@ -423,7 +441,6 @@ dat_for_models2_test <- dat_for_models2 %>% filter(country == "Norway")
 # Split data seet intto a list
 dat_for_models2_split <- dat_for_models2_test %>%
   group_by(country, altitude_f) %>%
-  mutate(label = paste(country, altitude_f, sep = "_")) %>%
   group_split()
 
 # Set names for the list
@@ -458,11 +475,11 @@ dat3_adjusted <- dat3_adjustment_list$result[adjustment_ok] %>%
 # str(dat3_adjusteddata_list, 1)
 
 # Plot resulting seasonal curves (version 1)
-dat3_adjustment_list$result %>% 
-  walk(~print(.$ggplot + labs(title = .$data$label[1])))
+# dat3_adjustment_list$result %>% 
+#   walk(~print(.$ggplot + labs(title = .$data$label[1])))
 
 # Plot resulting seasonal curves (version 2)
-dat3_day_effects <- dat3_adjustment_list$result %>% 
+dat3_day_effects <- dat3_adjustment_list$result[adjustment_ok] %>% 
   map_df(function(X){
     df <- X$day_effect
     df %>% mutate(group = X$data$label[1])
@@ -479,8 +496,6 @@ ggplot(dat3_day_effects, aes(day_number, log_NO3_dev)) +
   
 Calculate adjustments  
 ```{r}
-
-
 
 # Split data seet intto a list
 dat_for_models2_split <- dat_for_models2 %>%
@@ -505,7 +520,8 @@ Sys.time() - t0
 
 # Structure: a list of 2 objects: 
 # 1) list of results, 2) list of errors (NULL if analysis went ok)
-str(dat3_adjustment_list, 1)
+# str(dat3_adjustment_list, 1)
+
 ```
 
 
@@ -514,6 +530,10 @@ Put results together
 
 # Which adjustments did not retun an error?
 adjustment_ok <- dat3_adjustment_list$error %>% map_lgl(is.null)
+
+cat("Adjustment not OK for: \n")
+names(dat_for_models2_split)[!adjustment_ok]
+                             
 
 # Set names for result
 names(dat3_adjustment_list$result) <- names(dat_for_models2_split)
@@ -528,7 +548,7 @@ dat3_adjusted <- dat3_adjustment_list$result[adjustment_ok] %>%
 # str(dat3_adjusteddata_list, 1)
 
 # Make data set for seasonal curves used
-dat3_day_effects <- dat3_adjustment_list$result %>% 
+dat3_day_effects <- dat3_adjustment_list$result[adjustment_ok] %>% 
   map_df(function(X){
     df <- X$day_effect
     df %>% mutate(group = X$data$label[1])
@@ -537,7 +557,7 @@ dat3_day_effects <- dat3_adjustment_list$result %>%
 ```
 
 ### Plot seasonal curves  
-```{r}
+```{r, fig.height=5, fig.width = 8}
 
 ggplot(dat3_day_effects, aes(day_number, log_NO3_dev)) +
   geom_path() +
@@ -545,13 +565,34 @@ ggplot(dat3_day_effects, aes(day_number, log_NO3_dev)) +
 
 ```
 
+### Reproduce plot above using season-adjusted data  
+Some residual seasonal variation left - should be looked into?
+```{r, fig.height=4, fig.width = 9}
+
+gg <- ggplot(dat3_adjusted, aes(x = factor(month), y = log_NO3_adj)) +
+  geom_boxplot() +
+  facet_grid(rows = vars(altitude_f), cols = vars(country))
+gg
+
+```
 ## 5. Data on annual level  
-Simply using medians  
 ```{r}
 
-dat_annual <- dat3_adjusted %>%
+dat4 <- bind_rows(
+  # The areas/altitudes where saesonal regression failed 
+  # 'adjusted' data set equal to raw data
+  dat3 %>%
+    filter(label %in% c("Italy_(0,200]", "Switzerland_(500,2.4e+03]")) %>%
+    mutate(log_NO3_dev = 0,
+           log_NO3_adj = log_NO3),
+  # The areas/altitudes where saesonal regression did not fail 
+  dat3_adjusted
+)
+
+dat_annual <- dat4 %>%
   group_by(station_id, year) %>%
-  summarize(log_NO3_madj = median(log_NO3_adj)) %>%
+  summarize(log_NO3_madj = median(log_NO3_adj),
+            TOC = median(TOC)) %>%
   ungroup()
 
 ```
@@ -573,35 +614,11 @@ dat_annual <- dat_annual %>%
 ## 5. Save  
 ```{r}
 
-saveRDS(model_season, "Data/110_model_season.rds")
+saveRDS(dat3_adjustment_list, "Data/110_model_season.rds")
 saveRDS(dat_annual, "Data/110_dat_annual_season_adjusted.rds")
 
 
 ```
 
 
-## 5. Analysis  
-```{r}
-
-# Random intercept
-m1 <- lme(log_NO3_madj ~ TOTN_dep,
-          random = ~1 | station_id, 
-          data = dat_annual)
-summary(m1)
-
-# Random intercept and slope
-m2 <- lme(log_NO3_madj ~ TOTN_dep,
-          random = ~1 + TOTN_dep | station_id, 
-          data = dat_annual)
-summary(m2)
-
-# Random effects
-m3 <- lme(log_NO3_madj ~ 1,
-          random = ~1 | station_id, 
-          data = dat_annual)
-
-summary(m3)
-
-
-```
 
