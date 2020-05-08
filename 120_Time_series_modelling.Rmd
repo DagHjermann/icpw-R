@@ -102,47 +102,50 @@ dat_annual_sel <- dat_annual %>%
   mutate(n = n()) %>% 
   filter(n >= 10)
 
-run_ts_analyses <- function(data){
+dat_annual_sel_TOC <- dat_annual %>%
+  filter(!is.na(TOC)) %>%
+  group_by(station_id) %>%
+  mutate(n = n()) %>% 
+  filter(n >= 10)
+
+run_ts_analyses_with_TOC <- function(data){
+  data_TOC <- data %>% filter(!is.na(TOC))
   list <- list(
     gamm(log_NO3_madj ~ s(year, k = 3), 
          correlation = corAR1(form =∼ year),
-         data = data),
+         data = data_TOC),
     gamm(log_NO3_madj ~ s(TOTN_dep, k = 3), 
          correlation = corAR1(form =∼ year),
-         data = data),
+         data = data_TOC),
     gamm(log_NO3_madj ~ s(TOTN_dep, k = 3) + s(year, k = 3), 
          correlation = corAR1(form =∼ year),
-         data = data),
+         data = data_TOC),
+    gls(log_NO3_madj ~ TOC, 
+        correlation = corAR1(form =∼ year),
+        data = data_TOC),
+    gamm(log_NO3_madj ~ s(year, k = 3) + TOC, 
+         correlation = corAR1(form =∼ year),
+         data = data_TOC),
+    gamm(log_NO3_madj ~ s(TOTN_dep, k = 3) + TOC, 
+         correlation = corAR1(form =∼ year),
+         data = data_TOC),
+    gamm(log_NO3_madj ~ s(TOTN_dep, k = 3) + s(year, k = 3) + TOC, 
+         correlation = corAR1(form =∼ year),
+         data = data_TOC),
     years = data$year
   )
-  data_TOC <- data %>% filter(!is.na(TOC))
-  if (nrow(data_TOC) >= 12){
-    list2 <- list(
-      gls(log_NO3_madj ~ TOC, 
-          correlation = corAR1(form =∼ year),
-          data = data_TOC),
-      gamm(log_NO3_madj ~ s(year, k = 3) + TOC, 
-           correlation = corAR1(form =∼ year),
-           data = data_TOC),
-      gamm(log_NO3_madj ~ s(TOTN_dep, k = 3) + TOC, 
-           correlation = corAR1(form =∼ year),
-           data = data_TOC),
-      gamm(log_NO3_madj ~ s(TOTN_dep, k = 3) + s(year, k = 3) + TOC, 
-           correlation = corAR1(form =∼ year),
-           data = data_TOC)
-    )
-    list <- c(list, list2)
-  }
-  list
+list
 }
 # Test
 # mod <- run_ts_analyses(dat_annual_test)
 
 # Safe version
-run_ts_analyses_safe <- safely(run_ts_analyses)
+run_ts_analyses_with_TOC_safe <- safely(run_ts_analyses_with_TOC)
+
 
 # Split data
-dat_annual_split <- dat_annual_sel %>%
+dat_annual_split <- dat_annual_sel_TOC %>%
+  filter(!is.na(TOC)) %>%
   group_by(station_id) %>%
   group_split()
 
@@ -152,18 +155,25 @@ names(dat_annual_split) <- dat_annual_split %>% map_chr(~.$station_id[1])
 # Run all models  
 t0 <- Sys.time()
 ts_model_list <- dat_annual_split %>% 
-  map(run_ts_analyses_safe) %>%
+  map(run_ts_analyses_with_TOC_safe) %>%
   transpose()
 Sys.time() - t0  
 
 
 ```
 
+```{r}
+# ts_model_list_with_TOC <- ts_model_list
+# ts_model_list_wout_TOC
+```
+
 ## 4. Save
 ```{r}
 
 saveRDS(dat_annual_sel, "Data/120_dat_annual_sel.rds")
-saveRDS(ts_model_list, "Data/120_ts_model_list.rds")
+saveRDS(dat_annual_sel_TOC, "Data/120_dat_annual_sel_TOC.rds")
+saveRDS(ts_model_list_with_TOC, "Data/120_ts_model_list_with_TOC.rds")
+saveRDS(ts_model_list_wout_TOC, "Data/120_ts_model_list_wout_TOC.rds")
 
 ```
 
