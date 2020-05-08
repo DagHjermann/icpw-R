@@ -1,0 +1,60 @@
+---
+title: "910 Test analyses"
+author: "DHJ"
+date: "7 5 2020"
+output: html_document
+---
+
+## 1. Libraries  
+```{r}
+
+# All of tehse packages cn be loaded at once using library(tidyverse). (I just like to be specific.)
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+library(forcats)
+library(mgcv)
+
+```
+
+
+## 2. Data  
+
+### Read data
+```{r}
+
+dat_annual <- readRDS("Data/110_dat_annual_season_adjusted.rds")
+
+```
+
+
+## Basic mixed models     
+See Zuur 2009 chapter 5  
+```{r}
+
+# Random intercept
+m1 <- lme(log_NO3_madj ~ TOTN_dep,
+          random = ~1 | station_id, 
+          data = dat_annual)
+summary(m1)
+
+# Random intercept and slope
+m2 <- lme(log_NO3_madj ~ TOTN_dep,
+          random = ~1 + TOTN_dep | station_id, 
+          data = dat_annual)
+summary(m2)
+
+# Random effects
+m3 <- lme(log_NO3_madj ~ 1,
+          random = ~1 | station_id, 
+          data = dat_annual)
+
+summary(m3)
+
+summary(m1)$AIC
+summary(m2)$AIC
+summary(m3)$AIC
+
+```
+
+

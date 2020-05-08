@@ -12,6 +12,7 @@ output: html_document
 
 # All of tehse packages cn be loaded at once using library(tidyverse). (I just like to be specific.)
 library(dplyr)
+library(purrr)
 library(lubridate)
 library(ggplot2)
 library(tidyr)
@@ -50,7 +51,7 @@ apply(!is.na(df), 2, sum) %>% sort() %>% rev()
 ```
 
 
-## 3. Seasonal patterns  
+## 3. One common seasonal pattern  
 
 ### Seasonal distribution of data  
 ```{r}
@@ -80,6 +81,7 @@ dat %>%
 df <- dat %>%
   filter(!is.na(NO3)) %>%
   left_join(df_stations %>% select(station_id, country), by = "station_id") %>%
+  # Pick only countries with >1000 values
   group_by(country) %>%
   mutate(n = n()) %>%    # pull(n) %>% unique() %>% sort()    # for finding cut-off value = 1000
   filter(n > 1000)
@@ -155,42 +157,67 @@ pick_stations <- df %>%
   filter(n >= 50) %>%
   pull(station_id)
 
-dat2 <- dat %>% 
+# dat2 = stations with >50 values and after 1992
+dat_model <- dat %>% 
   filter(!is.na(NO3) & station_id %in% pick_stations & year >= 1992) %>%
   mutate(log_NO3 = log10(NO3 + 0.1)) %>%
   filter(is.finite(log_NO3))
-  
+
+
 model_season <- gam(log_NO3 ~ station_id_f + year_f + s(day_number, bs = "cc"), 
-           data = dat2) 
+           data = dat_model) 
 
 plot(model_season)
 
 ```
 
-### Normalize all data to 15. October  
-Day 288  
+### Extract seasonal effect (day_effect)  
+Set day 288 (15. October) as reference date  
 ```{r}
 
+# summary(model_season)
 yday(ymd("2019-10-15"))
 
-# Add row number (for later left_join)
-dat2 <- dat2 %>%
-  mutate(row_no = 1:nrow(dat2))
 
-# Predict NO2 given the actual data except that day_number = 288
-df_for_predict <- dat2 %>%
-  select(station_id_f, year_f, row_no) %>%
-  mutate(day_number = 288)
-pred <- predict.gam(model_season, newdata = df_for_predict)
+# Pick a random station and year
+# Which you choose doesn't matter (just try)
+station_example <- dat2$station_id_f[10000]
+year_example <- 2000
 
-# Add back the residuals
-df_for_predict <- df_for_predict %>%
-  mutate(log_NO3_adj = pred + residuals(model_season))
+# Data useed for prediction
+day_effect <- data.frame(
+  station_id_f = station_example,
+  year_f = year_example,
+  day_number = 1:366)
 
-# Add log_NO3_adj column to our data set
-dat2 <- dat2 %>%
-  left_join(df_for_predict %>% select(row_no, log_NO3_adj), by = "row_no")
-                       
+# Predict
+day_effect$log_NO3_pred <- predict.gam(model_season, newdata = day_effect)
+
+# Deviance from day 288 (15. October)
+sel <- day_effect$day_number == 288
+day_effect$log_NO3_dev <- day_effect$log_NO3_pred - day_effect$log_NO3_pred[sel]
+
+day_effect <- day_effect %>%
+  select(day_number, log_NO3_dev)
+  
+# Plot day effect
+ggplot(day_effect, aes(day_number, log_NO3_dev)) +
+  geom_path()
+
+
+```
+
+### Normalize all data to 15. October  (dat2) 
+Not only those in 'pick_stations'
+```{r}
+
+dat2 <- dat %>% 
+  filter(!is.na(NO3) & year >= 1992) %>%
+  left_join(day_effect, by = "day_number") %>%
+  mutate(log_NO3 = log10(NO3 + 0.1),
+         log_NO3_adj = log_NO3 - log_NO3_dev) %>%
+  filter(is.finite(log_NO3))
+
 ```
 
 ### Reproduce plot above using season-adjusted data  
@@ -199,6 +226,10 @@ Some residual seasonal variation left - should be looked into?
 
 gg <- dat2 %>%
   left_join(df_stations %>% select(station_id, country), by = "station_id") %>%
+  # Pick only countries with >850 values
+  group_by(country) %>%
+  mutate(n = n()) %>%  #  pull(n) %>% unique() %>% sort()    # for finding cut-off value = 850
+  filter(n > 850) %>%
   ggplot(aes(x = factor(month), y = log_NO3_adj)) +
   geom_boxplot() +
   facet_wrap(vars(country)) 
@@ -206,11 +237,319 @@ gg
 
 ```
 
-## 4. Data on annual level  
+## 4. Separate pattern by country and altitude  
+
+### Data
+```{r}
+
+dat3 <- dat %>%
+  filter(!is.na(NO3) & year >= 1992) %>%
+  mutate(log_NO3 = log10(NO3 + 0.1)) %>%
+  left_join(df_stations %>% select(station_id, country, altitude), by = "station_id")
+  
+```
+
+### Check patterns  
+```{r, fig.height=4, fig.width = 9}
+
+quantile(df_stations$altitude, na.rm = TRUE)
+
+altitude_limits <- c(0, 200, 500, 2400)
+
+df <- dat3 %>%
+  mutate(altitude_f = cut(altitude, breaks = altitude_limits)) %>%
+  filter(country %in% c("Norway", "Sweden", "Finland", "Germany", "United Kingdom", "Canada", "United States"))
+
+# For including zero values in box plot
+tr <- scales::trans_new("", transform = function(x) log(x+0.1), inverse = function(x) exp(x)-0.1)
+
+gg <- ggplot(df, aes(x = factor(month), y = NO3)) +
+  geom_boxplot() +
+  scale_y_continuous(
+    trans = tr, 
+    breaks = c(0,1,10, 100, 1000),
+    labels = function(lab) round(lab,0)
+  ) +
+  facet_grid(rows = vars(altitude_f), cols = vars(country))
+
+gg
+
+```
+
+### Function 'seasonal_adjustment'  
+Adds columns 'log_NO3_dev' and 'log_NO3_adj' to the data  
+```{r}
+
+seasonal_adjustment <- function(data, plot = FALSE){
+  data_for_model <- get_data_for_model(data)
+  model <- gam(log_NO3 ~ station_id_f + year_f + s(day_number, bs = "cc"),
+               data = data_for_model) 
+  day_effect <- extract_day_effect(model, data_for_model, plot = plot)
+  result <- data %>% 
+    left_join(day_effect$data, by = "day_number") %>%
+    mutate(log_NO3_adj = log_NO3 - log_NO3_dev)
+  invisible(
+    list(data = result,
+         day_effect = day_effect$data,
+         ggplot = day_effect$ggplot)
+  )
+}
+
+# Test
+# debugonce(seasonal_adjustment)
+# df <- seasonal_adjustment(dat3[1:20000,], plot = TRUE)$data
+
+
+get_data_for_model <- function(data){
+  data %>%
+    group_by(station_id) %>%
+    mutate(n = n()) %>%
+    ungroup() %>%
+    filter(n > 50) %>%
+    mutate(station_id_f = factor(station_id),
+           year_f = factor(year)) 
+}
+
+# Test
+# dat3 %>% nrow()
+# get_data_for_model(dat3) %>% nrow()
+
+extract_day_effect <- function(model, data, plot = FALSE){
+  
+  station_example <- data$station_id_f[1]
+  year_example <- 1992
+  
+  # Data useed for prediction
+  day_effect <- data.frame(
+    station_id_f = station_example,
+    year_f = year_example,
+    day_number = 1:366)
+  
+  # Predict
+  day_effect$log_NO3_pred <- predict.gam(model, newdata = day_effect)
+  
+  # Deviance from day 288 (15. October)
+  sel <- day_effect$day_number == 288
+  day_effect$log_NO3_dev <- day_effect$log_NO3_pred - day_effect$log_NO3_pred[sel]
+  
+  day_effect <- day_effect %>%
+    select(day_number, log_NO3_dev)
+  
+  # Plot day effect
+  gg <- ggplot(day_effect, aes(day_number, log_NO3_dev)) +
+    geom_path()
+
+  if (plot){
+    print(gg)
+  }
+    
+  invisible(list(data = day_effect,
+                 ggplot = gg)
+  )
+  
+}
+# Test
+# df <- get_data_for_model(dat3[1:20000,])
+# model <- gam(log_NO3 ~ station_id_f + year_f + s(day_number, bs = "cc"),
+#               data = df) 
+# extract_day_effect(model, df, plot = TRUE)
+
+
+```
+
+### Select data for modelling  
+```{r, fig.width = 9, fig.height = 7}
+
+altitude_limits <- c(0, 200, 500, 2400)
+
+dat3 <- dat3 %>%
+  mutate(altitude_f = cut(altitude, breaks = altitude_limits)) 
+
+# Set missing leve,s to "(missing)"
+dat3$altitude_f <- fct_explicit_na(dat3$altitude_f)
+
+# Check missing altitude by coutry
+xtabs(~is.na(altitude) + country, dat3)
+# altitude = NA for Estonia and 2/3 of Ireland's lakes
+# Estonia's highest point is 318 masl
+# Ireland's highest point is 1038 masl
+
+# Set all Ireland and Estonia lakes to (0,200]
+sel <- dat3$country == "Ireland"
+table(dat3$altitude_f[sel])
+dat3$altitude_f[sel] <- "(0,200]"
+
+sel <- dat3$country == "Estonia"
+table(dat3$altitude_f[sel])
+dat3$altitude_f[sel] <- "(0,200]"
+
+# Filter so we keep only countries/altitude with a range of >= 9 months
+#  with n >= 20 observations per month
+# These data will be adjusted for season
+dat_for_models1 <- dat3 %>%
+  group_by(country, altitude_f, month) %>%
+  mutate(n_per_month = n()) %>%
+  filter(n_per_month >= 20) %>%
+  ungroup() %>%
+  group_by(country, altitude_f) %>%
+  mutate(month_range = diff(range(month))) %>%
+  filter(month_range >= 9) %>%
+  ungroup()
+
+# Filter so we keep only stations with n >= 50 
+# These will be used for making the seasonal model for adjustment
+dat_for_models2 <- dat_for_models1 %>%
+  group_by(country, altitude_f) %>%
+  mutate(n = n()) %>%
+  filter(n >= 50) 
+
+dat_for_models1 %>%
+  ggplot(aes(month)) +
+  geom_histogram(binwidth = 1) +
+  facet_wrap(vars(country, altitude_f), scales = "free_y")
+
+nrow(dat3)
+nrow(dat_for_models1)
+nrow(dat_for_models2)  # which happens to be all of them
+
+```
+
+### Seasonal adjustment for each country/altitude - test 
+```{r}
+
+dat_for_models2_test <- dat_for_models2 %>% filter(country == "Norway")
+
+
+# Split data seet intto a list
+dat_for_models2_split <- dat_for_models2_test %>%
+  group_by(country, altitude_f) %>%
+  mutate(label = paste(country, altitude_f, sep = "_")) %>%
+  group_split()
+
+# Set names for the list
+names(dat_for_models2_split) <- dat_for_models2_split %>% map_chr(~.$label[1])
+
+# Make "safe" version of seasonal_adjustment
+# => Continues looping even if seasonal_adjustment() fails
+seasonal_adjustment_safe <- safely(seasonal_adjustment)
+
+# Run adjustments
+dat3_adjustment_list <- dat_for_models2_split %>%
+  map(~seasonal_adjustment_safe(.)) %>%
+  transpose()
+
+# Structure: a list of 2 objects: 
+# 1) list of results, 2) list of errors (NULL if analysis went ok)
+str(dat3_adjustment_list, 1)
+
+# Which adjustments did not retun an error?
+adjustment_ok <- dat3_adjustment_list$error %>% map_lgl(is.null)
+
+# Set names for result
+names(dat3_adjustment_list$result) <- names(dat_for_models2_split)
+
+# Check contents of $result
+# str(dat3_adjustment_list$result, 1)
+# str(dat3_adjustment_list$result[[1]], 1)
+
+# Extract the "data" object and put together to a data frame
+dat3_adjusted <- dat3_adjustment_list$result[adjustment_ok] %>% 
+  map_df(~.$data)
+# str(dat3_adjusteddata_list, 1)
+
+# Plot resulting seasonal curves (version 1)
+dat3_adjustment_list$result %>% 
+  walk(~print(.$ggplot + labs(title = .$data$label[1])))
+
+# Plot resulting seasonal curves (version 2)
+dat3_day_effects <- dat3_adjustment_list$result %>% 
+  map_df(function(X){
+    df <- X$day_effect
+    df %>% mutate(group = X$data$label[1])
+    })
+
+ggplot(dat3_day_effects, aes(day_number, log_NO3_dev)) +
+  geom_path() +
+  facet_wrap(vars(group))
+
+```
+
+
+### Seasonal adjustment for each country/altitude   
+  
+Calculate adjustments  
+```{r}
+
+
+
+# Split data seet intto a list
+dat_for_models2_split <- dat_for_models2 %>%
+  group_by(country, altitude_f) %>%
+  mutate(label = paste(country, altitude_f, sep = "_")) %>%
+  group_split()
+
+# Set names for the list
+names(dat_for_models2_split) <- dat_for_models2_split %>% map_chr(~.$label[1])
+
+# Make "safe" version of seasonal_adjustment
+# => Continues looping even if seasonal_adjustment() fails
+seasonal_adjustment_safe <- safely(seasonal_adjustment)
+
+# Run adjustments
+t0 <- Sys.time()
+dat3_adjustment_list <- dat_for_models2_split %>%
+  map(~seasonal_adjustment_safe(.)) %>%
+  transpose()
+
+Sys.time() - t0
+
+# Structure: a list of 2 objects: 
+# 1) list of results, 2) list of errors (NULL if analysis went ok)
+str(dat3_adjustment_list, 1)
+```
+
+
+Put results together 
+```{r}
+
+# Which adjustments did not retun an error?
+adjustment_ok <- dat3_adjustment_list$error %>% map_lgl(is.null)
+
+# Set names for result
+names(dat3_adjustment_list$result) <- names(dat_for_models2_split)
+
+# Check contents of $result
+# str(dat3_adjustment_list$result, 1)
+# str(dat3_adjustment_list$result[[1]], 1)
+
+# Extract the "data" object and put together to a data frame
+dat3_adjusted <- dat3_adjustment_list$result[adjustment_ok] %>% 
+  map_df(~.$data)
+# str(dat3_adjusteddata_list, 1)
+
+# Make data set for seasonal curves used
+dat3_day_effects <- dat3_adjustment_list$result %>% 
+  map_df(function(X){
+    df <- X$day_effect
+    df %>% mutate(group = X$data$label[1])
+    })
+
+```
+
+### Plot seasonal curves  
+```{r}
+
+ggplot(dat3_day_effects, aes(day_number, log_NO3_dev)) +
+  geom_path() +
+  facet_wrap(vars(group))
+
+```
+
+## 5. Data on annual level  
 Simply using medians  
 ```{r}
 
-dat_annual <- dat2 %>%
+dat_annual <- dat3_adjusted %>%
   group_by(station_id, year) %>%
   summarize(log_NO3_madj = median(log_NO3_adj)) %>%
   ungroup()
