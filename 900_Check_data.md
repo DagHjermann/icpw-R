@@ -5,14 +5,20 @@ DHJ
 
   - [1. Libraries](#libraries)
   - [2. Chemistry](#chemistry)
-      - [Add stuff](#add-stuff)
+      - [Wide format](#wide-format)
       - [Check](#check)
-  - [3. Deposition](#deposition)
+      - [Long format](#long-format)
+      - [Add stuff](#add-stuff)
       - [Check](#check-1)
+  - [3. Deposition](#deposition)
+      - [Check](#check-2)
   - [4. Land cover](#land-cover)
       - [Checks](#checks)
       - [Map](#map)
   - [5. Selection of stations](#selection-of-stations)
+  - [6. Climate](#climate)
+      - [Plot 1](#plot-1)
+      - [Plot 2](#plot-2)
 
     Dataene finner du her:
     Kjemi: K:/Prosjekter/JES/ICPW/Thematic_Trends_Report_2020/data_matrices/all_icpw_samples_long.csv
@@ -83,6 +89,62 @@ library(forcats)
 
 ## 2\. Chemistry
 
+### Wide format
+
+``` r
+df_wide <- readr::read_csv(
+  "K:/Prosjekter/JES/ICPW/Thematic_Trends_Report_2020/data_matrices/all_icpw_samples_wide.csv",
+  col_types = 
+    cols(
+      .default = col_double(),
+      station_code = col_character(),
+      station_name = col_character(),
+      sample_date = col_datetime(format = "")
+    )
+)
+
+names(df_wide)
+```
+
+    ##  [1] "station_id"     "station_code"   "station_name"   "sample_date"   
+    ##  [5] "depth1"         "depth2"         "ALK-E_µEq/l"    "Al_µg/l"       
+    ##  [9] "As_µg/l"        "COLOUR_"        "Ca_mg/l"        "Cd_µg/l"       
+    ## [13] "Cl_mg/l"        "Cr_µg/l"        "Cu_µg/l"        "DOC_mg/L C"    
+    ## [17] "F_mg/l"         "Fe_µg/l"        "Hg_ng/l"        "KOND20_µS/cm"  
+    ## [21] "KOND_mS/m"      "K_mg/l"         "LAL_µg/l"       "Mg_mg/l"       
+    ## [25] "Mn_µg/l"        "NH4-N_µg/l N"   "NO3-N_µg/l N"   "Na_mg/l"       
+    ## [29] "Ni_µg/l"        "ORTP_µg/l"      "Pb_µg/l"        "Qs_m3/s"       
+    ## [33] "SO4_mg/l"       "SiO2_mg SiO2/l" "TOC_mg C/l"     "TOTN_µg/l N"   
+    ## [37] "TOTP_µg/l P"    "Temp_oC"        "Zn_µg/l"        "pH_"
+
+### Check
+
+``` r
+df <- df_wide %>%
+  filter(!is.na(`NO3-N_µg/l N`))
+
+apply(!is.na(df), 2, sum) %>% sort() %>% rev()
+```
+
+    ##   NO3-N_µg/l N         depth2         depth1    sample_date   station_name 
+    ##          87318          87318          87318          87318          87318 
+    ##   station_code     station_id            pH_        Cl_mg/l       SO4_mg/l 
+    ##          87318          87318          86145          85760          85654 
+    ##        Ca_mg/l        Mg_mg/l        Na_mg/l         K_mg/l      KOND_mS/m 
+    ##          85380          85363          84137          84093          80556 
+    ##    ALK-E_µEq/l     TOC_mg C/l   NH4-N_µg/l N SiO2_mg SiO2/l    TOTN_µg/l N 
+    ##          79710          75402          67355          47680          44098 
+    ##    TOTP_µg/l P        Al_µg/l        Temp_oC      ORTP_µg/l        Fe_µg/l 
+    ##          42150          40020          34518          22567          21683 
+    ##        COLOUR_         F_mg/l        Mn_µg/l        Zn_µg/l       LAL_µg/l 
+    ##          21311          15310          15009          13359           9761 
+    ##        Qs_m3/s        Cd_µg/l        Pb_µg/l        Cu_µg/l        Ni_µg/l 
+    ##           9592           6786           6614           5687           4432 
+    ##        As_µg/l   KOND20_µS/cm        Cr_µg/l     DOC_mg/L C        Hg_ng/l 
+    ##           1481           1207            991            581            195
+
+### Long format
+
 ``` r
 df1 <- readr::read_csv(
   "K:/Prosjekter/JES/ICPW/Thematic_Trends_Report_2020/data_matrices/all_icpw_samples_long.csv",
@@ -127,7 +189,7 @@ df1 %>%
 
     ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
 
-![](900_Check_data_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+![](900_Check_data_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
 
 ``` r
 df1 %>%
@@ -141,7 +203,7 @@ df1 %>%
 
     ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
 
-![](900_Check_data_files/figure-gfm/unnamed-chunk-4-2.png)<!-- -->
+![](900_Check_data_files/figure-gfm/unnamed-chunk-6-2.png)<!-- -->
 
 ``` r
 gg <- ggplot(df1, aes(x = parameter)) +
@@ -154,14 +216,14 @@ gg <- ggplot(df1, aes(x = parameter)) +
 gg + theme(axis.text.x = element_text(angle = -45, hjust = 0))
 ```
 
-![](900_Check_data_files/figure-gfm/unnamed-chunk-4-3.png)<!-- -->
+![](900_Check_data_files/figure-gfm/unnamed-chunk-6-3.png)<!-- -->
 
 ``` r
 ggplot(df1, aes(x = year)) +
   geom_histogram(binwidth = 1)
 ```
 
-![](900_Check_data_files/figure-gfm/unnamed-chunk-4-4.png)<!-- -->
+![](900_Check_data_files/figure-gfm/unnamed-chunk-6-4.png)<!-- -->
 
 ## 3\. Deposition
 
@@ -186,7 +248,7 @@ ggplot(df2, aes(TOTN_dep)) +
 
     ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
 
-![](900_Check_data_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+![](900_Check_data_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
 
 ``` r
 ggplot(df2, aes(year, TOTN_dep)) +
@@ -194,7 +256,7 @@ ggplot(df2, aes(year, TOTN_dep)) +
   scale_y_log10()
 ```
 
-![](900_Check_data_files/figure-gfm/unnamed-chunk-6-2.png)<!-- -->
+![](900_Check_data_files/figure-gfm/unnamed-chunk-8-2.png)<!-- -->
 
 ## 4\. Land cover
 
@@ -215,7 +277,7 @@ ggplot(df3, aes(country)) +
 
     ## Warning: Ignoring unknown parameters: binwidth, bins, pad
 
-![](900_Check_data_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+![](900_Check_data_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
 
 ``` r
 gg <- ggplot(df3, aes(catchment_area)) +
@@ -225,7 +287,7 @@ gg
 
     ## Warning: Removed 106 rows containing non-finite values (stat_bin).
 
-![](900_Check_data_files/figure-gfm/unnamed-chunk-8-2.png)<!-- -->
+![](900_Check_data_files/figure-gfm/unnamed-chunk-10-2.png)<!-- -->
 
 ``` r
 gg + scale_x_log10()
@@ -233,7 +295,7 @@ gg + scale_x_log10()
 
     ## Warning: Removed 106 rows containing non-finite values (stat_bin).
 
-![](900_Check_data_files/figure-gfm/unnamed-chunk-8-3.png)<!-- -->
+![](900_Check_data_files/figure-gfm/unnamed-chunk-10-3.png)<!-- -->
 
 ``` r
 ggplot(df3, aes(altitude)) +
@@ -244,7 +306,7 @@ ggplot(df3, aes(altitude)) +
 
     ## Warning: Removed 16 rows containing non-finite values (stat_bin).
 
-![](900_Check_data_files/figure-gfm/unnamed-chunk-8-4.png)<!-- -->
+![](900_Check_data_files/figure-gfm/unnamed-chunk-10-4.png)<!-- -->
 
 ``` r
 gg <- df3 %>%
@@ -259,7 +321,7 @@ gg
 
     ## Warning: Removed 978 rows containing non-finite values (stat_bin).
 
-![](900_Check_data_files/figure-gfm/unnamed-chunk-8-5.png)<!-- -->
+![](900_Check_data_files/figure-gfm/unnamed-chunk-10-5.png)<!-- -->
 
 ``` r
 # Custom transformation log(x+1)
@@ -279,7 +341,7 @@ gg +
 
     ## Warning: Removed 978 rows containing non-finite values (stat_bin).
 
-![](900_Check_data_files/figure-gfm/unnamed-chunk-8-6.png)<!-- -->
+![](900_Check_data_files/figure-gfm/unnamed-chunk-10-6.png)<!-- -->
 
 ### Map
 
@@ -291,7 +353,7 @@ ggplot(df3, aes(longitude, latitude)) +
   geom_point()
 ```
 
-![](900_Check_data_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
+![](900_Check_data_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
 
 ## 5\. Selection of stations
 
@@ -342,3 +404,59 @@ nrow(df4c)
 ```
 
     ## [1] 312
+
+## 6\. Climate
+
+``` r
+df_climate <- read_csv("https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/climate/cru_climate_timeseries_icpw_stns_1992-2016.csv")
+```
+
+    ## Parsed with column specification:
+    ## cols(
+    ##   station_id = col_double(),
+    ##   year = col_double(),
+    ##   variable = col_character(),
+    ##   value = col_double()
+    ## )
+
+### Plot 1
+
+``` r
+df_climate %>%
+  group_by(station_id, variable) %>%
+  summarise(mean = mean(value)) %>%
+  ggplot(aes(variable, mean)) + geom_boxplot()
+```
+
+![](900_Check_data_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
+
+### Plot 2
+
+``` r
+df <- df_climate %>%
+  group_by(station_id, variable) %>%
+  summarise(mean = mean(value)) %>%
+  left_join(df3, by = "station_id")
+
+gg <- ggplot(df %>% filter(variable == "pre"),
+  aes(longitude, latitude)) +
+  annotation_map(my_map, fill = "lightgreen") +
+  geom_point(aes(color = mean))
+
+gg + 
+  scale_color_gradient2(low = "darkgreen", mid = "blue", high = "red")
+```
+
+![](900_Check_data_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
+
+``` r
+gg <- ggplot(df %>% filter(variable == "tmp"),
+  aes(longitude, latitude)) +
+  annotation_map(my_map, fill = "lightgreen") +
+  geom_point(aes(color = mean))
+
+gg + 
+  scale_color_gradient2(low = "darkgreen", mid = "blue", high = "red")
+```
+
+![](900_Check_data_files/figure-gfm/unnamed-chunk-15-2.png)<!-- -->
