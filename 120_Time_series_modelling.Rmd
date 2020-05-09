@@ -11,6 +11,8 @@ output: html_document
 
 # All of tehse packages cn be loaded at once using library(tidyverse). (I just like to be specific.)
 library(dplyr)
+library(tidyr)
+library(purrr)
 library(lubridate)
 library(ggplot2)
 library(forcats)
@@ -30,7 +32,39 @@ dat_annual <- readRDS("Data/110_dat_annual_season_adjusted.rds") %>%
 
 str(dat_annual)
 
+dat_climate <- readRDS("Data/100_Climate.rds")
+
+station_selection <- readRDS("Data/100_Stations_selection.rds")
+station_selection_no3 <- station_selection$trends_1992_2016_no3
+
 ```
+
+### Add climate data  
+```{r}
+
+dat_climate_wide <- dat_climate %>%
+  pivot_wider(names_from = "variable", values_from = "value") %>%
+  mutate(station_id = as.character(station_id))
+
+nrow(dat_annual)
+
+dat_annual <- dat_annual %>%
+  left_join(dat_climate_wide, by = c("station_id", "year"))
+
+nrow(dat_annual)  # check that row number hasn't changed
+
+```
+
+### Pick data  
+```{r}
+
+dat_annual_sel <- dat_annual %>%
+  filter(station_id %in% station_selection_no3)
+
+nrow(dat_annual_sel)
+
+```
+
 
 
 ## 3. Run time series analyses  
@@ -39,14 +73,8 @@ For each station separately
 ### Test with one time series
 ```{r}
 
-df <- dat_annual %>%
-  filter(!is.na(TOC)) %>%
-  count(station_id) %>%
-  arrange(n) %>% 
-  filter(n >= 20)
-
-dat_annual_test <- dat_annual %>%
-  filter(station_id %in% df$station_id[1])
+dat_annual_test <- dat_annual_sel %>%
+  filter(station_id %in% unique(dat_annual_sel$station_id)[1])
 
 mod <- list(
   gamm(log_NO3_madj ~ s(year, k = 3), 
@@ -55,27 +83,53 @@ mod <- list(
   gamm(log_NO3_madj ~ s(TOTN_dep, k = 3), 
             correlation = corAR1(form =∼ year),
             data = dat_annual_test),
-  gamm(log_NO3_madj ~ s(TOTN_dep, k = 3) + s(year, k = 3), 
+  gamm(log_NO3_madj ~ s(pre, k = 3), 
             correlation = corAR1(form =∼ year),
             data = dat_annual_test),
-  gls(log_NO3_madj ~ TOC, 
+  gamm(log_NO3_madj ~ s(tmp, k = 3), 
             correlation = corAR1(form =∼ year),
-            data = dat_annual_test %>% filter(!is.na(TOC))),
-  gamm(log_NO3_madj ~ s(year, k = 3) + TOC, 
+            data = dat_annual_test),
+  gamm(log_NO3_madj ~ s(pre, k = 3) + s(tmp, k = 3), 
             correlation = corAR1(form =∼ year),
-            data = dat_annual_test %>% filter(!is.na(TOC))),
-  gamm(log_NO3_madj ~ s(TOTN_dep, k = 3) + TOC, 
+            data = dat_annual_test),
+  gamm(log_NO3_madj ~ s(TOTN_dep, k = 3) + s(pre, k = 3), 
             correlation = corAR1(form =∼ year),
-            data = dat_annual_test %>% filter(!is.na(TOC))),
-  gamm(log_NO3_madj ~ s(TOTN_dep, k = 3) + s(year, k = 3) + TOC, 
+            data = dat_annual_test),
+  gamm(log_NO3_madj ~ s(TOTN_dep, k = 3) + s(tmp, k = 3), 
             correlation = corAR1(form =∼ year),
-            data = dat_annual_test %>% filter(!is.na(TOC)))
-)
+            data = dat_annual_test),
+  gamm(log_NO3_madj ~ s(TOTN_dep, k = 3) + s(pre, k = 3) + s(tmp, k = 3), 
+            correlation = corAR1(form =∼ year),
+            data = dat_annual_test),
+  gamm(TOTN_dep ~ s(year, k = 3), 
+            correlation = corAR1(form =∼ year),
+            data = dat_annual_test),
+  gamm(pre ~ s(year, k = 3), 
+            correlation = corAR1(form =∼ year),
+            data = dat_annual_test),
+  gamm(tmp ~ s(year, k = 3), 
+            correlation = corAR1(form =∼ year),
+            data = dat_annual_test)
+  )
 
-anova <- anova(mod[[1]]$lme, mod[[2]]$lme, mod[[3]]$lme)
-summary(mod[[which.min(anova$AIC)]]$gam) %>% str()
+anova <- anova(mod[[1]]$lme, 
+               mod[[2]]$lme,
+               mod[[3]]$lme,
+               mod[[4]]$lme,
+               mod[[5]]$lme,
+               mod[[6]]$lme,
+               mod[[7]]$lme,
+               mod[[8]]$lme)
+anova
 
-summary(mod[[which.min(anova$AIC)]]$gam)$s.table
+model_selected <- which.min(anova$AIC)
+summary(mod[[model_selected]]$gam)
+
+aic <- data.frame(Model = 1:8,
+                  AIC = anova$AIC,
+                  dAIC = anova$AIC - min(anova$AIC))
+
+aic
 
 par(mfrow = c(2,2), mar = c(4,5,2,1))
 plot(mod[[1]]$gam)
@@ -92,60 +146,56 @@ plot(mod[[7]]$gam)
 
 ```
 
-### All time series   
-2-3 minutes  
-```{r}
+### All time series with TOC     
+Ca 4 minutes  
+```{r, cache = TRUE}
 
-# Select data with >= 10 years
-dat_annual_sel <- dat_annual %>%
-  group_by(station_id) %>%
-  mutate(n = n()) %>% 
-  filter(n >= 10)
-
-dat_annual_sel_TOC <- dat_annual %>%
-  filter(!is.na(TOC)) %>%
-  group_by(station_id) %>%
-  mutate(n = n()) %>% 
-  filter(n >= 10)
-
-run_ts_analyses_with_TOC <- function(data){
-  data_TOC <- data %>% filter(!is.na(TOC))
-  list <- list(
+run_ts_analyses <- function(data){
+  list(
     gamm(log_NO3_madj ~ s(year, k = 3), 
          correlation = corAR1(form =∼ year),
-         data = data_TOC),
+         data = data),
     gamm(log_NO3_madj ~ s(TOTN_dep, k = 3), 
          correlation = corAR1(form =∼ year),
-         data = data_TOC),
-    gamm(log_NO3_madj ~ s(TOTN_dep, k = 3) + s(year, k = 3), 
+         data = data),
+    gamm(log_NO3_madj ~ s(pre, k = 3), 
          correlation = corAR1(form =∼ year),
-         data = data_TOC),
-    gls(log_NO3_madj ~ TOC, 
-        correlation = corAR1(form =∼ year),
-        data = data_TOC),
-    gamm(log_NO3_madj ~ s(year, k = 3) + TOC, 
+         data = data),
+    gamm(log_NO3_madj ~ s(tmp, k = 3), 
          correlation = corAR1(form =∼ year),
-         data = data_TOC),
-    gamm(log_NO3_madj ~ s(TOTN_dep, k = 3) + TOC, 
+         data = data),
+    gamm(log_NO3_madj ~ s(pre, k = 3) + s(tmp, k = 3), 
          correlation = corAR1(form =∼ year),
-         data = data_TOC),
-    gamm(log_NO3_madj ~ s(TOTN_dep, k = 3) + s(year, k = 3) + TOC, 
+         data = data),
+    gamm(log_NO3_madj ~ s(TOTN_dep, k = 3) + s(pre, k = 3), 
          correlation = corAR1(form =∼ year),
-         data = data_TOC),
-    years = data$year
+         data = data),
+    gamm(log_NO3_madj ~ s(TOTN_dep, k = 3) + s(tmp, k = 3), 
+         correlation = corAR1(form =∼ year),
+         data = data),
+    gamm(log_NO3_madj ~ s(TOTN_dep, k = 3) + s(pre, k = 3) + s(tmp, k = 3), 
+         correlation = corAR1(form =∼ year),
+         data = data),
+    gamm(TOTN_dep ~ s(year, k = 3), 
+         correlation = corAR1(form =∼ year),
+         data = data),
+    gamm(pre ~ s(year, k = 3), 
+         correlation = corAR1(form =∼ year),
+         data = data),
+    gamm(tmp ~ s(year, k = 3), 
+         correlation = corAR1(form =∼ year),
+         data = data)
   )
-list
 }
 # Test
 # mod <- run_ts_analyses(dat_annual_test)
 
 # Safe version
-run_ts_analyses_with_TOC_safe <- safely(run_ts_analyses_with_TOC)
+run_ts_analyses_safe <- safely(run_ts_analyses)
 
 
 # Split data
-dat_annual_split <- dat_annual_sel_TOC %>%
-  filter(!is.na(TOC)) %>%
+dat_annual_split <- dat_annual_sel %>%
   group_by(station_id) %>%
   group_split()
 
@@ -154,33 +204,24 @@ names(dat_annual_split) <- dat_annual_split %>% map_chr(~.$station_id[1])
 
 # Run all models  
 t0 <- Sys.time()
-ts_model_list <- dat_annual_split %>% 
-  map(run_ts_analyses_with_TOC_safe) %>%
+ts_model_list <- dat_annual_split %>%
+  map(run_ts_analyses_safe) %>%
   transpose()
 Sys.time() - t0  
 
+# Set names for result
+names(ts_model_list$error) <- names(dat_annual_split)
+names(ts_model_list$result) <- names(dat_annual_split)
 
 ```
 
-```{r}
-# ts_model_list_with_TOC <- ts_model_list
-# ts_model_list_wout_TOC
-```
 
 ## 4. Save
 ```{r}
 
 saveRDS(dat_annual_sel, "Data/120_dat_annual_sel.rds")
-saveRDS(dat_annual_sel_TOC, "Data/120_dat_annual_sel_TOC.rds")
-saveRDS(ts_model_list_with_TOC, "Data/120_ts_model_list_with_TOC.rds")
-saveRDS(ts_model_list_wout_TOC, "Data/120_ts_model_list_wout_TOC.rds")
+saveRDS(ts_model_list, "Data/120_ts_model_list.rds")
 
 ```
 
-
-
-
-```{r}
-
-```
 
