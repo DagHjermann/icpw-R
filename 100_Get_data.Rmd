@@ -148,3 +148,13 @@ station_selection <- list(
 saveRDS(station_selection, "Data/100_Stations_selection.rds")
 
 ```
+
+## 6. Climate  
+```{r}
+
+df_climate <- read_csv("https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/climate/cru_climate_timeseries_icpw_stns_1992-2016.csv")
+
+saveRDS(df_climate, "Data/100_Climate.rds")
+
+```
+
