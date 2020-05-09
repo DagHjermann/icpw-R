@@ -218,7 +218,7 @@ ggplot(daic, aes(Dep, Dep_P_T)) +
 ### Extract R-sq’s
 
 Models  
-\- model 2: effect of deposition on NO3 - model 8: time trend in
+\- model 2: effect of deposition on NO3 - model 9: time trend in
 deposition
 
 ``` r
@@ -568,6 +568,7 @@ PLus ANOVA table for best model;
 #   get.models(dd, 3)[[1]]
 # )
 # saveRDS(best_models, "Data/130_best_models.rds")
+
 best_models <- readRDS("Data/130_best_models.rds")
 
 summary(best_models[[1]])$s.table
