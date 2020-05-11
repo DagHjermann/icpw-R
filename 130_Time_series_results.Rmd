@@ -306,7 +306,7 @@ rsq <- rsq %>%
              rsq_dep_vs_time < 0.7 ~ "Expected_low",
              rsq_no3_vs_dep < 0.20 ~ "Low_effect",
              rsq_no3_vs_dep < 0.40 ~ "Medium_effect",
-             rsq_no3_vs_dep > 0.40 ~ "High_effect")
+             rsq_no3_vs_dep >= 0.40 ~ "High_effect")
   ) %>%
   mutate(station_id = as.numeric(station_id))
 
@@ -315,10 +315,26 @@ table(rsq$Dep_effect)
 ```
 
 ### Data   
-  
+
+#### Check land cover NAs
+```{r}
+
+df_lacking_landcover <- df_stations %>% select(urban:other)
+df_lacking_landcover <- is.na(df_lacking_landcover)
+
+sel_lacking_all <- apply(df_lacking_landcover, 1, mean) == 1
+# df_stations[sel_lacking_all,] %>% View()
+
+apply(df_lacking_landcover[!sel_lacking_all,], 2, sum)
+
+# df_stations %>% filter(is.na(grasslands)) %>% View()
+
+```
+
+
+#### Make data set 'data_select'
 Adding mean deposition and mean precipitation + temeprature   
 - Exclude time series with "Expected_low" - i.e., weak time series trends in deposition  
-
 ```{r}
 
 df_deposition_mean <-
@@ -333,12 +349,13 @@ df_climate_mean <- df_climate %>%
 
 
 # df_stations %>% filter(is.na(coniferous))
+# apply(is.na(df_stations), 2, mean)
 
 df_stations2 <- df_stations %>%
+  mutate(bare_sparse = bare_rock + sparsely_vegetated + glacier) %>%
   select(station_id, 
-         coniferous, deciduous, lake, mixed_forest, wetland) %>%
+         coniferous, deciduous, lake, mixed_forest, wetland, bare_sparse) %>%
   filter(!is.na(coniferous))
-apply(is.na(df_stations2), 2, sum)
 
 
 data_select <- df_stations2 %>% 
@@ -355,8 +372,12 @@ data_select <- df_stations2 %>%
     Dep_effect = factor(Dep_effect, 
                              levels = c("Low_effect", "Medium_effect", "High_effect")
                              ),
-    coniferous = log(coniferous + 1), deciduous = log(deciduous + 1), lake = log(lake + 1), 
-    mixed_forest = log(mixed_forest + 1), wetland = log(wetland + 1)
+    coniferous = log(coniferous + 1), 
+    deciduous = log(deciduous + 1), 
+    lake = log(lake + 1), 
+    mixed_forest = log(mixed_forest + 1), 
+    wetland = log(wetland + 1),
+    bare_sparse = log(bare_sparse + 1)
     ) %>%
   as.data.frame() 
 # %>%
@@ -389,12 +410,16 @@ table(addNA(data_select$Dep_effect))
 ### Multiple GAM  
 
 
-#### Plot 
-```{r, fig.height=7}
-
+#### Plot 1
+```{r}
 ggplot(data_select, aes(Dep_effect, rsq_no3_vs_dep)) +
   geom_boxplot() +
   geom_jitter()
+
+```
+
+#### Plot 2
+```{r, fig.width=9, fig.height=9}
 
 plot(data_select %>% select(-Dep_effect))
 
@@ -419,7 +444,7 @@ data_mumin <- data_select %>%
 # x <- data_select %>% names()
 # paste0("s(", x, ", k = 3)") %>% paste(collapse = " + ")
 
-data_mumin <- readRDS("Data/130_data_mumin.rds")
+# data_mumin <- readRDS("Data/130_data_mumin.rds")
 
 # Check for NAs
 # apply(is.na(data_mumin), 2, sum)
@@ -429,7 +454,7 @@ data_mumin <- readRDS("Data/130_data_mumin.rds")
 
 mod_complete <- gam(rsq_no3_vs_dep ~ 
              s(coniferous, k = 3) + s(deciduous, k = 3) + s(lake, k = 3) + 
-             s(mixed_forest, k = 3) + s(wetland, k = 3) + 
+             s(mixed_forest, k = 3) + s(wetland, k = 3) +  + s(bare_sparse, k = 3) +
              s(Mean_dep, k = 3) + s(Mean_pre, k = 3) + s(Mean_tmp, k = 3), 
            data = data_mumin,
            na.action = "na.fail")
@@ -437,6 +462,7 @@ mod_complete <- gam(rsq_no3_vs_dep ~
 # summary(mod_complete)
 # dd <- dredge(mod_complete)
 # saveRDS(dd, "Data/130_mumin_object.rds")
+
 dd <- readRDS("Data/130_mumin_object.rds")
 
 ```
@@ -457,20 +483,23 @@ PLus ANOVA table for best model;
 # best_models <- list(
 #   get.models(dd, 1)[[1]],
 #   get.models(dd, 2)[[1]],
-#   get.models(dd, 3)[[1]]
+#   get.models(dd, 3)[[1]],
+#   get.models(dd, 4)[[1]]
 # )
 # saveRDS(best_models, "Data/130_best_models.rds")
 
 best_models <- readRDS("Data/130_best_models.rds")
 
-summary(best_models[[1]])$s.table
+summary(best_models[[1]])
 
-par(mfrow = c(3,4), mar = c(4,5,2,1))
+par(mfrow = c(4,4), mar = c(4,5,2,1))
 plot(best_models[[1]], res = TRUE, pch = 1)
 par(mfg = c(2,1))
 plot(best_models[[2]], res = TRUE, pch = 1)
 par(mfg = c(3,1))
 plot(best_models[[3]], res = TRUE, pch = 1)
+par(mfg = c(4,1))
+plot(best_models[[4]], res = TRUE, pch = 1)
 
 ```
 
@@ -524,6 +553,180 @@ varImpPlot(model1)
 
 ```
 
+#### Plot partial effects (standard)   
+```{r, fig.height=8, fig.width=8}
+
+imp <- randomForest::importance(model1)
+impvar1 <- rownames(imp)[order(imp[, 2], decreasing=TRUE)]
+saveRDS(impvar1, "Data/130_impvar1.rmd")
+# impvar1 <- readRDS("Data/130_impvar1.rmd")
+
+par(mfrow=c(3,3))
+
+for (i in seq_along(impvar1)) {
+  partialPlot(model1, train_set, impvar1[i], xlab=impvar1[i],
+              main=paste("Effect of", impvar1[i]),
+              ylim=c(0, 1))
+}
+
+
+if (FALSE){
+  
+  
+  # dir.create("Figures")
+
+  png("Figures/Random_forest_class_partial.png", height = 17, width = 17, units = 'cm', 
+     res = 300, type="cairo", antialias="default")
+
+  par(mfrow=c(3,3), mar = c(5,4,2,1))
+  
+  for (i in seq_along(impvar1)) {
+    partialPlot(model1, train_set, impvar1[i], xlab=impvar1[i],
+              main=paste("Effect of", impvar1[i]),
+                ylim=c(0.18, 0.36))
+    
+  }
+  
+  dev.off()
+  
+    
+}
+
+```
+
+#### Partial plots - functions   
+```{r}
+
+# Random sample of variable number 'var_no'
+random_sample <- function(var_no, 
+                          data = train_set, 
+                          n = 20) {
+  base::sample(data[[var_no]], n, replace = TRUE)
+}
+# random_sample(2)
+
+# Make variable going from min to max
+make_focus_variable <- function(pred_data,
+                                var, 
+                                actual_data = train_set){
+  n <- nrow(pred_data)
+  pred_data[[var]] <- seq(min(actual_data[[var]]), max(actual_data[[var]]), length = n)
+  pred_data
+}
+
+# Returns data for plot
+# - where the 'focus variable' var is set to name 'x_var' and varies from min to max
+# - the otehr variables 
+plot_effect_get_data_class <- function(var, 
+                                       data = train_set,
+                                       model = model1,
+                                       var_nos = 2:ncol(data), 
+                                       n_categories = 12, n = 1000){
+  
+  sample_for_predict <- var_nos %>% 
+    purrr::map_dfc(random_sample, n = n) %>%
+    set_names(names(train_set)[var_nos]) %>%
+    make_focus_variable(var = var)
+  
+  # Make predicted data
+  sample_for_predict$Pred_class <- predict(model, sample_for_predict, type = "class")
+  sample_for_predict$i <- 1:nrow(sample_for_predict)
+  
+  sample_for_predict <- sample_for_predict %>%
+    mutate(Group = cut(i, breaks = n_categories))
+  
+  # Changes name of 'focus variable' to name 'x_var'
+  sel <- names(sample_for_predict) == var
+  names(sample_for_predict)[sel] <- "x_var"
+  
+  sample_for_predict_grouped <- sample_for_predict %>%
+    group_by(Group) %>%
+    summarize(x_var = mean(x_var),
+              Low_effect = mean(Pred_class == "Low_effect"),
+              Medium_effect = mean(Pred_class == "Medium_effect"),
+              High_effect = mean(Pred_class == "High_effect")
+    ) %>%
+    pivot_longer(Low_effect:High_effect, names_to = "Class", values_to = "Fraction") %>%
+    mutate(Class = forcats::fct_inorder(Class))
+  
+  sample_for_predict_grouped
+}
+# Test
+# plot_effect_get_data("coniferous")
+
+plot_effect_class <- function(var, 
+                              data = train_set,
+                              model = model1,
+                              var_nos = 2:ncol(data), 
+                              n_categories = 12, n = 1000,
+                              backtransform = FALSE){
+  
+  sample_for_predict_grouped <- plot_effect_get_data_class(
+    var = var,
+    data = data,
+    model = model,
+    var_nos = var_nos, 
+    n_categories = n_categories, 
+    n = n)
+  
+  colors <- RColorBrewer::brewer.pal(n = 5, name = "YlOrRd")
+  
+  df <- sample_for_predict_grouped %>%
+    mutate(Class = forcats::fct_rev(Class),)
+  
+  if (backtransform){
+    df <- df %>%
+      mutate(x_var = factor(round(exp(x_var) - 1,1)))
+      xlabel <- paste0(var, ", percent")
+  } else {
+    df <- df %>%
+      mutate(x_var = factor(round(x_var, 1)))
+      xlabel <- paste0(var, ", log(percent + 1)")
+  }
+  ggplot(df, 
+         aes(x = x_var, y = Fraction, fill = Class)) +
+    geom_col() +
+    scale_fill_manual(values = rev(colors)) +
+    labs(x = xlabel)
+  
+} 
+
+```
+
+
+
+#### Partial plots
+```{r}
+
+# dir.create("Figures/Random_forest_class")
+# dir.create("Figures/Random_forest_regr")
+
+for (i in 1:length(impvar1)){
+  var <- impvar1[i]
+  # show log-transformed numbers (a)
+  fn <- sprintf("Figures/Random_forest_class/Random_forest_class_%02ia_%s.png", i, var)
+  gg <- plot_effect_class(var, data = train_set, model = model1)
+  ggsave(fn, gg, height = 4, width = 7)
+  # Original numbers (b)
+  if (!var %in% c("Mean_tmp", "Mean_pre", "Mean_dep")){
+    
+    fn <- sprintf("Figures/Random_forest_class/Random_forest_class_%02ib_%s.png", i, var)
+    gg <- plot_effect_class(var, data = train_set, model = model1, 
+                           backtransform = TRUE)
+    ggsave(fn, gg, height = 4, width = 7)
+  }
+} 
+
+```
+
+#### Partial plot for bare_sparse  
+```{r}
+plot_effect_class("bare_sparse", backtransform = TRUE)
+```
+
+
+
+
 ### Random forest, regression  
 
 #### Split into training and validation data
@@ -551,7 +754,31 @@ model2 <- randomForest(rsq_no3_vs_dep ~ .,
 
 model2
 
+
 ```
+
+#### Actual vs Predicted, training set
+```{r}
+plot(model2$pred, train_set$rsq_no3_vs_dep)
+
+# R-sq
+summary(lm(train_set$rsq_no3_vs_dep ~ model2$pred))$r.sq
+
+```
+
+#### Predict on training data
+```{r}
+
+# ?predict.randomForest
+
+# Predicting on train set
+pred_valid <- predict(model2, valid_set, type = "response")
+# Checking classification accuracy
+plot(pred_valid, valid_set$rsq_no3_vs_dep)  
+abline(0, 1, lty = 2)
+
+```
+
 
 #### Importance
 High MeanDecreaseGini = high importance in model  
@@ -560,5 +787,175 @@ High MeanDecreaseGini = high importance in model
 randomForest::importance(model2)
 varImpPlot(model2)
 
+png("Figures/Random_forest_regr_importance.png", height = 14, width = 25, units = 'cm', 
+    res = 300, type="cairo", antialias="default")
+
+varImpPlot(model2)
+
+dev.off()
+
+
 ```
+
+
+
+#### Plot partial effects (standard plot)
+```{r, fig.height=8, fig.width=8}
+
+# imp <- randomForest::importance(model2)
+# impvar2 <- rownames(imp)[order(imp[, 1], decreasing=TRUE)]
+# saveRDS(impvar2, "Data/130_impvar2.rmd")
+impvar2 <- readRDS("Data/130_impvar2.rmd")
+
+op = par(mfrow=c(3,3))
+
+for (i in seq_along(impvar2)) {
+  partialPlot(model2, train_set, impvar2[i], xlab=impvar2[i],
+              main=paste("Effect of", impvar2[i]),
+              ylim=c(0.18, 0.36))
+}
+
+if (FALSE){
+  
+  
+  # dir.create("Figures")
+
+  png("Figures/Random_forest_regr_partial.png", height = 17, width = 17, units = 'cm', 
+     res = 300, type="cairo", antialias="default")
+
+  par(mfrow=c(3,3), mar = c(5,4,2,1))
+  
+  for (i in seq_along(impvar2)) {
+    partialPlot(model2, train_set, impvar2[i], xlab=impvar2[i],
+              main=paste("Effect of", impvar2[i]),
+                ylim=c(0.18, 0.36))
+    
+  }
+  
+  dev.off()
+  
+    
+}
+```
+
+
+#### Partial plots - functions   
+```{r}
+
+# random_sample() - AS ABOVE
+# make_focus_variable() - AS ABOVE <- function(pred_data,
+
+# Returns data for plot
+# - where the 'focus variable' var is set to name 'x_var' and varies from min to max
+# - the otehr variables 
+
+# type  = "class" for classification, "response" for regression
+plot_effect_get_data_regr <- function(var, 
+                                       data = train_set,
+                                       model = model2,
+                                       var_nos = 2:ncol(data), 
+                                       n_categories = 50, n = 2000){
+  
+  sample_for_predict <- var_nos %>% 
+    purrr::map_dfc(random_sample, n = n) %>%
+    set_names(names(data)[var_nos]) %>%
+    make_focus_variable(var = var)
+  
+  # Make predicted data
+  sample_for_predict$Pred_response <- predict(model, sample_for_predict, type = "response")
+  sample_for_predict$i <- 1:nrow(sample_for_predict)
+  
+  sample_for_predict <- sample_for_predict %>%
+    mutate(Group = cut(i, breaks = n_categories))
+  
+  # Changes name of 'focus variable' to name 'x_var'
+  sel <- names(sample_for_predict) == var
+  names(sample_for_predict)[sel] <- "x_var"
+
+  sample_for_predict_grouped <- sample_for_predict %>%
+    group_by(Group) %>%
+    summarize(x_var = mean(x_var),
+              Pred_response = mean(Pred_response)
+    )
+  sample_for_predict_grouped
+}
+
+
+# plot_effect_get_data_regr("bare_sparse", data = train_set, model2)
+# 
+# plot_effect_get_data_regr("bare_sparse", data = train_set, model2,
+#                           n_categories = 50, n = 2000)
+
+plot_effect_regr <- function(var, 
+                             data = train_set,
+                             model = model2,
+                             backtransform = FALSE,
+                             var_nos = 2:ncol(data), 
+                             n_categories = 12, n = 1000){
+  
+  sample_for_predict_regr <- plot_effect_get_data_regr(
+    var = var, 
+    data = data,
+    model = model,
+    var_nos = var_nos, 
+    n_categories = n_categories, 
+    n = n)
+  
+  colors <- RColorBrewer::brewer.pal(n = 5, name = "YlOrRd")
+  
+  df <- sample_for_predict_regr
+  
+  if (backtransform){
+    df <- df %>%
+      mutate(x_var = round(exp(x_var) - 1,1))
+      xlabel <- paste0(var, ", percent")
+  } else {
+      xlabel <- paste0(var, ", log(percent + 1)")
+  }
+  ggplot(df, 
+         aes(x = x_var, y = Pred_response)) +
+    geom_smooth(span = 0.3) +
+    geom_point() +
+    labs(x = xlabel)
+  
+} 
+
+```
+
+#### Partial plots
+```{r}
+
+for (i in 1:length(impvar2)){
+  var <- impvar2[i]
+  # show log-transformed numbers (a)
+  fn <- sprintf("Figures/Random_forest_regr/Random_forest_regr_%02ia_%s.png", i, var)
+  gg <- plot_effect_regr(var, data = train_set, model = model2)
+  ggsave(fn, gg, height = 4, width = 7)
+  # Original numbers (b)
+  if (!var %in% c("Mean_tmp", "Mean_pre", "Mean_dep")){
+    fn <- sprintf("Figures/Random_forest_regr/Random_forest_regr_%02ib_%s.png", i, var)
+    gg <- plot_effect_regr(var, data = train_set, model = model2, 
+                           backtransform = TRUE)
+    ggsave(fn, gg, height = 4, width = 7)
+  }
+} 
+
+
+```
+
+#### Partial plot for bare_sparse
+```{r}
+
+plot_effect_regr("bare_sparse", data = train_set, model = model2,
+                          n_categories = 50, n = 2000)
+plot_effect_regr("bare_sparse", data = train_set, model = model2,
+                          n_categories = 50, n = 2000,
+                 backtransform = TRUE)
+
+```
+
+
+
+
+
 
