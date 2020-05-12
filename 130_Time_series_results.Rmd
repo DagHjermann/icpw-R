@@ -3,15 +3,11 @@ title: "130_Time_series_results"
 author: "DHJ"
 date: "8 5 2020"
 output: 
-  github_document:
-    toc: true
   html_document:
     toc: true    
     toc_float: true
-knit: (function(inputFile, encoding) {
-  rmarkdown::render(inputFile, encoding = encoding,
-  output_format = "all") })    
-  
+    keep_md: true
+
 ---
 
 
@@ -802,10 +798,10 @@ dev.off()
 #### Plot partial effects (standard plot)
 ```{r, fig.height=8, fig.width=8}
 
-# imp <- randomForest::importance(model2)
-# impvar2 <- rownames(imp)[order(imp[, 1], decreasing=TRUE)]
-# saveRDS(impvar2, "Data/130_impvar2.rmd")
-impvar2 <- readRDS("Data/130_impvar2.rmd")
+imp <- randomForest::importance(model2)
+impvar2 <- rownames(imp)[order(imp[, 1], decreasing=TRUE)]
+saveRDS(impvar2, "Data/130_impvar2.rmd")
+# impvar2 <- readRDS("Data/130_impvar2.rmd")
 
 op = par(mfrow=c(3,3))
 
