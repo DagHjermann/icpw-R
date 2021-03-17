@@ -67,7 +67,7 @@ nrow(dat_annual_sel)
 
 
 
-## 3. Run time series analyses  
+## 3. Time series analyses with gamm    
 For each station separately
 
 ### Test with one time series
@@ -150,7 +150,7 @@ plot(mod[[7]]$gam)
 Ca 4 minutes  
 ```{r, cache = TRUE}
 
-run_ts_analyses <- function(data){
+run_gamm_analyses <- function(data){
   list(
     gamm(log_NO3_madj ~ s(year, k = 3), 
          correlation = corAR1(form =∼ year),
@@ -188,10 +188,10 @@ run_ts_analyses <- function(data){
   )
 }
 # Test
-# mod <- run_ts_analyses(dat_annual_test)
+# mod <- run_gamm_analyses(dat_annual_test)
 
 # Safe version
-run_ts_analyses_safe <- safely(run_ts_analyses)
+run_gamm_analyses_safe <- safely(run_gamm_analyses)
 
 
 # Split data
@@ -204,23 +204,160 @@ names(dat_annual_split) <- dat_annual_split %>% map_chr(~.$station_id[1])
 
 # Run all models  
 t0 <- Sys.time()
-ts_model_list <- dat_annual_split %>%
-  map(run_ts_analyses_safe) %>%
+gamm_model_list <- dat_annual_split %>%
+  map(run_gamm_analyses_safe) %>%
   transpose()
 Sys.time() - t0  
 
 # Set names for result
-names(ts_model_list$error) <- names(dat_annual_split)
-names(ts_model_list$result) <- names(dat_annual_split)
+names(gamm_model_list$error) <- names(dat_annual_split)
+names(gamm_model_list$result) <- names(dat_annual_split)
+
+```
+## 4. Time series analyses with gls (linear effects)        
+For each station separately
+
+### Test with one time series
+```{r}
+
+dat_annual_test <- dat_annual_sel %>%
+  filter(station_id %in% unique(dat_annual_sel$station_id)[1])
+
+mod <- list(
+  gls(log_NO3_madj ~ year, 
+            correlation = corAR1(form =∼ year),
+            data = dat_annual_test),
+  gls(log_NO3_madj ~ TOTN_dep, 
+            correlation = corAR1(form =∼ year),
+            data = dat_annual_test),
+  gls(log_NO3_madj ~ pre, 
+            correlation = corAR1(form =∼ year),
+            data = dat_annual_test),
+  gls(log_NO3_madj ~ tmp, 
+            correlation = corAR1(form =∼ year),
+            data = dat_annual_test),
+  gls(log_NO3_madj ~ pre + tmp, 
+            correlation = corAR1(form =∼ year),
+            data = dat_annual_test),
+  gls(log_NO3_madj ~ TOTN_dep + pre, 
+            correlation = corAR1(form =∼ year),
+            data = dat_annual_test),
+  gls(log_NO3_madj ~ TOTN_dep + tmp, 
+            correlation = corAR1(form =∼ year),
+            data = dat_annual_test),
+  gls(log_NO3_madj ~ TOTN_dep + pre + tmp, 
+            correlation = corAR1(form =∼ year),
+            data = dat_annual_test),
+  gls(TOTN_dep ~ year, 
+            correlation = corAR1(form =∼ year),
+            data = dat_annual_test),
+  gls(pre ~ year, 
+            correlation = corAR1(form =∼ year),
+            data = dat_annual_test),
+  gls(tmp ~ year, 
+            correlation = corAR1(form =∼ year),
+            data = dat_annual_test)
+  )
+
+anova <- anova(mod[[1]], 
+               mod[[2]],
+               mod[[3]],
+               mod[[4]],
+               mod[[5]],
+               mod[[6]],
+               mod[[7]],
+               mod[[8]])
+anova
+
+model_selected <- which.min(anova$AIC)
+summary(mod[[model_selected]]$gam)
+
+aic <- data.frame(Model = 1:8,
+                  AIC = anova$AIC,
+                  dAIC = anova$AIC - min(anova$AIC))
+
+aic
+
+
+```
+
+### All time series with TOC     
+Ca 20 seconds    
+```{r, cache = TRUE}
+
+run_gls_analyses <- function(data){
+  list(
+  gls(log_NO3_madj ~ year, 
+            correlation = corAR1(form =∼ year),
+            data = data),
+  gls(log_NO3_madj ~ TOTN_dep, 
+            correlation = corAR1(form =∼ year),
+            data = data),
+  gls(log_NO3_madj ~ pre, 
+            correlation = corAR1(form =∼ year),
+            data = data),
+  gls(log_NO3_madj ~ tmp, 
+            correlation = corAR1(form =∼ year),
+            data = data),
+  gls(log_NO3_madj ~ pre + tmp, 
+            correlation = corAR1(form =∼ year),
+            data = data),
+  gls(log_NO3_madj ~ TOTN_dep + pre, 
+            correlation = corAR1(form =∼ year),
+            data = data),
+  gls(log_NO3_madj ~ TOTN_dep + tmp, 
+            correlation = corAR1(form =∼ year),
+            data = data),
+  gls(log_NO3_madj ~ TOTN_dep + pre + tmp, 
+            correlation = corAR1(form =∼ year),
+            data = data),
+  gls(TOTN_dep ~ year, 
+            correlation = corAR1(form =∼ year),
+            data = data),
+  gls(pre ~ year, 
+            correlation = corAR1(form =∼ year),
+            data = data),
+  gls(tmp ~ year, 
+            correlation = corAR1(form =∼ year),
+            data = data)
+  )
+}
+
+# Test
+# mod <- run_gls_analyses(dat_annual_test)
+
+# Safe version
+run_gls_analyses_safe <- safely(run_gls_analyses)
+
+
+# Split data
+dat_annual_split <- dat_annual_sel %>%
+  group_by(station_id) %>%
+  group_split()
+
+# Name the split data
+names(dat_annual_split) <- dat_annual_split %>% map_chr(~.$station_id[1])
+
+# Run all models  
+t0 <- Sys.time()
+gls_model_list <- dat_annual_split %>%
+  map(run_gls_analyses_safe) %>%
+  transpose()
+Sys.time() - t0  
+
+# Set names for result
+names(gls_model_list$error) <- names(dat_annual_split)
+names(gls_model_list$result) <- names(dat_annual_split)
 
 ```
 
 
-## 4. Save
+## 5. Save
 ```{r}
 
 saveRDS(dat_annual_sel, "Data/120_dat_annual_sel.rds")
-saveRDS(ts_model_list, "Data/120_ts_model_list.rds")
+saveRDS(gamm_model_list, "Data/120_ts_model_list.rds")
+saveRDS(gls_model_list, "Data/120_ts_model_list_linear.rds")
 
 ```
 
