@@ -72,11 +72,32 @@ result_list <- ts_model_list$result[model_ok]
 
 ```
 
+### Check one station  
+```{r}
+
+st <- 1
+
+# Station ID ( = station_ID in df_stations, df_deposition, df_climate...) 
+names(result_list)[st]
+
+# All models
+str(result_list[[st]], 1)
+
+# Model 1 - log_NO3_madj ~ year 
+summary(result_list[[st]][[1]]$gam)
+
+# Model 6 - log_NO3_madj ~ Deposition + precipitation  
+summary(result_list[[st]][[6]]$gam)
+
+# Model 9 - Deposition ~ year      
+summary(result_list[[1]][[9]]$gam)
+
+```
+
 
 ## 4. Explote AIC values 
 All models:  
   c("Time", "Dep", "P", "T", "P+T", "Dep+P", "Dep+T", "Dep+P+T", "Dep_vs_time", "P_vs_time", "T_vs_time")
-
 
 ### Extract dAIC for NO3 models   
 Not including the last three  
