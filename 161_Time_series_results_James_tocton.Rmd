@@ -1,0 +1,1025 @@
+---
+title: "161_Time_series_results_James_tocton"
+author: "DHJ"
+date: "8 5 2020"
+output: 
+  html_document:
+    toc: true    
+    toc_float: true
+    keep_md: true
+
+---
+
+As 160, but analysing the trend in TOC/TON ratio
+
+Analysis of TOC/TON ratio increase, based on James' trend results    
+* Taken from `https://github.com/JamesSample/icpw2/tree/master/thematic_report_2020/results`   
+* Sen slope of NO3, TOTN, TOC/TON etc.  
+* Predictor variable in all analyses are *whether TOC/TON ratio increases or not*     
+* Basically 3 sets of identical analyses (5,6,7) which only differ in data set (5 has the largest set of variables and the lowest sample size)  
+
+
+
+## 1. Libraries  
+```{r, results='hide', message=FALSE, warning=FALSE}
+
+# All of these packages cn be loaded at once using library(tidyverse). (I just like to be specific.)
+library(dplyr)
+library(tidyr)
+library(purrr)
+library(lubridate)
+library(ggplot2)
+
+# Too many packages, not all are used
+# library(forcats)
+# library(mgcv)
+# library(nlme)
+library(mapview)
+library(visreg)     # visreg
+library(rkt)        # Theil -Sen Regression
+
+library(MuMIn)      
+
+# Trees and forests
+# install.packages("party")
+# install.packages("modeltools")
+# install.packages("coin")
+# install.packages("multcomp")
+# install.packages("TH.data")
+library(party)
+# install.packages("evtree")
+library(evtree)
+# install.packages("randomForest")
+library(randomForest)
+
+library(maps)
+my_map <- map_data("world")
+
+library(effects)    # handles lme models  
+library(readxl)
+
+knitr::opts_chunk$set(results = 'hold')
+knitr::opts_chunk$set(warning = FALSE)
+
+```
+
+
+## 2. Data
+```{r}
+
+dat_annual_sel <- readRDS("Data/120_dat_annual_sel.rds")
+# ts_model_list <- readRDS("Data/120_ts_model_list_linear.rds")
+# ts_model_list_wout_TOC <- readRDS("Data/120_ts_model_list_wout_TOC.rds")
+
+df_stations <- readRDS("Data/100_Stations.rds")
+df_deposition <- readRDS("Data/100_Deposition.rds")
+df_climate <- readRDS("Data/100_Climate.rds")
+
+```
+
+### Station metadata
+```{r}
+
+df_station <- read_excel(
+  "K:/Prosjekter/langtransporterte forurensninger/O-23300 - ICP-WATERS - HWI/Faglige rapporter/2020 report/Land cover/ICPW_All_Stations_2020_2020_05_04.xlsx") %>%
+  mutate(station_id = as.character(station_id))
+
+```
+
+### James results  
+```{r}
+
+#
+# Regression results
+#
+# fn <- "https://raw.githubusercontent.com/JamesSample/icpw2/master/thematic_report_2020/results/trends_1992-2016_toc_totn_no3_relax_italy/trends_1992-2016_toc_totn_no3_relax_italy_results.csv"
+fn <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/trends_1992-2016_no3/trends_1992-2016_no3_results.csv"
+reg_no3 <- read.csv(fn, encoding = "UTF-8")
+nrow(reg_no3)
+
+# Station metadata
+fn <- "https://raw.githubusercontent.com/JamesSample/icpw2/master/thematic_report_2020/results/trends_1992-2016_toc_totn_no3_relax_italy/trends_1992-2016_toc_totn_no3_relax_italy_stations.csv"
+fn <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/trends_1992-2016_no3/trends_1992-2016_no3_stations.csv"
+reg_no3_st <- read.csv(fn, encoding = "UTF-8")
+
+# xtabs(~variable, reg_no3)  
+xtabs(~country, reg_no3_st)  
+
+#
+# Medians
+#
+fn <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/medians_2012-2016/medians_2012-2016_no3.csv"
+medians_no3 <- read.csv(fn, encoding = "UTF-8")
+nrow(medians_no3)
+
+
+if (FALSE){
+  # Check Germany:
+  x <- reg_no3_st %>% filter(country == "Germany") %>% pull(station_id)
+  medians_no3 %>% filter(station_id %in% x) %>% View()  # only 3 stations??
+
+  # Dounle check by reading and adding metadata 
+  fn <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/medians_2012-2016/medians_2012-2016_no3_stations.csv"
+  medians_no3_st <- read.csv(fn, encoding = "UTF-8")
+  medians_no3 <- medians_no3 %>% left_join(medians_no3_st)
+  medians_no3 %>% filter(country %in% "Germany") %>% View()  # still only 3 stations
+
+}
+
+fn <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/medians_2012-2016/medians_2012-2016_toc_totn_no3_nh4.csv"
+medians_toc <- read.csv(fn, encoding = "UTF-8")
+nrow(medians_toc)
+
+
+```
+### Start 'dat'  
+With slope regression data  
+* Make one line per station  
+```{r}
+
+df1 <- reg_no3 %>%
+  filter(variable %in% c("NO3-N_µg/l N", "TOC/TON")) %>%
+  select(station_id, variable, sen_slp) %>%
+  tidyr::pivot_wider(names_from = "variable", values_from = "sen_slp")
+df2 <- reg_no3 %>%
+  filter(variable %in% c("NO3-N_µg/l N", "TOC/TON")) %>%
+  select(station_id, variable, mk_p_val) %>%
+  tidyr::pivot_wider(names_from = "variable", values_from = "mk_p_val")
+
+names(df1)[2:3] <- c("slope_no3_vs_time", "slope_tocton_vs_time")
+names(df2)[2:3] <- c("p_no3_vs_time", "p_tocton_vs_time")
+
+dat <- full_join(df1, df2, by = "station_id")
+
+```
+
+### Deposition Theil-Senslope   
+```{r}
+
+### Get deposition  
+df_deposition <- readRDS("Data/100_Deposition.rds") %>%
+  as.data.frame()
+
+# TEST Senslope
+# df_test <- df_deposition %>% filter(station_id == 38115)
+# result <- rkt(df_test$year, df_test$TOTN_dep)
+# data.frame(station_id = 38115, TOTN_dep_P = result$sl, TOTN_dep_slope = result$B)
+
+# Function for Sen slope
+get_senslope <- function(data){
+  result <- rkt(data$year, data$TOTN_dep)
+  data.frame(station_id = data$station_id[1], slope_dep_vs_time = result$B, p_dep_vs_time = result$sl)
+}
+
+df_deposition_slope <- df_deposition %>%
+  split(.$station_id) %>% # str()
+  purrr::map_dfr(get_senslope)  
+
+```
+
+
+### Add deposition slope to data  
+```{r}
+
+nrow(dat)
+dat <- left_join(dat, 
+                 df_deposition_slope,
+                 by = "station_id")
+
+nrow(dat)
+
+
+```
+### Add medians and station metadata   
+```{r}
+
+nrow(dat)
+dat <- dat %>%
+  left_join(medians_no3, by = "station_id") %>%
+  # left_join(medians_toc, by = "station_id") %>%   # not needed, overlap in variables  
+  left_join(reg_no3_st, by = "station_id")
+nrow(dat)
+
+# Simplify names by removing units
+# names(dat)
+names(dat) <- sub(".N_µg.l.N", "", names(dat))
+names(dat) <- sub("_mg.C.l", "", names(dat))
+names(dat) <- sub("_µg.l.P", "", names(dat))
+names(dat)
+
+
+```
+
+### Add climate and deposition means 
+```{r}
+
+df_climate <- readRDS("Data/100_Climate.rds")
+
+df_climate_mean <- df_climate %>%
+  group_by(station_id, variable) %>% 
+  summarise(mean = mean(value)) %>%
+  tidyr::pivot_wider(names_from = "variable", values_from = "mean")
+
+df_deposition_mean <-
+  df_deposition %>% 
+  group_by(station_id) %>% 
+  summarise(Mean_dep = mean(TOTN_dep))
+
+# Add
+dat <- dat %>%
+  left_join(df_climate_mean, by = "station_id") %>%
+  left_join(df_deposition_mean, by = "station_id")
+nrow(dat)
+
+```
+
+### Add land cover    
+```{r}
+
+fn <- "K:/Prosjekter/langtransporterte forurensninger/O-23300 - ICP-WATERS - HWI/Faglige rapporter/2020 report/Land cover/ICPW_All_Stations_2020_2020_05_04.xlsx"
+
+df_station <- read_excel(fn)
+
+nrow(dat)
+dat <- left_join(dat, 
+                 df_station %>% select(-(station_code:longitude), -(altitude:region)), 
+                 by = "station_id"
+)
+
+nrow(dat)
+
+```
+
+
+
+## 3. Plot estimates  
+
+Note: **No USA**
+
+```{r, fig.width=9, fig.height=7}
+
+ggplot(dat, aes(slope_dep_vs_time, slope_tocton_vs_time)) + 
+  geom_point(data = dat %>% filter(p_tocton_vs_time < 0.05), size = rel(2)) +
+  geom_point(aes(color = country)) +
+  geom_hline(yintercept = 0, linetype = 2) + 
+  geom_vline(xintercept = 0, linetype = 2) 
+  
+ggplot(dat, aes(slope_dep_vs_time, slope_tocton_vs_time,
+                color = (p_tocton_vs_time < 0.05))) + 
+  geom_point() +
+  facet_wrap(vars(country)) +
+  geom_hline(yintercept = 0, linetype = 2) + 
+  geom_vline(xintercept = 0, linetype = 2) + 
+  labs(title = "A selection of countries")
+
+dat %>%
+  filter(!country %in% c("Latvia","Ireland","Italy","Netherlands")) %>%
+  ggplot(aes(slope_dep_vs_time, slope_tocton_vs_time,
+             color = (p_tocton_vs_time < 0.05))) + 
+  geom_point() +
+  facet_wrap(vars(country)) +
+  geom_hline(yintercept = 0, linetype = 2) + 
+  geom_vline(xintercept = 0, linetype = 2) + 
+  labs(title = "A selection of countries") + 
+  ylim(-2, 2)
+
+
+```
+
+
+## 4. Analysis of 'Significant / non-significant TOC/TON increase'   
+* Parts 5, 6 and 7 all run logistic regression + "trees and forest" methods  
+* Each part differ only in dataset used  
+
+```{r}
+
+use_saved_results <- TRUE
+
+```
+
+
+## 5a. Data INCLUDING catchment_area    
+```{r}
+
+# Data for analyses
+df_analysis <- dat %>%
+  mutate(
+    tocton_increase = case_when(
+      slope_tocton_vs_time > 0 & p_tocton_vs_time <= 0.05 ~ 1,
+      TRUE ~ 0)
+  ) %>%
+  select(tocton_increase, slope_dep_vs_time,
+         NO3, TOC,
+    latitude, longitude, altitude, 
+    pre, tmp, catchment_area,
+    coniferous, deciduous, lake, mixed_forest, wetland)
+
+# Complete cases
+apply(is.na(df_analysis), 2, sum)
+
+# What is missing? (long output)
+if (FALSE){
+dat %>% 
+  split(.$country) %>%
+  purrr::map(~apply(is.na(.), 2, mean))
+}
+
+complete <- complete.cases(df_analysis)
+table(complete)
+table(dat$country, complete)
+
+# Keep only complete cases
+df_analysis <- df_analysis[complete.cases(df_analysis),]
+
+
+
+```
+
+
+## 5b. Logistic regression, all variables  
+```{r, results  = "hold"}
+
+
+# Full model  
+fm <- glm(
+  tocton_increase ~ .,
+  data = df_analysis, 
+  family = "binomial",
+  na.action = "na.fail")
+
+# Dredging for best model
+if (use_saved_results){
+  # Read dredge result
+  dd1a <- readRDS("Data/161_all_dd1a.rds")
+} else {
+  dd1a <- dredge(fm)                          # do only once
+  saveRDS(dd1a, "Data/161_all_dd1a.rds")      # save it as it takes a couple of minutes
+}
+
+
+# Check best models  
+subset(dd1a, delta < 1)
+
+cat("\n\nR2: \n")
+dd1a_mod1 <- get.models(dd1a, 1)[[1]]  
+# summary(dd1a_mod1)  
+
+par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
+visreg(dd1a_mod1, scale = "response")
+mtext("All data, include coordinates", outer = TRUE)
+
+```
+
+## 5c. Logistic regression, exclude coordinates    
+```{r, results  = "hold"}
+
+fm <- glm(
+  tocton_increase ~ slope_dep_vs_time + NO3 + TOC +
+    altitude + 
+    pre + tmp + catchment_area +
+    coniferous + deciduous + lake + mixed_forest + 
+    wetland,
+  data = df_analysis, 
+  family = "binomial",
+  na.action = "na.fail")
+
+# Dredging for best model
+if (use_saved_results){
+  # Read dredge result
+  dd1b <- readRDS("Data/161_all_dd1b.rds")
+} else {
+  dd1b <- dredge(fm)                          # do only once
+  saveRDS(dd1b, "Data/161_all_dd1b.rds")      # save it as it takes a couple of minutes
+}
+
+subset(dd1b, delta < 1)
+
+cat("\n\nR2: \n")
+dd1b_mod1 <- get.models(dd1b, 1)[[1]]  
+# summary(dd1b_mod1)  
+
+par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
+visreg(dd1b_mod1, scale = "response")
+mtext("All data, exclude coordinates", outer = TRUE)
+
+```
+
+
+
+
+## 5d. Tree and forest classification
+
+
+
+### Split into training and validation data
+```{r}
+
+set.seed(123)
+
+x <- runif(nrow(df_analysis))
+train <- ifelse(x < 0.9, TRUE, FALSE)
+
+train_set <- df_analysis[train,]  %>% 
+  mutate(tocton_increase_f = factor(tocton_increase)) %>% select(-tocton_increase, -longitude, - latitude) %>%
+  as.data.frame()
+valid_set <- df_analysis[!train,] %>% 
+  mutate(tocton_increase_f = factor(tocton_increase)) %>% select(-tocton_increase, -longitude, - latitude) %>%
+  as.data.frame()
+
+```
+
+
+### a. Tree classification using 'party'   
+```{r, fig.width=8, fig.height=8}
+
+(ct = ctree(tocton_increase_f ~ ., data = train_set))
+
+plot(ct, main="Conditional Inference Tree")
+
+cat("\n\n")
+cat("Table of prediction errors \n")
+table(predict(ct), train_set$tocton_increase_f)
+cat("\n\n")
+
+cat("Classification of training set \n")
+tr.pred = predict(ct, newdata = valid_set, type="prob")
+colnames(tr.pred) <- c("P0", "P1")
+# tr.pred <- tr.pred %>% map_dfr(~data.frame(P0 = .[1], P1 = .[2]))
+table(tr.pred[,"P1"] > 0.5, valid_set$tocton_increase_f)
+
+
+```
+
+### b. Evtree (Evolutionary Learning)   
+```{r, fig.width=8, fig.height=8}
+
+ev.raw = evtree(tocton_increase_f ~ ., data = train_set)
+
+plot(ev.raw)
+cat("Predicted in training data: \n")
+table(predict(ev.raw), train_set$tocton_increase_f)
+
+cat("\n\nPrediction errors in training data: \n")
+1-mean(predict(ev.raw) == train_set$tocton_increase_f)
+```
+
+
+### c. Random forest  
+* *For results/interpretation, see separate document '161_randomforest_James_data.html'*  
+* Model called 'model1'
+```{r}
+
+model1 <- randomForest(tocton_increase_f ~ ., 
+                       data = train_set, 
+                       mtry = 5,
+                       importance = TRUE)
+
+model1
+
+```
+
+
+#### Random forest, predict on training data
+```{r}
+
+# Predicting on train set
+pred_valid <- predict(model1, valid_set, type = "class")
+# Checking classification accuracy
+table(pred_valid, valid_set$tocton_increase_f)  
+
+```
+
+#### Random forest, importance (but see separate result file)  
+High MeanDecreaseGini = high importance in model  
+```{r}
+
+randomForest::importance(model1)
+varImpPlot(model1)
+
+```
+
+#### Random forest, partial effects   
+* NOt easy to interpret    
+```{r, fig.height=7, fig.width = 10}
+
+imp <- randomForest::importance(model1)
+impvar1 <- rownames(imp)[order(imp[, 2], decreasing=TRUE)]
+
+# impvar1 <- readRDS("Data/130_impvar1.rmd")
+
+par(mfrow=c(3,4))
+
+for (i in seq_along(impvar1)) {
+  partialPlot(x = model1, 
+              pred.data = train_set, 
+              x.var = impvar1[i], 
+              which.class = "1",
+              main=paste("Effect of", impvar1[i]))
+}
+
+
+
+```
+#### randomForestExplainer
+```{r}
+
+# install.packages("randomForestExplainer")
+library(randomForestExplainer)
+
+# COPY to console and run (this will create an Rmd file and render an HTML file):
+# DON'T rin ith within this chunk, RStudio will hang
+
+if (FALSE){
+  explain_forest(model1, interactions = TRUE, data = train_set, 
+                 path = "C:/Data/seksjon 317/icpw-R/161_randomforest_James_data_model1.html")
+}
+
+```
+
+
+
+
+## 6a. Data EXCLUDING catchment_area   
+* Includes USA data, still missing UK and most German data      
+*  Germany is missing TOC and NO3 (87%), UK is missing land cover (100%)
+```{r}
+
+# Data for analyses
+df_analysis <- dat %>%
+  mutate(
+    tocton_increase = case_when(
+      slope_tocton_vs_time > 0 & p_tocton_vs_time <= 0.05 ~ 1,
+      TRUE ~ 0)
+  ) %>%
+  select(tocton_increase, slope_dep_vs_time,
+         NO3, TOC,
+    latitude, longitude, altitude, 
+    pre, tmp, 
+    coniferous, deciduous, lake, mixed_forest, wetland)
+
+# Complete cases
+apply(is.na(df_analysis), 2, sum)
+
+complete <- complete.cases(df_analysis)
+table(complete)
+table(dat$country, complete)
+
+# What is missing? (long output)  
+# Germany is missing TOC (87%)
+if (FALSE){
+dat %>% 
+  split(.$country) %>%
+  purrr::map(~apply(is.na(.), 2, mean))
+}
+
+
+# Keep only complete cases
+df_analysis <- df_analysis[complete.cases(df_analysis),]
+
+
+
+```
+
+
+## 6b. Logistic regression, all variables  
+```{r, results  = "hold"}
+
+
+# Full model  
+fm <- glm(
+  tocton_increase ~ .,
+  data = df_analysis, 
+  family = "binomial",
+  na.action = "na.fail")
+
+# Dredging for best model
+if (use_saved_results){
+  # Read dredge result
+  dd2a <- readRDS("Data/161_all_dd2a.rds")
+} else {
+  dd2a <- dredge(fm)                          # do only once
+  saveRDS(dd2a, "Data/161_all_dd2a.rds")      # save it as it takes a couple of minutes
+}
+
+# Check best models  
+subset(dd2a, delta < 1)
+
+cat("\n\nR2: \n")
+dd2a_mod1 <- get.models(dd2a, 1)[[1]]  
+# summary(dd2a_mod1)  
+
+par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
+visreg(dd2a_mod1, scale = "response")
+mtext("All data, include coordinates", outer = TRUE)
+
+```
+
+## 6c. Logistic regression, exclude coordinates    
+```{r, results  = "hold"}
+
+fm <- glm(
+  tocton_increase ~ slope_dep_vs_time + NO3 + TOC +
+    altitude + 
+    pre + tmp + 
+    coniferous + deciduous + lake + mixed_forest + 
+    wetland,
+  data = df_analysis, 
+  family = "binomial",
+  na.action = "na.fail")
+
+# Dredging for best model
+if (use_saved_results){
+  # Read dredge result
+  dd2b <- readRDS("Data/161_all_dd2b.rds")
+} else {
+  dd2b <- dredge(fm)                          # do only once
+  saveRDS(dd2b, "Data/161_all_dd2b.rds")      # save it as it takes a couple of minutes
+}
+
+subset(dd2b, delta < 1)
+
+cat("\n\nR2: \n")
+dd2b_mod1 <- get.models(dd2b, 1)[[1]]  
+# summary(dd2b_mod1)  
+
+par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
+visreg(dd2b_mod1, scale = "response")
+mtext("All data, exclude coordinates", outer = TRUE)
+
+```
+
+
+
+
+## 6d. Tree and forest classification
+
+
+### Split into training and validation data
+```{r}
+
+set.seed(123)
+
+x <- runif(nrow(df_analysis))
+train <- ifelse(x < 0.9, TRUE, FALSE)
+
+train_set <- df_analysis[train,]  %>% 
+  mutate(tocton_increase_f = factor(tocton_increase)) %>% select(-tocton_increase, -longitude, - latitude) %>%
+  as.data.frame()
+valid_set <- df_analysis[!train,] %>% 
+  mutate(tocton_increase_f = factor(tocton_increase)) %>% select(-tocton_increase, -longitude, - latitude) %>%
+  as.data.frame()
+
+```
+
+
+### a. Tree classification using 'party'   
+```{r, fig.width=8, fig.height=8}
+
+(ct = ctree(tocton_increase_f ~ ., data = train_set))
+
+plot(ct, main="Conditional Inference Tree")
+
+cat("\n\n")
+cat("Table of prediction errors \n")
+table(predict(ct), train_set$tocton_increase_f)
+cat("\n\n")
+
+cat("Classification of training set \n")
+tr.pred = predict(ct, newdata = valid_set, type="prob")
+colnames(tr.pred) <- c("P0", "P1")
+# tr.pred <- tr.pred %>% map_dfr(~data.frame(P0 = .[1], P1 = .[2]))
+table(tr.pred[,"P1"] > 0.5, valid_set$tocton_increase_f)
+
+
+```
+
+### b. Evtree (Evolutionary Learning)   
+```{r, fig.width=10, fig.height=8}
+
+ev.raw = evtree(tocton_increase_f ~ ., data = train_set)
+
+plot(ev.raw)
+cat("Predicted in training data: \n")
+table(predict(ev.raw), train_set$tocton_increase_f)
+
+cat("\n\nPrediction errors in training data: \n")
+1-mean(predict(ev.raw) == train_set$tocton_increase_f)
+
+```
+
+
+### c. Random forest  
+* *For results/interpretation, see separate document '161_randomforest_James_data.html'*  
+* Model called 'model2'
+```{r}
+
+model2 <- randomForest(tocton_increase_f ~ ., 
+                       data = train_set, 
+                       mtry = 5,
+                       importance = TRUE)
+
+model2
+
+```
+
+
+#### Random forest, predict on training data
+```{r}
+
+# Predicting on train set
+pred_valid <- predict(model2, valid_set, type = "class")
+# Checking classification accuracy
+table(pred_valid, valid_set$tocton_increase_f)  
+
+```
+
+#### Random forest, importance (but see separate result file)  
+High MeanDecreaseGini = high importance in model  
+```{r}
+
+randomForest::importance(model2)
+varImpPlot(model2)
+
+```
+
+#### Random forest, partial effects   
+* NOt easy to interpret    
+```{r, fig.height=7, fig.width = 10}
+
+imp <- randomForest::importance(model2)
+impvar1 <- rownames(imp)[order(imp[, 2], decreasing=TRUE)]
+
+# impvar1 <- readRDS("Data/130_impvar1.rmd")
+
+par(mfrow=c(3,4))
+
+for (i in seq_along(impvar1)) {
+  partialPlot(x = model2, 
+              pred.data = train_set, 
+              x.var = impvar1[i], 
+              which.class = "1",
+              main=paste("Effect of", impvar1[i]))
+}
+
+
+
+```
+#### randomForestExplainer
+```{r}
+
+# install.packages("randomForestExplainer")
+library(randomForestExplainer)
+
+# COPY to console and run (this will create an Rmd file and render an HTML file):
+# DON'T rin ith within this chunk, RStudio will hang
+
+if (FALSE){
+  explain_forest(model2, interactions = TRUE, data = train_set, 
+                 path = "C:/Data/seksjon 317/icpw-R/161_randomforest_James_data_model2.html")
+}
+
+```
+
+
+
+## 7a. Data EXCLUDING catchment_area, TOC and NO3    
+* Includes USA data, still missing UK and most German data      
+*  Germany is missing TOC (87%), UK is missing land cover (100%)
+```{r}
+
+# Data for analyses
+df_analysis <- dat %>%
+  mutate(
+    tocton_increase = case_when(
+      slope_tocton_vs_time > 0 & p_tocton_vs_time <= 0.05 ~ 1,
+      TRUE ~ 0)
+  ) %>%
+  select(country, station_code, tocton_increase, slope_dep_vs_time,
+    latitude, longitude, altitude, 
+    pre, tmp, 
+    coniferous, deciduous, lake, mixed_forest, wetland)
+
+# Complete cases
+apply(is.na(df_analysis), 2, sum)
+
+complete <- complete.cases(df_analysis)
+table(complete)
+table(df_analysis$country, complete)
+
+# What is missing? (long output)  
+# Germany is missing NO3 (87%)
+if (FALSE){
+df_analysis %>% 
+  split(.$country) %>%
+  purrr::map(~apply(is.na(.), 2, mean))
+}
+
+
+# Keep only complete cases
+df_analysis <- df_analysis[complete.cases(df_analysis),] %>%
+  select(-country, -station_code)
+
+
+
+```
+
+
+## 7b. Logistic regression, all variables  
+```{r, results  = "hold"}
+
+
+# Full model  
+fm <- glm(
+  tocton_increase ~ .,
+  data = df_analysis, 
+  family = "binomial",
+  na.action = "na.fail")
+
+# Dredging for best model
+if (use_saved_results){
+  # Read dredge result
+  dd3a <- readRDS("Data/161_all_dd3a.rds")
+} else {
+  dd3a <- dredge(fm)                          # do only once
+  saveRDS(dd3a, "Data/161_all_dd3a.rds")      # save it as it takes a couple of minutes
+}
+
+# Check best models  
+subset(dd3a, delta < 1)
+
+cat("\n\nR2: \n")
+dd3a_mod1 <- get.models(dd3a, 1)[[1]]  
+# summary(dd3a_mod1)  
+
+par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
+visreg(dd3a_mod1, scale = "response")
+mtext("All data, include coordinates", outer = TRUE)
+
+```
+
+## 7c. Logistic regression, exclude coordinates    
+```{r, results  = "hold"}
+
+fm <- glm(
+  tocton_increase ~ slope_dep_vs_time + 
+    altitude + 
+    pre + tmp + 
+    coniferous + deciduous + lake + mixed_forest + 
+    wetland,
+  data = df_analysis, 
+  family = "binomial",
+  na.action = "na.fail")
+
+# Dredging for best model
+if (use_saved_results){
+  # Read dredge result
+  dd3b <- readRDS("Data/161_all_dd3b.rds")
+} else {
+  dd3b <- dredge(fm)                          # do only once
+  saveRDS(dd3b, "Data/161_all_dd3b.rds")      # save it as it takes a couple of minutes
+}
+
+subset(dd3b, delta < 1)
+
+cat("\n\nR2: \n")
+dd3b_mod1 <- get.models(dd3b, 1)[[1]]  
+# summary(dd3b_mod1)  
+
+par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
+visreg(dd3b_mod1, scale = "response")
+mtext("All data, exclude coordinates", outer = TRUE)
+
+```
+
+
+
+
+## 7d. Tree and forest classification
+
+
+### Split into training and validation data   
+```{r}
+
+set.seed(123)
+
+x <- runif(nrow(df_analysis))
+train <- ifelse(x < 0.9, TRUE, FALSE)
+
+train_set <- df_analysis[train,]  %>% 
+  mutate(tocton_increase_f = factor(tocton_increase)) %>% select(-tocton_increase, -longitude, - latitude) %>%
+  as.data.frame()
+valid_set <- df_analysis[!train,] %>% 
+  mutate(tocton_increase_f = factor(tocton_increase)) %>% select(-tocton_increase, -longitude, - latitude) %>%
+  as.data.frame()
+
+```
+
+
+### a. Tree classification using 'party'   
+```{r, fig.width=8, fig.height=8}
+
+(ct = ctree(tocton_increase_f ~ ., data = train_set))
+
+plot(ct, main="Conditional Inference Tree")
+
+cat("\n\n")
+cat("Table of prediction errors \n")
+table(predict(ct), train_set$tocton_increase_f)
+cat("\n\n")
+
+cat("Classification of training set \n")
+tr.pred = predict(ct, newdata = valid_set, type="prob")
+colnames(tr.pred) <- c("P0", "P1")
+# tr.pred <- tr.pred %>% map_dfr(~data.frame(P0 = .[1], P1 = .[2]))
+table(tr.pred[,"P1"] > 0.5, valid_set$tocton_increase_f)
+
+
+```
+
+### b. Evtree (Evolutionary Learning)   
+```{r, fig.width=10, fig.height=8}
+
+ev.raw = evtree(tocton_increase_f ~ ., data = train_set)
+
+plot(ev.raw)
+cat("Predicted in training data: \n")
+table(predict(ev.raw), train_set$tocton_increase_f)
+
+cat("\n\nPrediction errors in training data: \n")
+1-mean(predict(ev.raw) == train_set$tocton_increase_f)
+
+```
+
+
+### c. Random forest  
+* *For results/interpretation, see separate document '161_randomforest_James_data.html'*  
+* Model called 'model3'
+```{r}
+
+model3 <- randomForest(tocton_increase_f ~ ., 
+                       data = train_set, 
+                       mtry = 5,
+                       importance = TRUE)
+
+model3
+
+```
+
+
+#### Random forest, predict on training data
+```{r}
+
+# Predicting on train set
+pred_valid <- predict(model3, valid_set, type = "class")
+# Checking classification accuracy
+table(pred_valid, valid_set$tocton_increase_f)  
+
+```
+
+#### Random forest, importance (but see separate result file)  
+High MeanDecreaseGini = high importance in model  
+```{r}
+
+randomForest::importance(model3)
+varImpPlot(model3)
+
+```
+
+#### Random forest, partial effects   
+* NOt easy to interpret    
+```{r, fig.height=7, fig.width = 10}
+
+imp <- randomForest::importance(model3)
+impvar1 <- rownames(imp)[order(imp[, 2], decreasing=TRUE)]
+
+# impvar1 <- readRDS("Data/130_impvar1.rmd")
+
+par(mfrow=c(3,4))
+
+for (i in seq_along(impvar1)) {
+  partialPlot(x = model3, 
+              pred.data = train_set, 
+              x.var = impvar1[i], 
+              which.class = "1",
+              main=paste("Effect of", impvar1[i]))
+}
+
+
+
+```
+#### randomForestExplainer
+```{r}
+
+# install.packages("randomForestExplainer")
+library(randomForestExplainer)
+
+# COPY to console and run (this will create an Rmd file and render an HTML file):
+# DON'T rin ith within this chunk, RStudio will hang
+
+if (FALSE){
+  explain_forest(model3, interactions = TRUE, data = train_set, 
+                 path = "C:/Data/seksjon 317/icpw-R/161_randomforest_James_data_model3.html")
+}
+
+```
+
