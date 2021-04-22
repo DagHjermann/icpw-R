@@ -10,10 +10,11 @@ output:
 
 ---
 
-Analysis of James' trend results    
+Analysis of NO3 decrease, based on James' trend results    
 * Taken from `https://github.com/JamesSample/icpw2/tree/master/thematic_report_2020/results`   
 * Sen slope of NO3, TOTN, TOC/TON etc.  
-* Note that these contains no data fra United States!  
+* Predictor variable in all analyses are *whether NO3 decreases or not*     
+* Basically 3 sets of identical analyses (5,6,7) which only differ in data set (5 has the largest set of variables and the lowest sample size)  
 
 
 ## 1. Libraries  
@@ -88,15 +89,18 @@ df_station <- read_excel(
 #
 # Regression results
 #
-fn <- "https://raw.githubusercontent.com/JamesSample/icpw2/master/thematic_report_2020/results/trends_1992-2016_toc_totn_no3_relax_italy/trends_1992-2016_toc_totn_no3_relax_italy_results.csv"
+# fn <- "https://raw.githubusercontent.com/JamesSample/icpw2/master/thematic_report_2020/results/trends_1992-2016_toc_totn_no3_relax_italy/trends_1992-2016_toc_totn_no3_relax_italy_results.csv"
+fn <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/trends_1992-2016_no3/trends_1992-2016_no3_results.csv"
 reg_no3 <- read.csv(fn, encoding = "UTF-8")
 nrow(reg_no3)
 
 # Station metadata
 fn <- "https://raw.githubusercontent.com/JamesSample/icpw2/master/thematic_report_2020/results/trends_1992-2016_toc_totn_no3_relax_italy/trends_1992-2016_toc_totn_no3_relax_italy_stations.csv"
+fn <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/trends_1992-2016_no3/trends_1992-2016_no3_stations.csv"
 reg_no3_st <- read.csv(fn, encoding = "UTF-8")
 
 # xtabs(~variable, reg_no3)  
+xtabs(~country, reg_no3_st)  
 
 #
 # Medians
@@ -104,6 +108,20 @@ reg_no3_st <- read.csv(fn, encoding = "UTF-8")
 fn <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/medians_2012-2016/medians_2012-2016_no3.csv"
 medians_no3 <- read.csv(fn, encoding = "UTF-8")
 nrow(medians_no3)
+
+
+if (FALSE){
+  # Check Germany:
+  x <- reg_no3_st %>% filter(country == "Germany") %>% pull(station_id)
+  medians_no3 %>% filter(station_id %in% x) %>% View()  # only 3 stations??
+
+  # Dounle check by reading and adding metadata 
+  fn <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/medians_2012-2016/medians_2012-2016_no3_stations.csv"
+  medians_no3_st <- read.csv(fn, encoding = "UTF-8")
+  medians_no3 <- medians_no3 %>% left_join(medians_no3_st)
+  medians_no3 %>% filter(country %in% "Germany") %>% View()  # still only 3 stations
+
+}
 
 fn <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/medians_2012-2016/medians_2012-2016_toc_totn_no3_nh4.csv"
 medians_toc <- read.csv(fn, encoding = "UTF-8")
@@ -259,15 +277,18 @@ dat %>%
   facet_wrap(vars(country)) +
   geom_hline(yintercept = 0, linetype = 2) + 
   geom_vline(xintercept = 0, linetype = 2) + 
-  labs(title = "A selection of countries")
+  labs(title = "A selection of countries") + 
+  ylim(-50, 25)
 
 
 ```
 
 
-## 4. Significant / non-significant NO3 decline  
+## 4. Analysis of 'Significant / non-significant NO3 decline'   
+* Parts 5, 6 and 7 all run logistic regression + "trees and forest" methods  
+* Each part differ only in dataset used  
 
-### Data for analysis  
+## 5a. Data INCLUDING catchment_area    
 ```{r}
 
 # Data for analyses
@@ -285,15 +306,27 @@ df_analysis <- dat %>%
 
 # Complete cases
 apply(is.na(df_analysis), 2, sum)
-table(complete.cases(df_analysis))
+
+# What is missing? (long output)
+if (FALSE){
+dat %>% 
+  split(.$country) %>%
+  purrr::map(~apply(is.na(.), 2, mean))
+}
+
+complete <- complete.cases(df_analysis)
+table(complete)
+table(dat$country, complete)
 
 # Keep only complete cases
 df_analysis <- df_analysis[complete.cases(df_analysis),]
 
+
+
 ```
 
 
-## 5. Logistic regression, all variables  
+## 5b. Logistic regression, all variables  
 ```{r, results  = "hold"}
 
 
@@ -305,26 +338,26 @@ fm <- glm(
   na.action = "na.fail")
 
 # Dredging for best model
-# dd1 <- dredge(fm)                           # only once
-# saveRDS(dd1, "Data/160_all_dd1.rds")    # save it as it takes a couple of minutes
+# dd1a <- dredge(fm)                           # only once
+# saveRDS(dd1a, "Data/160_all_dd1a.rds")    # save it as it takes a couple of minutes
 
 # Read dredge result
-dd1 <- readRDS("Data/160_all_dd1.rds")
+dd1a <- readRDS("Data/160_all_dd1a.rds")
 
 # Check best models  
-subset(dd1, delta < 1)
+subset(dd1a, delta < 1)
 
 cat("\n\nR2: \n")
-dd1_mod1 <- get.models(dd1, 1)[[1]]  
-# summary(dd1_mod1)  
+dd1a_mod1 <- get.models(dd1a, 1)[[1]]  
+# summary(dd1a_mod1)  
 
 par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
-visreg(dd1_mod1, scale = "response")
+visreg(dd1a_mod1, scale = "response")
 mtext("All data, include coordinates", outer = TRUE)
 
 ```
 
-## 6. Logistic regression, exclude coordinates    
+## 5c. Logistic regression, exclude coordinates    
 ```{r, results  = "hold"}
 
 fm <- glm(
@@ -337,19 +370,19 @@ fm <- glm(
   family = "binomial",
   na.action = "na.fail")
 
-# dd2 <- dredge(fm)                       # only once
-# saveRDS(dd2, "Data/160_all_dd2.rds")    # save it as it takes a couple of minutes
+# dd1b <- dredge(fm)                       # only once
+# saveRDS(dd1b, "Data/160_all_dd1b.rds")    # save it as it takes a couple of minutes
 
-dd2 <- readRDS("Data/160_all_dd2.rds")
+dd1b <- readRDS("Data/160_all_dd1b.rds")
 
-subset(dd2, delta < 1)
+subset(dd1b, delta < 1)
 
 cat("\n\nR2: \n")
-dd2_mod1 <- get.models(dd2, 1)[[1]]  
-# summary(dd2_mod1)  
+dd1b_mod1 <- get.models(dd1b, 1)[[1]]  
+# summary(dd1b_mod1)  
 
 par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
-visreg(dd2_mod1, scale = "response")
+visreg(dd1b_mod1, scale = "response")
 mtext("All data, exclude coordinates", outer = TRUE)
 
 ```
@@ -357,7 +390,7 @@ mtext("All data, exclude coordinates", outer = TRUE)
 
 
 
-## 7. Tree and forest classification
+## 5d. Tree and forest classification
 
 
 
@@ -393,7 +426,9 @@ cat("\n\n")
 
 cat("Classification of training set \n")
 tr.pred = predict(ct, newdata = valid_set, type="prob")
-table(tr.pred[,"1"] > 0.5, valid_set$no3_decline_f)
+colnames(tr.pred) <- c("P0", "P1")
+# tr.pred <- tr.pred %>% map_dfr(~data.frame(P0 = .[1], P1 = .[2]))
+table(tr.pred[,"P1"] > 0.5, valid_set$no3_decline_f)
 
 
 ```
@@ -402,15 +437,19 @@ table(tr.pred[,"1"] > 0.5, valid_set$no3_decline_f)
 ```{r, fig.width=8, fig.height=8}
 
 ev.raw = evtree(no3_decline_f ~ ., data = train_set)
-plot(ev.raw)
-table(predict(ev.raw), train_set$no3_decline_f)
-1-mean(predict(ev.raw) == train_set$no3_decline_f)
 
+plot(ev.raw)
+cat("Predicted in training data: \n")
+table(predict(ev.raw), train_set$no3_decline_f)
+
+cat("\n\nPrediction errors in training data: \n")
+1-mean(predict(ev.raw) == train_set$no3_decline_f)
 ```
 
 
 ### c. Random forest  
 * *For results/interpretation, see separate document '160_randomforest_James_data.html'*  
+* Model called 'model1'
 ```{r}
 
 model1 <- randomForest(no3_decline_f ~ ., 
@@ -470,11 +509,488 @@ for (i in seq_along(impvar1)) {
 # install.packages("randomForestExplainer")
 library(randomForestExplainer)
 
-# Copy to console and run (this will create an Rmd file and render an HTML file):
-# explain_forest(model1, interactions = TRUE, data = train_set, path = "160_randomforest_James_data.html")
+# COPY to console and run (this will create an Rmd file and render an HTML file):
+# DON'T rin ith within this chunk, RStudio will hang
+
+if (FALSE){
+  explain_forest(model1, interactions = TRUE, data = train_set, 
+                 path = "C:/Data/seksjon 317/icpw-R/160_randomforest_James_data_model1.html")
+}
 
 ```
 
 
 
+
+## 6a. Data EXCLUDING catchment_area   
+* Includes USA data, still missing UK and most German data      
+*  Germany is missing TOC and NO3 (87%), UK is missing land cover (100%)
+```{r}
+
+# Data for analyses
+df_analysis <- dat %>%
+  mutate(
+    no3_decline = case_when(
+      slope_no3_vs_time < 0 & p_no3_vs_time <= 0.05 ~ 1,
+      TRUE ~ 0)
+  ) %>%
+  select(no3_decline, slope_dep_vs_time,
+         NO3, TOC,
+    latitude, longitude, altitude, 
+    pre, tmp, 
+    coniferous, deciduous, lake, mixed_forest, wetland)
+
+# Complete cases
+apply(is.na(df_analysis), 2, sum)
+
+complete <- complete.cases(df_analysis)
+table(complete)
+table(dat$country, complete)
+
+# What is missing? (long output)  
+# Germany is missing TOC (87%)
+if (FALSE){
+dat %>% 
+  split(.$country) %>%
+  purrr::map(~apply(is.na(.), 2, mean))
+}
+
+
+# Keep only complete cases
+df_analysis <- df_analysis[complete.cases(df_analysis),]
+
+
+
+```
+
+
+## 6b. Logistic regression, all variables  
+```{r, results  = "hold"}
+
+
+# Full model  
+fm <- glm(
+  no3_decline ~ .,
+  data = df_analysis, 
+  family = "binomial",
+  na.action = "na.fail")
+
+# Dredging for best model
+# dd2a <- dredge(fm)                           # only once
+# saveRDS(dd2a, "Data/160_all_dd2a.rds")    # save it as it takes a couple of minutes
+
+# Read dredge result
+dd2a <- readRDS("Data/160_all_dd2a.rds")
+
+# Check best models  
+subset(dd2a, delta < 1)
+
+cat("\n\nR2: \n")
+dd2a_mod1 <- get.models(dd2a, 1)[[1]]  
+# summary(dd2a_mod1)  
+
+par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
+visreg(dd2a_mod1, scale = "response")
+mtext("All data, include coordinates", outer = TRUE)
+
+```
+
+## 6c. Logistic regression, exclude coordinates    
+```{r, results  = "hold"}
+
+fm <- glm(
+  no3_decline ~ slope_dep_vs_time + NO3 + TOC +
+    altitude + 
+    pre + tmp + 
+    coniferous + deciduous + lake + mixed_forest + 
+    wetland,
+  data = df_analysis, 
+  family = "binomial",
+  na.action = "na.fail")
+
+# dd2b <- dredge(fm)                       # only once
+# saveRDS(dd2b, "Data/160_all_dd2b.rds")    # save it as it takes a couple of minutes
+
+dd2b <- readRDS("Data/160_all_dd2b.rds")
+
+subset(dd2b, delta < 1)
+
+cat("\n\nR2: \n")
+dd2b_mod1 <- get.models(dd2b, 1)[[1]]  
+# summary(dd2b_mod1)  
+
+par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
+visreg(dd2b_mod1, scale = "response")
+mtext("All data, exclude coordinates", outer = TRUE)
+
+```
+
+
+
+
+## 6d. Tree and forest classification
+
+
+### Split into training and validation data
+```{r}
+
+set.seed(123)
+
+x <- runif(nrow(df_analysis))
+train <- ifelse(x < 0.9, TRUE, FALSE)
+
+train_set <- df_analysis[train,]  %>% 
+  mutate(no3_decline_f = factor(no3_decline)) %>% select(-no3_decline, -longitude, - latitude) %>%
+  as.data.frame()
+valid_set <- df_analysis[!train,] %>% 
+  mutate(no3_decline_f = factor(no3_decline)) %>% select(-no3_decline, -longitude, - latitude) %>%
+  as.data.frame()
+
+```
+
+
+### a. Tree classification using 'party'   
+```{r, fig.width=8, fig.height=8}
+
+(ct = ctree(no3_decline_f ~ ., data = train_set))
+
+plot(ct, main="Conditional Inference Tree")
+
+cat("\n\n")
+cat("Table of prediction errors \n")
+table(predict(ct), train_set$no3_decline_f)
+cat("\n\n")
+
+cat("Classification of training set \n")
+tr.pred = predict(ct, newdata = valid_set, type="prob")
+colnames(tr.pred) <- c("P0", "P1")
+# tr.pred <- tr.pred %>% map_dfr(~data.frame(P0 = .[1], P1 = .[2]))
+table(tr.pred[,"P1"] > 0.5, valid_set$no3_decline_f)
+
+
+```
+
+### b. Evtree (Evolutionary Learning)   
+```{r, fig.width=10, fig.height=8}
+
+ev.raw = evtree(no3_decline_f ~ ., data = train_set)
+
+plot(ev.raw)
+cat("Predicted in training data: \n")
+table(predict(ev.raw), train_set$no3_decline_f)
+
+cat("\n\nPrediction errors in training data: \n")
+1-mean(predict(ev.raw) == train_set$no3_decline_f)
+
+```
+
+
+### c. Random forest  
+* *For results/interpretation, see separate document '160_randomforest_James_data.html'*  
+* Model called 'model2'
+```{r}
+
+model2 <- randomForest(no3_decline_f ~ ., 
+                       data = train_set, 
+                       mtry = 5,
+                       importance = TRUE)
+
+model2
+
+```
+
+
+#### Random forest, predict on training data
+```{r}
+
+# Predicting on train set
+pred_valid <- predict(model2, valid_set, type = "class")
+# Checking classification accuracy
+table(pred_valid, valid_set$no3_decline_f)  
+
+```
+
+#### Random forest, importance (but see separate result file)  
+High MeanDecreaseGini = high importance in model  
+```{r}
+
+randomForest::importance(model2)
+varImpPlot(model2)
+
+```
+
+#### Random forest, partial effects   
+* NOt easy to interpret    
+```{r, fig.height=7, fig.width = 10}
+
+imp <- randomForest::importance(model2)
+impvar1 <- rownames(imp)[order(imp[, 2], decreasing=TRUE)]
+
+# impvar1 <- readRDS("Data/130_impvar1.rmd")
+
+par(mfrow=c(3,4))
+
+for (i in seq_along(impvar1)) {
+  partialPlot(x = model2, 
+              pred.data = train_set, 
+              x.var = impvar1[i], 
+              which.class = "1",
+              main=paste("Effect of", impvar1[i]))
+}
+
+
+
+```
+#### randomForestExplainer
+```{r}
+
+# install.packages("randomForestExplainer")
+library(randomForestExplainer)
+
+# COPY to console and run (this will create an Rmd file and render an HTML file):
+# DON'T rin ith within this chunk, RStudio will hang
+
+if (FALSE){
+  explain_forest(model2, interactions = TRUE, data = train_set, 
+                 path = "C:/Data/seksjon 317/icpw-R/160_randomforest_James_data_model2.html")
+}
+
+```
+
+
+
+## 7a. Data EXCLUDING catchment_area, TOC and NO3    
+* Includes USA data, still missing UK and most German data      
+*  Germany is missing TOC (87%), UK is missing land cover (100%)
+```{r}
+
+# Data for analyses
+df_analysis <- dat %>%
+  mutate(
+    no3_decline = case_when(
+      slope_no3_vs_time < 0 & p_no3_vs_time <= 0.05 ~ 1,
+      TRUE ~ 0)
+  ) %>%
+  select(country, station_code, no3_decline, slope_dep_vs_time,
+    latitude, longitude, altitude, 
+    pre, tmp, 
+    coniferous, deciduous, lake, mixed_forest, wetland)
+
+# Complete cases
+apply(is.na(df_analysis), 2, sum)
+
+complete <- complete.cases(df_analysis)
+table(complete)
+table(df_analysis$country, complete)
+
+# What is missing? (long output)  
+# Germany is missing NO3 (87%)
+if (FALSE){
+df_analysis %>% 
+  split(.$country) %>%
+  purrr::map(~apply(is.na(.), 2, mean))
+}
+
+
+# Keep only complete cases
+df_analysis <- df_analysis[complete.cases(df_analysis),] %>%
+  select(-country, -station_code)
+
+
+
+```
+
+
+## 7b. Logistic regression, all variables  
+```{r, results  = "hold"}
+
+
+# Full model  
+fm <- glm(
+  no3_decline ~ .,
+  data = df_analysis, 
+  family = "binomial",
+  na.action = "na.fail")
+
+# Dredging for best model
+# dd3a <- dredge(fm)                           # only once
+# saveRDS(dd3a, "Data/160_all_dd3a.rds")    # save it as it takes a couple of minutes
+
+# Read dredge result
+dd3a <- readRDS("Data/160_all_dd3a.rds")
+
+# Check best models  
+subset(dd3a, delta < 1)
+
+cat("\n\nR2: \n")
+dd3a_mod1 <- get.models(dd3a, 1)[[1]]  
+# summary(dd3a_mod1)  
+
+par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
+visreg(dd3a_mod1, scale = "response")
+mtext("All data, include coordinates", outer = TRUE)
+
+```
+
+## 7c. Logistic regression, exclude coordinates    
+```{r, results  = "hold"}
+
+fm <- glm(
+  no3_decline ~ slope_dep_vs_time + 
+    altitude + 
+    pre + tmp + 
+    coniferous + deciduous + lake + mixed_forest + 
+    wetland,
+  data = df_analysis, 
+  family = "binomial",
+  na.action = "na.fail")
+
+# dd3b <- dredge(fm)                       # only once
+# saveRDS(dd3b, "Data/160_all_dd3b.rds")    # save it as it takes a couple of minutes
+
+dd3b <- readRDS("Data/160_all_dd3b.rds")
+
+subset(dd3b, delta < 1)
+
+cat("\n\nR2: \n")
+dd3b_mod1 <- get.models(dd3b, 1)[[1]]  
+# summary(dd3b_mod1)  
+
+par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
+visreg(dd3b_mod1, scale = "response")
+mtext("All data, exclude coordinates", outer = TRUE)
+
+```
+
+
+
+
+## 7d. Tree and forest classification
+
+
+### Split into training and validation data   
+```{r}
+
+set.seed(123)
+
+x <- runif(nrow(df_analysis))
+train <- ifelse(x < 0.9, TRUE, FALSE)
+
+train_set <- df_analysis[train,]  %>% 
+  mutate(no3_decline_f = factor(no3_decline)) %>% select(-no3_decline, -longitude, - latitude) %>%
+  as.data.frame()
+valid_set <- df_analysis[!train,] %>% 
+  mutate(no3_decline_f = factor(no3_decline)) %>% select(-no3_decline, -longitude, - latitude) %>%
+  as.data.frame()
+
+```
+
+
+### a. Tree classification using 'party'   
+```{r, fig.width=8, fig.height=8}
+
+(ct = ctree(no3_decline_f ~ ., data = train_set))
+
+plot(ct, main="Conditional Inference Tree")
+
+cat("\n\n")
+cat("Table of prediction errors \n")
+table(predict(ct), train_set$no3_decline_f)
+cat("\n\n")
+
+cat("Classification of training set \n")
+tr.pred = predict(ct, newdata = valid_set, type="prob")
+colnames(tr.pred) <- c("P0", "P1")
+# tr.pred <- tr.pred %>% map_dfr(~data.frame(P0 = .[1], P1 = .[2]))
+table(tr.pred[,"P1"] > 0.5, valid_set$no3_decline_f)
+
+
+```
+
+### b. Evtree (Evolutionary Learning)   
+```{r, fig.width=10, fig.height=8}
+
+ev.raw = evtree(no3_decline_f ~ ., data = train_set)
+
+plot(ev.raw)
+cat("Predicted in training data: \n")
+table(predict(ev.raw), train_set$no3_decline_f)
+
+cat("\n\nPrediction errors in training data: \n")
+1-mean(predict(ev.raw) == train_set$no3_decline_f)
+
+```
+
+
+### c. Random forest  
+* *For results/interpretation, see separate document '160_randomforest_James_data.html'*  
+* Model called 'model3'
+```{r}
+
+model3 <- randomForest(no3_decline_f ~ ., 
+                       data = train_set, 
+                       mtry = 5,
+                       importance = TRUE)
+
+model3
+
+```
+
+
+#### Random forest, predict on training data
+```{r}
+
+# Predicting on train set
+pred_valid <- predict(model3, valid_set, type = "class")
+# Checking classification accuracy
+table(pred_valid, valid_set$no3_decline_f)  
+
+```
+
+#### Random forest, importance (but see separate result file)  
+High MeanDecreaseGini = high importance in model  
+```{r}
+
+randomForest::importance(model3)
+varImpPlot(model3)
+
+```
+
+#### Random forest, partial effects   
+* NOt easy to interpret    
+```{r, fig.height=7, fig.width = 10}
+
+imp <- randomForest::importance(model3)
+impvar1 <- rownames(imp)[order(imp[, 2], decreasing=TRUE)]
+
+# impvar1 <- readRDS("Data/130_impvar1.rmd")
+
+par(mfrow=c(3,4))
+
+for (i in seq_along(impvar1)) {
+  partialPlot(x = model3, 
+              pred.data = train_set, 
+              x.var = impvar1[i], 
+              which.class = "1",
+              main=paste("Effect of", impvar1[i]))
+}
+
+
+
+```
+#### randomForestExplainer
+```{r}
+
+# install.packages("randomForestExplainer")
+library(randomForestExplainer)
+
+# COPY to console and run (this will create an Rmd file and render an HTML file):
+# DON'T rin ith within this chunk, RStudio will hang
+
+if (FALSE){
+  explain_forest(model3, interactions = TRUE, data = train_set, 
+                 path = "C:/Data/seksjon 317/icpw-R/160_randomforest_James_data_model3.html")
+}
+
+```
 
