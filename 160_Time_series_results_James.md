@@ -12,8 +12,15 @@ output:
 
 Analysis of NO3 decrease, based on James' trend results    
 * Taken from `https://github.com/JamesSample/icpw2/tree/master/thematic_report_2020/results`   
-* Sen slope of NO3, TOTN, TOC/TON etc.  
-* Predictor variable in all analyses are *whether NO3 decreases or not*      
+* Sen slope of NO3, TOTN, TOC/TON etc. 1992-2016
+* Response variable in all analyses are *whether NO3 decreases or not*     
+* Predictors:
+    - slope_dep_vs_time: Trend in Tot-N deposition 1992-2016    
+    - NO3, TOTN_dep: Medians of NO3, TOTN_dep (Tot-N deposition) 1992-2016   
+    - TOC: Medians of TOC 1992-2016 (section 5 and 6 only)     
+    - pre, tmp: mean precipitation + temp   
+    - catchment_area (section 5 only)   
+    - Land cover  
 * Basically 3 sets of identical analyses (5,6,7) which only differ in data set (5 has the largest set of variables and the lowest sample size)  
 
 
@@ -60,6 +67,13 @@ knitr::opts_chunk$set(warning = FALSE)
 ```
 
 
+```r
+# run_randomForestExplainer <- TRUE
+run_randomForestExplainer <- FALSE
+```
+
+
+
 ## 2. Data
 
 ```r
@@ -80,53 +94,76 @@ df_station <- read_excel(
   mutate(station_id = as.character(station_id))
 ```
 
-### James results  
+### James' trends and medians     
 
 ```r
 #
 # Regression results
 #
-# fn <- "https://raw.githubusercontent.com/JamesSample/icpw2/master/thematic_report_2020/results/trends_1992-2016_toc_totn_no3_relax_italy/trends_1992-2016_toc_totn_no3_relax_italy_results.csv"
-fn <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/trends_1992-2016_no3/trends_1992-2016_no3_results.csv"
+folder <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/trends_1992-2016_no3"
+file <- "trends_1992-2016_no3_results.csv"
+fn <- paste0(folder, "/", file)
+
 reg_no3 <- read.csv(fn, encoding = "UTF-8")
-nrow(reg_no3)
+cat("Regression results:", sQuote(file), ",n =", nrow(reg_no3), "\n\n")
 
 # Station metadata
-fn <- "https://raw.githubusercontent.com/JamesSample/icpw2/master/thematic_report_2020/results/trends_1992-2016_toc_totn_no3_relax_italy/trends_1992-2016_toc_totn_no3_relax_italy_stations.csv"
-fn <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/trends_1992-2016_no3/trends_1992-2016_no3_stations.csv"
-reg_no3_st <- read.csv(fn, encoding = "UTF-8")
+file <- "trends_1992-2016_no3_stations.csv"
+fn <- paste0(folder, "/", file)
 
-# xtabs(~variable, reg_no3)  
+reg_no3_st <- read.csv(fn, encoding = "UTF-8")
+cat("Regression result metadata:", sQuote(file), ",n =", nrow(reg_no3_st), "\n\n")
+
+cat("Countries with trends: \n")
 xtabs(~country, reg_no3_st)  
 
 #
-# Medians
+# Medians NO3
 #
-fn <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/medians_2012-2016/medians_2012-2016_no3.csv"
-medians_no3 <- read.csv(fn, encoding = "UTF-8")
-nrow(medians_no3)
-
 
 if (FALSE){
-  # Check Germany:
-  x <- reg_no3_st %>% filter(country == "Germany") %>% pull(station_id)
-  medians_no3 %>% filter(station_id %in% x) %>% View()  # only 3 stations??
 
-  # Dounle check by reading and adding metadata 
-  fn <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/medians_2012-2016/medians_2012-2016_no3_stations.csv"
+  # OLD: 2012-2016 medians NO3  
+
+  cat("--------------------------------------------------------------------------\n")
+  folder <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/medians_2012-2016"
+  file <- "medians_2012-2016_no3.csv"
+  fn <- paste0(folder, "/", file)
+  # data:
+  medians_no3 <- read.csv(fn, encoding = "UTF-8")
+  cat("Medians NO3:", sQuote(file), ",n =", nrow(medians_no3), "\n\n")
+  file <- "medians_2012-2016_no3_stations.csv"
+  fn <- paste0(folder, "/", file)
+  # metadata:
   medians_no3_st <- read.csv(fn, encoding = "UTF-8")
-  medians_no3 <- medians_no3 %>% left_join(medians_no3_st)
-  medians_no3 %>% filter(country %in% "Germany") %>% View()  # still only 3 stations
-
+  cat("Median metadata (not used):", sQuote(file), "n =", nrow(medians_no3_st), "\n\n")
+  # stats:
+  cat("Countries with medians: \n")
+  xtabs(~country, medians_no3_st)  
+  
+  #
+  #  OLD: 2012-2016 Medians TOC
+  #
+  cat("--------------------------------------------------------------------------\n")
+  
+  file <- "medians_2012-2016_toc_totn_no3_nh4.csv"
+  fn <- paste0(folder, "/", file)
+  
+  medians_toc <- read.csv(fn, encoding = "UTF-8")
+  cat("Medians TOC:", sQuote(file), ",n =", nrow(medians_toc), "\n\n")
+  
+  cat("Countries with medians: \n")
+  xtabs(~country, medians_no3_st)  
+  
 }
-
-fn <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/medians_2012-2016/medians_2012-2016_toc_totn_no3_nh4.csv"
-medians_toc <- read.csv(fn, encoding = "UTF-8")
-nrow(medians_toc)
 ```
 
 ```
-## [1] 3176
+## Regression results: 'trends_1992-2016_no3_results.csv' ,n = 3176 
+## 
+## Regression result metadata: 'trends_1992-2016_no3_stations.csv' ,n = 498 
+## 
+## Countries with trends: 
 ## country
 ##         Canada Czech Republic        Estonia        Finland        Germany 
 ##            114              8              1             26             23 
@@ -135,139 +172,159 @@ nrow(medians_toc)
 ##         Poland       Slovakia         Sweden    Switzerland United Kingdom 
 ##              6             12             92              6             21 
 ##  United States 
-##             91 
-## [1] 494
-## [1] 225
+##             91
 ```
 ### Start 'dat'  
 With slope regression data  
 * Make one line per station  
 
 ```r
+# table(reg_no3$variable)
+
+# Slope 
 df1 <- reg_no3 %>%
   filter(variable %in% c("NO3-N_µg/l N", "TOC/TON")) %>%
   select(station_id, variable, sen_slp) %>%
-  tidyr::pivot_wider(names_from = "variable", values_from = "sen_slp")
+  tidyr::pivot_wider(names_from = "variable", values_from = "sen_slp") %>%
+  rename(slope_no3_vs_time = `NO3-N_µg/l N`, 
+         slope_tocton_vs_time = `TOC/TON`)
+  
+# Slope p-value
 df2 <- reg_no3 %>%
   filter(variable %in% c("NO3-N_µg/l N", "TOC/TON")) %>%
   select(station_id, variable, mk_p_val) %>%
-  tidyr::pivot_wider(names_from = "variable", values_from = "mk_p_val")
+  tidyr::pivot_wider(names_from = "variable", values_from = "mk_p_val") %>%
+  rename(p_no3_vs_time = `NO3-N_µg/l N`, 
+         p_tocton_vs_time = `TOC/TON`)
 
-names(df1)[2:3] <- c("slope_no3_vs_time", "slope_tocton_vs_time")
-names(df2)[2:3] <- c("p_no3_vs_time", "p_tocton_vs_time")
+# Medians
+df3 <- reg_no3 %>%
+  filter(variable %in% c("NO3-N_µg/l N", "TOC_mg C/l")) %>%
+  select(station_id, variable, median) %>%
+  tidyr::pivot_wider(names_from = "variable", values_from = "median") %>%
+  rename(NO3 = `NO3-N_µg/l N`, 
+         TOC = `TOC_mg C/l`)
 
-dat <- full_join(df1, df2, by = "station_id")
+cat("\n")
+cat("df1, n =", nrow(df1), "\n")
+cat("df2, n =", nrow(df2), "\n")
+cat("df3, n =", nrow(df3), "\n")
+
+dat <- df1 %>%
+  full_join(df2, by = "station_id") %>%
+  full_join(df3, by = "station_id")
+
+cat("dat, n =", nrow(dat), "\n")
 ```
 
-### Deposition Theil-Senslope   
-
-```r
-### Get deposition  
-df_deposition <- readRDS("Data/100_Deposition.rds") %>%
-  as.data.frame()
-
-# TEST Senslope
-# df_test <- df_deposition %>% filter(station_id == 38115)
-# result <- rkt(df_test$year, df_test$TOTN_dep)
-# data.frame(station_id = 38115, TOTN_dep_P = result$sl, TOTN_dep_slope = result$B)
-
-# Function for Sen slope
-get_senslope <- function(data){
-  result <- rkt(data$year, data$TOTN_dep)
-  data.frame(station_id = data$station_id[1], slope_dep_vs_time = result$B, p_dep_vs_time = result$sl)
-}
-
-df_deposition_slope <- df_deposition %>%
-  split(.$station_id) %>% # str()
-  purrr::map_dfr(get_senslope)  
+```
+## 
+## df1, n = 498 
+## df2, n = 498 
+## df3, n = 498 
+## dat, n = 498
 ```
 
 
-### Add deposition slope to data  
+### Deposition trends and median 1992-2006     
 
 ```r
-nrow(dat)
-dat <- left_join(dat, 
-                 df_deposition_slope,
+fn <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/deposition/totn_dep_trends_icpw_stns.csv"  
+
+df_deposition <- read.csv(fn) %>% 
+  filter(variable == "totn_mgNpm2")  
+
+cat("n =", nrow(df_deposition), "\n")
+```
+
+```
+## n = 556
+```
+
+### Add deposition slope and medians to data  
+
+```r
+cat("dat, n =", nrow(dat), "\n")
+
+dat <- dat %>% 
+  left_join(df_deposition %>% 
+              select(station_id, median, sen_slp, mk_p_val) %>%
+              rename(TOTN_dep = median,
+                     slope_dep_vs_time = sen_slp,
+                     p_dep_vs_time = mk_p_val),
                  by = "station_id")
 
-nrow(dat)
+cat("dat, n =", nrow(dat), "\n")
+
+# names(dat)
 ```
 
 ```
-## [1] 498
-## [1] 498
+## dat, n = 498 
+## dat, n = 498
 ```
 ### Add medians and station metadata   
 
 ```r
-nrow(dat)
 dat <- dat %>%
-  left_join(medians_no3, by = "station_id") %>%
-  # left_join(medians_toc, by = "station_id") %>%   # not needed, overlap in variables  
   left_join(reg_no3_st, by = "station_id")
-nrow(dat)
+
+cat("dat, n =", nrow(dat), "\n")
 
 # Simplify names by removing units
 # names(dat)
-names(dat) <- sub(".N_µg.l.N", "", names(dat))
-names(dat) <- sub("_mg.C.l", "", names(dat))
-names(dat) <- sub("_µg.l.P", "", names(dat))
+# names(dat) <- sub(".N_µg.l.N", "", names(dat))
+# names(dat) <- sub("_mg.C.l", "", names(dat))
+# names(dat) <- sub("_µg.l.P", "", names(dat))
+
+cat("\nVariable names: \n")
 names(dat)
 ```
 
 ```
-## [1] 498
-## [1] 498
+## dat, n = 498 
+## 
+## Variable names: 
 ##  [1] "station_id"           "slope_no3_vs_time"    "slope_tocton_vs_time"
-##  [4] "p_no3_vs_time"        "p_tocton_vs_time"     "slope_dep_vs_time"   
-##  [7] "p_dep_vs_time"        "NH4"                  "NO3"                 
-## [10] "TOC"                  "TO"                   "TOTP"                
-## [13] "T"                    "TOTN.TOTP"            "NO3.TOTP"            
-## [16] "TOC.TON"              "TOC.TOTP"             "station_code"        
-## [19] "station_name"         "latitude"             "longitude"           
-## [22] "altitude"             "continent"            "country"             
-## [25] "region"               "group"
+##  [4] "p_no3_vs_time"        "p_tocton_vs_time"     "NO3"                 
+##  [7] "TOC"                  "TOTN_dep"             "slope_dep_vs_time"   
+## [10] "p_dep_vs_time"        "station_code"         "station_name"        
+## [13] "latitude"             "longitude"            "altitude"            
+## [16] "continent"            "country"              "region"              
+## [19] "group"
 ```
 
 ### Add climate and deposition means 
 
 ```r
-df_climate <- readRDS("Data/100_Climate.rds")
+df_climate <- readRDS("Data/100_Climate.rds") %>%
+  filter(year %in% 1992:2006)
 
 df_climate_mean <- df_climate %>%
   group_by(station_id, variable) %>% 
-  summarise(mean = mean(value)) %>%
+  summarise(mean = mean(value), .groups = "drop") %>%
   tidyr::pivot_wider(names_from = "variable", values_from = "mean")
-```
-
-```
-## `summarise()` has grouped output by 'station_id'. You can override using the `.groups` argument.
-```
-
-```r
-df_deposition_mean <-
-  df_deposition %>% 
-  group_by(station_id) %>% 
-  summarise(Mean_dep = mean(TOTN_dep))
 
 # Add
 dat <- dat %>%
-  left_join(df_climate_mean, by = "station_id") %>%
-  left_join(df_deposition_mean, by = "station_id")
-nrow(dat)
+  left_join(df_climate_mean, by = "station_id")
+
+cat("dat, n =", nrow(dat), "\n")
 ```
 
 ```
-## [1] 498
+## dat, n = 498
 ```
 
 ### Add land cover    
+* Combine: bare_sparse = bare_rock + sparsely_vegetated + glacier   
+* Select: coniferous, deciduous, lake, mixed_forest, wetland, bare_sparse   
 
 ```r
 fn <- "K:/Prosjekter/langtransporterte forurensninger/O-23300 - ICP-WATERS - HWI/Faglige rapporter/2020 report/Land cover/ICPW_All_Stations_2020_2020_05_04.xlsx"
 
-df_station <- read_excel(fn)
+df_station <- read_excel(fn) %>%
+  mutate(bare_sparse = bare_rock + sparsely_vegetated + glacier)
 
 nrow(dat)
 dat <- left_join(dat, 
@@ -276,12 +333,15 @@ dat <- left_join(dat,
 )
 
 nrow(dat)
+names(dat) %>% paste(collapse = " + ") 
 ```
 
 ```
 ## [1] 498
 ## [1] 498
+## [1] "station_id + slope_no3_vs_time + slope_tocton_vs_time + p_no3_vs_time + p_tocton_vs_time + NO3 + TOC + TOTN_dep + slope_dep_vs_time + p_dep_vs_time + station_code + station_name + latitude + longitude + altitude + continent + country + region + group + pre + tmp + catchment_area + urban + cultivated + total_forest + deciduous + coniferous + mixed_forest + total_shrub_herbaceous + grasslands + heathlands + transitional_woodland_shrub + bare_rock + sparsely_vegetated + glacier + wetland + lake + water_ex_lake + other + bare_sparse"
 ```
+
 
 
 
@@ -298,7 +358,7 @@ ggplot(dat, aes(slope_dep_vs_time, slope_no3_vs_time)) +
   geom_vline(xintercept = 0, linetype = 2) 
 ```
 
-![](160_Time_series_results_James_files/figure-html/unnamed-chunk-11-1.png)<!-- -->
+![](160_Time_series_results_James_files/figure-html/unnamed-chunk-14-1.png)<!-- -->
 
 ```r
 ggplot(dat, aes(slope_dep_vs_time, slope_no3_vs_time,
@@ -310,7 +370,7 @@ ggplot(dat, aes(slope_dep_vs_time, slope_no3_vs_time,
   labs(title = "A selection of countries")
 ```
 
-![](160_Time_series_results_James_files/figure-html/unnamed-chunk-11-2.png)<!-- -->
+![](160_Time_series_results_James_files/figure-html/unnamed-chunk-14-2.png)<!-- -->
 
 ```r
 dat %>%
@@ -325,7 +385,7 @@ dat %>%
   ylim(-50, 25)
 ```
 
-![](160_Time_series_results_James_files/figure-html/unnamed-chunk-11-3.png)<!-- -->
+![](160_Time_series_results_James_files/figure-html/unnamed-chunk-14-3.png)<!-- -->
 
 
 ## 4. Analysis of 'Significant / non-significant NO3 decline'   
@@ -343,13 +403,20 @@ df_analysis <- dat %>%
       TRUE ~ 0)
   ) %>%
   select(no3_decline, slope_dep_vs_time,
-         NO3, TOC,
-    latitude, longitude, altitude, 
-    pre, tmp, catchment_area,
-    coniferous, deciduous, lake, mixed_forest, wetland)
+         NO3, TOC, TOTN_dep,
+         latitude, longitude, altitude,
+         pre, tmp, catchment_area,
+         urban, cultivated, 
+         deciduous, coniferous, mixed_forest, 
+         total_shrub_herbaceous, 
+         wetland, lake, water_ex_lake, 
+         bare_sparse)
 
-# Complete cases
-apply(is.na(df_analysis), 2, sum)
+# names(dat) %>% paste(collapse = ", ")
+
+cat("Number of missing values per variable: \n")
+apply(is.na(df_analysis), 2, sum) 
+cat("\n")
 
 # What is missing? (long output)
 if (FALSE){
@@ -358,36 +425,56 @@ dat %>%
   purrr::map(~apply(is.na(.), 2, mean))
 }
 
+cat("Number of complete observations: \n")
 complete <- complete.cases(df_analysis)
 table(complete)
+
+cat("\n\n")
+cat("Number of complete observations by country: \n")
 table(dat$country, complete)
 
 # Keep only complete cases
 df_analysis <- df_analysis[complete.cases(df_analysis),]
+
+cat("\n\n")
+cat("Original data: n =", nrow(dat), "\n")
+cat("Analysis: n =", nrow(df_analysis), "\n")
 ```
 
 ```
-##       no3_decline slope_dep_vs_time               NO3               TOC 
-##                 0                 0                25                26 
-##          latitude         longitude          altitude               pre 
-##                 0                 0                 9                 0 
-##               tmp    catchment_area        coniferous         deciduous 
-##                 0                93                43                43 
-##              lake      mixed_forest           wetland 
-##                37                43                37 
+## Number of missing values per variable: 
+##            no3_decline      slope_dep_vs_time                    NO3 
+##                      0                      0                      0 
+##                    TOC               TOTN_dep               latitude 
+##                     33                      0                      0 
+##              longitude               altitude                    pre 
+##                      0                      9                      0 
+##                    tmp         catchment_area                  urban 
+##                      0                     93                     37 
+##             cultivated              deciduous             coniferous 
+##                     37                     43                     43 
+##           mixed_forest total_shrub_herbaceous                wetland 
+##                     43                     37                     37 
+##                   lake          water_ex_lake            bare_sparse 
+##                     37                     37                     37 
+## 
+## Number of complete observations: 
 ## complete
 ## FALSE  TRUE 
-##   153   345 
+##   145   353 
+## 
+## 
+## Number of complete observations by country: 
 ##                 complete
 ##                  FALSE TRUE
 ##   Canada             0  114
-##   Czech Republic     0    8
+##   Czech Republic     1    7
 ##   Estonia            1    0
-##   Finland            3   23
-##   Germany           21    2
-##   Ireland            1    2
-##   Italy              2    4
-##   Latvia             0    3
+##   Finland            0   26
+##   Germany            6   17
+##   Ireland            3    0
+##   Italy              6    0
+##   Latvia             3    0
 ##   Netherlands        1    2
 ##   Norway             0   83
 ##   Poland             0    6
@@ -396,139 +483,19 @@ df_analysis <- df_analysis[complete.cases(df_analysis),]
 ##   Switzerland        6    0
 ##   United Kingdom    21    0
 ##   United States     91    0
-```
-
-
-## 5b. Logistic regression, all variables  
-
-```r
-# Full model  
-fm <- glm(
-  no3_decline ~ .,
-  data = df_analysis, 
-  family = "binomial",
-  na.action = "na.fail")
-
-# Dredging for best model
-# dd1a <- dredge(fm)                           # only once
-# saveRDS(dd1a, "Data/160_all_dd1a.rds")    # save it as it takes a couple of minutes
-
-# Read dredge result
-dd1a <- readRDS("Data/160_all_dd1a.rds")
-
-# Check best models  
-subset(dd1a, delta < 1)
-
-cat("\n\nR2: \n")
-dd1a_mod1 <- get.models(dd1a, 1)[[1]]  
-# summary(dd1a_mod1)  
-
-par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
-visreg(dd1a_mod1, scale = "response")
-mtext("All data, include coordinates", outer = TRUE)
-```
-
-![](160_Time_series_results_James_files/figure-html/unnamed-chunk-13-1.png)<!-- -->
-
-```
-## Global model call: glm(formula = no3_decline ~ ., family = "binomial", data = df_analysis, 
-##     na.action = "na.fail")
-## ---
-## Model selection table 
-##         (Int)      alt    ltt mxd_frs       NO3       pre slp_dep_vs_tim
-## 3618   -9.370 0.002339 0.1243                   0.0010250       -0.03810
-## 14114  -8.951 0.002622 0.1200         -0.002646 0.0006034       -0.03658
-## 5922   -9.434 0.002610 0.1278         -0.002438 0.0006667       -0.03520
-## 16162  -8.219 0.002443 0.1106         -0.002318 0.0007028       -0.04377
-## 14242 -10.440 0.002782 0.1403 0.01389 -0.002341 0.0005943       -0.03978
-## 3874   -9.286 0.002518 0.1217         -0.001556 0.0010000       -0.04266
-## 7970   -8.637 0.002429 0.1176         -0.002137 0.0007687       -0.04341
-## 7714   -8.908 0.002222 0.1218                   0.0008626       -0.03743
-## 13602  -7.501 0.002661 0.1070         -0.003050                 -0.03991
-##           tmp      TOC     wtl df   logLik  AICc delta weight
-## 3618  -0.1675                   6 -166.153 344.6  0.00  0.149
-## 14114         -0.08147 0.03140  8 -164.074 344.6  0.02  0.147
-## 5922          -0.06388          7 -165.318 345.0  0.42  0.121
-## 16162 -0.1041 -0.06793 0.03016  9 -163.383 345.3  0.75  0.102
-## 14242         -0.07912 0.03525  9 -163.416 345.4  0.82  0.099
-## 3874  -0.1596                   7 -165.539 345.4  0.86  0.097
-## 7970  -0.1146 -0.04904          8 -164.502 345.4  0.88  0.096
-## 7714  -0.1372 -0.03531          7 -165.556 345.4  0.89  0.095
-## 13602         -0.10690 0.03569  7 -165.563 345.5  0.90  0.095
-## Models ranked by AICc(x) 
 ## 
 ## 
-## R2:
-```
-
-## 5c. Logistic regression, exclude coordinates    
-
-```r
-fm <- glm(
-  no3_decline ~ slope_dep_vs_time + NO3 + TOC +
-    altitude + 
-    pre + tmp + catchment_area +
-    coniferous + deciduous + lake + mixed_forest + 
-    wetland,
-  data = df_analysis, 
-  family = "binomial",
-  na.action = "na.fail")
-
-# dd1b <- dredge(fm)                       # only once
-# saveRDS(dd1b, "Data/160_all_dd1b.rds")    # save it as it takes a couple of minutes
-
-dd1b <- readRDS("Data/160_all_dd1b.rds")
-
-subset(dd1b, delta < 1)
-
-cat("\n\nR2: \n")
-dd1b_mod1 <- get.models(dd1b, 1)[[1]]  
-# summary(dd1b_mod1)  
-
-par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
-visreg(dd1b_mod1, scale = "response")
-```
-
-![](160_Time_series_results_James_files/figure-html/unnamed-chunk-14-1.png)<!-- -->
-
-```r
-mtext("All data, exclude coordinates", outer = TRUE)
-```
-
-![](160_Time_series_results_James_files/figure-html/unnamed-chunk-14-2.png)<!-- -->
-
-```
-## Global model call: glm(formula = no3_decline ~ slope_dep_vs_time + NO3 + TOC + altitude + 
-##     pre + tmp + catchment_area + coniferous + deciduous + lake + 
-##     mixed_forest + wetland, family = "binomial", data = df_analysis, 
-##     na.action = "na.fail")
-## ---
-## Model selection table 
-##         (Int)      alt       cnf      dcd  mxd_frs       NO3       pre
-## 4074 -0.37410 0.001460           -0.02238 -0.01548 -0.002883 0.0005804
-## 3950  0.33280 0.001574 -0.008691 -0.02683 -0.01731 -0.003258          
-## 3946  0.06466 0.001644           -0.01983 -0.01366 -0.003409          
-## 4042 -0.49790 0.001452           -0.02847          -0.002697 0.0005127
-## 3914 -0.09034 0.001612           -0.02565          -0.003177          
-## 4078 -0.08987 0.001425 -0.006561 -0.02728 -0.01797 -0.002842 0.0004843
-##      slp_dep_vs_tim     tmp      TOC     wtl df   logLik  AICc delta weight
-## 4074       -0.05323 -0.2509 -0.09644 0.03637 10 -170.230 361.1  0.00  0.223
-## 3950       -0.05451 -0.2009 -0.09097 0.03303 10 -170.524 361.7  0.59  0.166
-## 3946       -0.05284 -0.1974 -0.12370 0.04099  9 -171.616 361.8  0.65  0.161
-## 4042       -0.05841 -0.2611 -0.10420 0.04421  9 -171.628 361.8  0.67  0.159
-## 3914       -0.05741 -0.2118 -0.12770 0.04762  8 -172.736 361.9  0.78  0.151
-## 4078       -0.05426 -0.2443 -0.07689 0.03088 11 -169.640 362.1  0.95  0.139
-## Models ranked by AICc(x) 
-## 
-## 
-## R2:
+## Original data: n = 498 
+## Analysis: n = 353
 ```
 
 
 
 
-## 5d. Tree and forest classification
 
+
+
+## 5b. Tree and forest classification
 
 
 ### Split into training and validation data
@@ -556,7 +523,7 @@ valid_set <- df_analysis[!train,] %>%
 plot(ct, main="Conditional Inference Tree")
 ```
 
-![](160_Time_series_results_James_files/figure-html/unnamed-chunk-16-1.png)<!-- -->
+![](160_Time_series_results_James_files/figure-html/unnamed-chunk-17-1.png)<!-- -->
 
 ```r
 cat("\n\n")
@@ -574,37 +541,40 @@ table(tr.pred[,"P1"] > 0.5, valid_set$no3_decline_f)
 ```
 ## 
 ## Model formula:
-## no3_decline_f ~ slope_dep_vs_time + NO3 + TOC + altitude + pre + 
-##     tmp + catchment_area + coniferous + deciduous + lake + mixed_forest + 
-##     wetland
+## no3_decline_f ~ slope_dep_vs_time + NO3 + TOC + TOTN_dep + altitude + 
+##     pre + tmp + catchment_area + urban + cultivated + deciduous + 
+##     coniferous + mixed_forest + total_shrub_herbaceous + wetland + 
+##     lake + water_ex_lake + bare_sparse
 ## 
 ## Fitted party:
 ## [1] root
-## |   [2] altitude <= 203
-## |   |   [3] slope_dep_vs_time <= -21.33716: 0 (n = 57, err = 40.4%)
-## |   |   [4] slope_dep_vs_time > -21.33716
-## |   |   |   [5] tmp <= 1.22633: 1 (n = 7, err = 28.6%)
-## |   |   |   [6] tmp > 1.22633: 0 (n = 91, err = 3.3%)
-## |   [7] altitude > 203
-## |   |   [8] mixed_forest <= 29.71: 1 (n = 126, err = 38.1%)
-## |   |   [9] mixed_forest > 29.71: 0 (n = 33, err = 24.2%)
+## |   [2] altitude <= 223
+## |   |   [3] water_ex_lake <= 0.48
+## |   |   |   [4] slope_dep_vs_time <= -36.2425: 1 (n = 10, err = 40.0%)
+## |   |   |   [5] slope_dep_vs_time > -36.2425
+## |   |   |   |   [6] bare_sparse <= 0.211: 0 (n = 121, err = 6.6%)
+## |   |   |   |   [7] bare_sparse > 0.211: 0 (n = 18, err = 16.7%)
+## |   |   [8] water_ex_lake > 0.48: 1 (n = 15, err = 13.3%)
+## |   [9] altitude > 223
+## |   |   [10] mixed_forest <= 29.71: 1 (n = 124, err = 33.9%)
+## |   |   [11] mixed_forest > 29.71: 0 (n = 32, err = 25.0%)
 ## 
-## Number of inner nodes:    4
-## Number of terminal nodes: 5
+## Number of inner nodes:    5
+## Number of terminal nodes: 6
 ## 
 ## 
 ## Table of prediction errors 
 ##    
 ##       0   1
-##   0 147  34
-##   1  50  83
+##   0 152  19
+##   1  48 101
 ## 
 ## 
 ## Classification of training set 
 ##        
 ##          0  1
-##   FALSE 13  1
-##   TRUE   6 11
+##   FALSE  7  1
+##   TRUE  12 13
 ```
 
 ### b. Evtree (Evolutionary Learning)   
@@ -615,7 +585,7 @@ ev.raw = evtree(no3_decline_f ~ ., data = train_set)
 plot(ev.raw)
 ```
 
-![](160_Time_series_results_James_files/figure-html/unnamed-chunk-17-1.png)<!-- -->
+![](160_Time_series_results_James_files/figure-html/unnamed-chunk-18-1.png)<!-- -->
 
 ```r
 cat("Predicted in training data: \n")
@@ -629,12 +599,12 @@ cat("\n\nPrediction errors in training data: \n")
 ## Predicted in training data: 
 ##    
 ##       0   1
-##   0 178  34
-##   1  19  83
+##   0 175  25
+##   1  25  95
 ## 
 ## 
 ## Prediction errors in training data: 
-## [1] 0.1687898
+## [1] 0.15625
 ```
 
 
@@ -659,11 +629,11 @@ model1
 ##                      Number of trees: 500
 ## No. of variables tried at each split: 5
 ## 
-##         OOB estimate of  error rate: 21.97%
+##         OOB estimate of  error rate: 23.44%
 ## Confusion matrix:
 ##     0  1 class.error
-## 0 169 28   0.1421320
-## 1  41 76   0.3504274
+## 0 167 33       0.165
+## 1  42 78       0.350
 ```
 
 
@@ -679,8 +649,8 @@ table(pred_valid, valid_set$no3_decline_f)
 ```
 ##           
 ## pred_valid  0  1
-##          0 14  4
-##          1  5  8
+##          0 15  5
+##          1  4  9
 ```
 
 #### Random forest, importance (but see separate result file)  
@@ -691,22 +661,47 @@ randomForest::importance(model1)
 varImpPlot(model1)
 ```
 
-![](160_Time_series_results_James_files/figure-html/unnamed-chunk-20-1.png)<!-- -->
+![](160_Time_series_results_James_files/figure-html/unnamed-chunk-21-1.png)<!-- -->
 
 ```
-##                           0         1 MeanDecreaseAccuracy MeanDecreaseGini
-## slope_dep_vs_time 16.095172  9.961779            18.962441        15.835297
-## NO3               11.771612  1.904267            10.922560         9.961502
-## TOC               21.700938 23.099189            32.056949        23.221035
-## altitude          14.470720  9.741508            17.183749        15.497963
-## pre               11.803386  1.215109            11.105992         9.973637
-## tmp                7.990175  3.130453             8.707898         8.788499
-## catchment_area     6.079605  3.968000             7.404545         9.594425
-## coniferous         6.485133  7.855741            10.614760        11.126433
-## deciduous          6.455327  8.648916            11.409659        10.163437
-## lake               6.747708  8.424689            10.633523        12.570075
-## mixed_forest       7.203030  7.431042            11.286080        10.634334
-## wetland            7.041735  7.408902            10.180838         8.785747
+##                                0         1 MeanDecreaseAccuracy
+## slope_dep_vs_time      12.320043  9.247796            15.814223
+## NO3                    11.803465  4.531261            13.668697
+## TOC                    10.741599 13.264266            16.091769
+## TOTN_dep               11.896283  6.510043            14.322480
+## altitude               18.898840  9.459553            21.072672
+## pre                     8.299429  4.849181             9.871903
+## tmp                     9.279237  3.974902            10.907701
+## catchment_area          5.729029  2.380451             5.927249
+## urban                   2.613988  3.129678             4.070903
+## cultivated              3.239058  4.502073             5.688338
+## deciduous               7.000467  8.708454            10.688826
+## coniferous              6.153762  5.424430             8.501164
+## mixed_forest            5.500884  8.867331            10.074414
+## total_shrub_herbaceous  5.762396  1.295938             5.912114
+## wetland                 6.007112  6.809353             9.239757
+## lake                    3.161325  7.858077             7.512426
+## water_ex_lake          16.175794 10.775912            17.968867
+## bare_sparse             5.747553  6.592667             8.457561
+##                        MeanDecreaseGini
+## slope_dep_vs_time             10.276387
+## NO3                           10.355567
+## TOC                           12.500726
+## TOTN_dep                      10.932978
+## altitude                      16.221701
+## pre                            7.789306
+## tmp                            7.575128
+## catchment_area                 7.390310
+## urban                          2.958152
+## cultivated                     1.382525
+## deciduous                      8.858816
+## coniferous                     6.650124
+## mixed_forest                  10.049024
+## total_shrub_herbaceous         6.202155
+## wetland                        6.370490
+## lake                           8.759831
+## water_ex_lake                 11.230866
+## bare_sparse                    4.028922
 ```
 
 #### Random forest, partial effects   
@@ -729,30 +724,92 @@ for (i in seq_along(impvar1)) {
 }
 ```
 
-![](160_Time_series_results_James_files/figure-html/unnamed-chunk-21-1.png)<!-- -->
+![](160_Time_series_results_James_files/figure-html/unnamed-chunk-22-1.png)<!-- -->![](160_Time_series_results_James_files/figure-html/unnamed-chunk-22-2.png)<!-- -->
 #### randomForestExplainer
 
 ```r
 # install.packages("randomForestExplainer")
 library(randomForestExplainer)
-```
 
-```
-## Registered S3 method overwritten by 'GGally':
-##   method from   
-##   +.gg   ggplot2
-```
-
-```r
 # COPY to console and run (this will create an Rmd file and render an HTML file):
 # DON'T rin ith within this chunk, RStudio will hang
 
-if (FALSE){
+if (run_randomForestExplainer){
   explain_forest(model1, interactions = TRUE, data = train_set, 
                  path = "C:/Data/seksjon 317/icpw-R/160_randomforest_James_data_model1.html")
 }
 ```
 
+
+
+## 5c. Logistic regression, exclude coordinates    
+
+```r
+fm <- glm(
+  no3_decline ~ altitude + mixed_forest + TOC + NO3 + TOTN_dep + 
+    slope_dep_vs_time + deciduous + pre + wetland + tmp + lake +
+    altitude:lake + altitude:TOTN_dep + altitude:tmp,
+  data = df_analysis, 
+  family = "binomial",
+  na.action = "na.fail")
+
+# dd1b <- dredge(fm)                       # only once
+# saveRDS(dd1b, "Data/160_all_dd1b.rds")    # save it as it takes a couple of minutes
+
+dd1b <- readRDS("Data/160_all_dd1b.rds")
+
+# subset(dd1b, delta < 1)
+subset(dd1b, delta < 2)
+
+cat("\n\nR2: \n")
+dd1b_mod1 <- get.models(dd1b, 1)[[1]]  
+# summary(dd1b_mod1)  
+
+par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
+visreg(dd1b_mod1, scale = "response")
+```
+
+![](160_Time_series_results_James_files/figure-html/unnamed-chunk-24-1.png)<!-- -->
+
+```r
+mtext("All data, exclude coordinates", outer = TRUE)
+```
+
+![](160_Time_series_results_James_files/figure-html/unnamed-chunk-24-2.png)<!-- -->
+
+```
+## Global model call: glm(formula = no3_decline ~ altitude + mixed_forest + TOC + NO3 + 
+##     TOTN_dep + slope_dep_vs_time + deciduous + pre + wetland + 
+##     tmp + lake + altitude:lake + altitude:TOTN_dep + altitude:tmp, 
+##     family = "binomial", data = df_analysis, na.action = "na.fail")
+## ---
+## Model selection table 
+##        (Int)       alt      dcd  mxd_frs       NO3       pre slp_dep_vs_tim
+## 1516 -0.5547 1.040e-03 -0.02285 -0.01612           0.0008404       -0.06416
+## 1508 -0.7164 1.066e-03 -0.02822                    0.0007601       -0.07013
+## 5612 -0.3381 1.986e-04 -0.02374 -0.01454           0.0009339       -0.06446
+## 1532 -0.5865 9.280e-04 -0.02400 -0.01611 0.0006999 0.0009408       -0.06045
+## 5604 -0.4249 4.412e-05 -0.02865                    0.0008777       -0.06945
+## 2028 -0.5321 1.109e-03 -0.02194 -0.01552           0.0008001       -0.07322
+##          tmp      TOC    TOT_dep     wtl   alt:tmp df   logLik  AICc delta
+## 1516 -0.3374 -0.10130            0.04723            9 -171.803 362.1  0.00
+## 1508 -0.3422 -0.11100            0.05823            8 -173.295 363.0  0.88
+## 5612 -0.4156 -0.09421            0.04682 0.0001837 10 -171.306 363.3  1.12
+## 1532 -0.3584 -0.08877            0.04701           10 -171.351 363.3  1.21
+## 5604 -0.4365 -0.10180            0.05648 0.0002246  9 -172.517 363.6  1.43
+## 2028 -0.3129 -0.10610 -0.0004314 0.04670           10 -171.687 364.0  1.88
+##      weight
+## 1516  0.275
+## 1508  0.177
+## 5612  0.157
+## 1532  0.150
+## 5604  0.135
+## 2028  0.107
+## Models ranked by AICc(x) 
+## 
+## 
+## R2:
+```
 
 
 
@@ -768,54 +825,81 @@ df_analysis <- dat %>%
       slope_no3_vs_time < 0 & p_no3_vs_time <= 0.05 ~ 1,
       TRUE ~ 0)
   ) %>%
-  select(no3_decline, slope_dep_vs_time,
-         NO3, TOC,
-    latitude, longitude, altitude, 
-    pre, tmp, 
-    coniferous, deciduous, lake, mixed_forest, wetland)
+  select(country, no3_decline, slope_dep_vs_time,
+         NO3, TOC, TOTN_dep,
+         latitude, longitude, altitude, 
+         pre, tmp, 
+         urban, cultivated, deciduous, coniferous, mixed_forest, total_shrub_herbaceous, 
+         wetland, lake, bare_sparse)
+  
+  
 
-# Complete cases
-apply(is.na(df_analysis), 2, sum)
+cat("Number of missing values per variable: \n")
+apply(is.na(df_analysis), 2, sum) 
+cat("\n")
 
-complete <- complete.cases(df_analysis)
-table(complete)
-table(dat$country, complete)
-
-# What is missing? (long output)  
-# Germany is missing TOC (87%)
+# What is missing? (long output)
 if (FALSE){
-dat %>% 
-  split(.$country) %>%
-  purrr::map(~apply(is.na(.), 2, mean))
+  df <- df_analysis %>% 
+    mutate(country = substr(country, 1, 3)) %>%
+    split(.$country) %>%
+    purrr::map_dfr(~apply(is.na(.), 2, mean) %>% round(2), .id = "Country")
+  names(df) <- substr(names(df), 1, 9)
+  df
+  
 }
 
+cat("Number of complete observations: \n")
+complete <- complete.cases(df_analysis)
+table(complete)
+
+cat("\n\n")
+cat("Number of complete observations by country: \n")
+table(dat$country, complete)
 
 # Keep only complete cases
-df_analysis <- df_analysis[complete.cases(df_analysis),]
+df_analysis <- df_analysis[complete.cases(df_analysis),] %>%
+  select(-country)
+
+cat("\n\n")
+cat("Original data: n =", nrow(dat), "\n")
+cat("Analysis: n =", nrow(df_analysis), "\n")
 ```
 
 ```
-##       no3_decline slope_dep_vs_time               NO3               TOC 
-##                 0                 0                25                26 
-##          latitude         longitude          altitude               pre 
-##                 0                 0                 9                 0 
-##               tmp        coniferous         deciduous              lake 
-##                 0                43                43                37 
-##      mixed_forest           wetland 
-##                43                37 
+## Number of missing values per variable: 
+##                country            no3_decline      slope_dep_vs_time 
+##                      0                      0                      0 
+##                    NO3                    TOC               TOTN_dep 
+##                      0                     33                      0 
+##               latitude              longitude               altitude 
+##                      0                      0                      9 
+##                    pre                    tmp                  urban 
+##                      0                      0                     37 
+##             cultivated              deciduous             coniferous 
+##                     37                     43                     43 
+##           mixed_forest total_shrub_herbaceous                wetland 
+##                     43                     37                     37 
+##                   lake            bare_sparse 
+##                     37                     37 
+## 
+## Number of complete observations: 
 ## complete
 ## FALSE  TRUE 
-##    78   420 
+##    70   428 
+## 
+## 
+## Number of complete observations by country: 
 ##                 complete
 ##                  FALSE TRUE
 ##   Canada             0  114
-##   Czech Republic     0    8
+##   Czech Republic     1    7
 ##   Estonia            1    0
-##   Finland            3   23
-##   Germany           21    2
-##   Ireland            1    2
-##   Italy              2    4
-##   Latvia             0    3
+##   Finland            0   26
+##   Germany            6   17
+##   Ireland            3    0
+##   Italy              6    0
+##   Latvia             3    0
 ##   Netherlands        1    2
 ##   Norway             0   83
 ##   Poland             0    6
@@ -824,120 +908,16 @@ df_analysis <- df_analysis[complete.cases(df_analysis),]
 ##   Switzerland        6    0
 ##   United Kingdom    21    0
 ##   United States     16   75
-```
-
-
-## 6b. Logistic regression, all variables  
-
-```r
-# Full model  
-fm <- glm(
-  no3_decline ~ .,
-  data = df_analysis, 
-  family = "binomial",
-  na.action = "na.fail")
-
-# Dredging for best model
-# dd2a <- dredge(fm)                           # only once
-# saveRDS(dd2a, "Data/160_all_dd2a.rds")    # save it as it takes a couple of minutes
-
-# Read dredge result
-dd2a <- readRDS("Data/160_all_dd2a.rds")
-
-# Check best models  
-subset(dd2a, delta < 1)
-
-cat("\n\nR2: \n")
-dd2a_mod1 <- get.models(dd2a, 1)[[1]]  
-# summary(dd2a_mod1)  
-
-par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
-visreg(dd2a_mod1, scale = "response")
-```
-
-![](160_Time_series_results_James_files/figure-html/unnamed-chunk-24-1.png)<!-- -->
-
-```r
-mtext("All data, include coordinates", outer = TRUE)
-```
-
-![](160_Time_series_results_James_files/figure-html/unnamed-chunk-24-2.png)<!-- -->
-
-```
-## Global model call: glm(formula = no3_decline ~ ., family = "binomial", data = df_analysis, 
-##     na.action = "na.fail")
-## ---
-## Model selection table 
-##       (Int)      alt     ltt mxd_frs       NO3       pre slp_dep_vs_tim     tmp
-## 8146 -4.263 0.002248 0.05366 -0.0152 -0.003603 0.0006980       -0.05247 -0.2199
-## 8082 -5.543 0.002408 0.07051         -0.003291 0.0006445       -0.05414 -0.1990
-##           TOC     wtl df   logLik  AICc delta weight
-## 8146 -0.06382 0.04390 10 -209.753 440.0  0.00  0.545
-## 8082 -0.06738 0.05073  9 -210.981 440.4  0.36  0.455
-## Models ranked by AICc(x) 
 ## 
 ## 
-## R2:
-```
-
-## 6c. Logistic regression, exclude coordinates    
-
-```r
-fm <- glm(
-  no3_decline ~ slope_dep_vs_time + NO3 + TOC +
-    altitude + 
-    pre + tmp + 
-    coniferous + deciduous + lake + mixed_forest + 
-    wetland,
-  data = df_analysis, 
-  family = "binomial",
-  na.action = "na.fail")
-
-# dd2b <- dredge(fm)                       # only once
-# saveRDS(dd2b, "Data/160_all_dd2b.rds")    # save it as it takes a couple of minutes
-
-dd2b <- readRDS("Data/160_all_dd2b.rds")
-
-subset(dd2b, delta < 1)
-
-cat("\n\nR2: \n")
-dd2b_mod1 <- get.models(dd2b, 1)[[1]]  
-# summary(dd2b_mod1)  
-
-par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
-visreg(dd2b_mod1, scale = "response")
-```
-
-![](160_Time_series_results_James_files/figure-html/unnamed-chunk-25-1.png)<!-- -->
-
-```r
-mtext("All data, exclude coordinates", outer = TRUE)
-```
-
-![](160_Time_series_results_James_files/figure-html/unnamed-chunk-25-2.png)<!-- -->
-
-```
-## Global model call: glm(formula = no3_decline ~ slope_dep_vs_time + NO3 + TOC + altitude + 
-##     pre + tmp + coniferous + deciduous + lake + mixed_forest + 
-##     wetland, family = "binomial", data = df_analysis, na.action = "na.fail")
-## ---
-## Model selection table 
-##        (Int)      alt      dcd  mxd_frs       NO3       pre slp_dep_vs_tim
-## 2034 -0.5133 0.001738          -0.02802 -0.004148 0.0006341       -0.05859
-## 2038 -0.4808 0.001736 -0.00794 -0.02600 -0.003902 0.0006543       -0.05782
-##          tmp      TOC     wtl df   logLik  AICc delta weight
-## 2034 -0.3199 -0.06086 0.03589  9 -213.220 444.9  0.00  0.553
-## 2038 -0.3049 -0.06875 0.03927 10 -212.384 445.3  0.43  0.447
-## Models ranked by AICc(x) 
-## 
-## 
-## R2:
+## Original data: n = 498 
+## Analysis: n = 428
 ```
 
 
 
 
-## 6d. Tree and forest classification
+## 6b. Tree and forest classification
 
 
 ### Split into training and validation data
@@ -983,36 +963,40 @@ table(tr.pred[,"P1"] > 0.5, valid_set$no3_decline_f)
 ```
 ## 
 ## Model formula:
-## no3_decline_f ~ slope_dep_vs_time + NO3 + TOC + altitude + pre + 
-##     tmp + coniferous + deciduous + lake + mixed_forest + wetland
+## no3_decline_f ~ slope_dep_vs_time + NO3 + TOC + TOTN_dep + altitude + 
+##     pre + tmp + urban + cultivated + deciduous + coniferous + 
+##     mixed_forest + total_shrub_herbaceous + wetland + lake + 
+##     bare_sparse
 ## 
 ## Fitted party:
 ## [1] root
-## |   [2] altitude <= 203
-## |   |   [3] deciduous <= 3.084: 0 (n = 70, err = 32.9%)
-## |   |   [4] deciduous > 3.084
-## |   |   |   [5] slope_dep_vs_time <= -38.72255: 0 (n = 10, err = 50.0%)
-## |   |   |   [6] slope_dep_vs_time > -38.72255: 0 (n = 87, err = 4.6%)
-## |   [7] altitude > 203
-## |   |   [8] mixed_forest <= 29.71: 1 (n = 174, err = 39.1%)
-## |   |   [9] mixed_forest > 29.71: 0 (n = 37, err = 24.3%)
+## |   [2] altitude <= 223
+## |   |   [3] NO3 <= 125.5
+## |   |   |   [4] mixed_forest <= 1.359: 0 (n = 27, err = 44.4%)
+## |   |   |   [5] mixed_forest > 1.359: 0 (n = 142, err = 8.5%)
+## |   |   [6] NO3 > 125.5: 1 (n = 8, err = 12.5%)
+## |   [7] altitude > 223
+## |   |   [8] mixed_forest <= 29.71
+## |   |   |   [9] bare_sparse <= 15.861: 1 (n = 144, err = 41.0%)
+## |   |   |   [10] bare_sparse > 15.861: 1 (n = 27, err = 7.4%)
+## |   |   [11] mixed_forest > 29.71: 0 (n = 38, err = 23.7%)
 ## 
-## Number of inner nodes:    4
-## Number of terminal nodes: 5
+## Number of inner nodes:    5
+## Number of terminal nodes: 6
 ## 
 ## 
 ## Table of prediction errors 
 ##    
 ##       0   1
-##   0 163  41
-##   1  68 106
+##   0 174  33
+##   1  62 117
 ## 
 ## 
 ## Classification of training set 
 ##        
 ##          0  1
-##   FALSE 16  2
-##   TRUE  11 13
+##   FALSE  9  6
+##   TRUE  16 11
 ```
 
 ### b. Evtree (Evolutionary Learning)   
@@ -1037,12 +1021,12 @@ cat("\n\nPrediction errors in training data: \n")
 ## Predicted in training data: 
 ##    
 ##       0   1
-##   0 206  41
-##   1  25 106
+##   0 197  26
+##   1  39 124
 ## 
 ## 
 ## Prediction errors in training data: 
-## [1] 0.1746032
+## [1] 0.1683938
 ```
 
 
@@ -1067,11 +1051,11 @@ model2
 ##                      Number of trees: 500
 ## No. of variables tried at each split: 5
 ## 
-##         OOB estimate of  error rate: 24.87%
+##         OOB estimate of  error rate: 22.02%
 ## Confusion matrix:
-##     0  1 class.error
-## 0 187 44   0.1904762
-## 1  50 97   0.3401361
+##     0   1 class.error
+## 0 193  43   0.1822034
+## 1  42 108   0.2800000
 ```
 
 
@@ -1087,8 +1071,8 @@ table(pred_valid, valid_set$no3_decline_f)
 ```
 ##           
 ## pred_valid  0  1
-##          0 24  3
-##          1  3 12
+##          0 19  5
+##          1  6 12
 ```
 
 #### Random forest, importance (but see separate result file)  
@@ -1102,18 +1086,40 @@ varImpPlot(model2)
 ![](160_Time_series_results_James_files/figure-html/unnamed-chunk-31-1.png)<!-- -->
 
 ```
-##                           0         1 MeanDecreaseAccuracy MeanDecreaseGini
-## slope_dep_vs_time 19.329271 16.299669            24.599823         21.22609
-## NO3               13.340090  2.151598            12.903752         14.34007
-## TOC               16.254351 24.439163            29.966134         22.81956
-## altitude          15.733447 17.499942            23.492887         26.92790
-## pre               13.232342  8.504363            15.871216         13.02270
-## tmp                7.132700  9.994468            12.918633         14.09981
-## coniferous         7.462411  7.609056            12.445970         11.36415
-## deciduous          6.996246  4.753874             8.977179         10.88013
-## lake               2.614851  7.948136             7.649662         14.04822
-## mixed_forest      10.548020  8.863458            14.483085         16.12061
-## wetland            5.165532 10.968570            12.418336         14.21777
+##                                0         1 MeanDecreaseAccuracy
+## slope_dep_vs_time      13.239665 15.426510            20.065174
+## NO3                    14.274488  5.342990            15.606900
+## TOC                    12.084607 15.375908            18.432947
+## TOTN_dep               13.023175 10.666145            18.545339
+## altitude               22.426848 11.405891            24.065639
+## pre                     8.416135  6.950489            11.195385
+## tmp                     8.950396  7.459858            13.076987
+## urban                   4.051719  3.668596             5.585528
+## cultivated              3.204921  5.631711             6.653088
+## deciduous               7.232131  5.741586             9.484358
+## coniferous              2.924174  7.889910             8.173519
+## mixed_forest           12.152709  9.289893            14.621749
+## total_shrub_herbaceous  7.322701  1.285351             6.497962
+## wetland                 4.645796  8.564017             9.605788
+## lake                    3.588158 10.793062            10.137040
+## bare_sparse             4.402885  7.997317             8.929063
+##                        MeanDecreaseGini
+## slope_dep_vs_time             16.469279
+## NO3                           12.761978
+## TOC                           16.450497
+## TOTN_dep                      16.350265
+## altitude                      24.196265
+## pre                           10.550431
+## tmp                           11.453715
+## urban                          4.102292
+## cultivated                     2.450389
+## deciduous                      9.134110
+## coniferous                     8.351456
+## mixed_forest                  16.263215
+## total_shrub_herbaceous         8.115649
+## wetland                       10.074421
+## lake                          11.116183
+## bare_sparse                    4.885314
 ```
 
 #### Random forest, partial effects   
@@ -1136,7 +1142,7 @@ for (i in seq_along(impvar1)) {
 }
 ```
 
-![](160_Time_series_results_James_files/figure-html/unnamed-chunk-32-1.png)<!-- -->
+![](160_Time_series_results_James_files/figure-html/unnamed-chunk-32-1.png)<!-- -->![](160_Time_series_results_James_files/figure-html/unnamed-chunk-32-2.png)<!-- -->
 #### randomForestExplainer
 
 ```r
@@ -1146,16 +1152,125 @@ library(randomForestExplainer)
 # COPY to console and run (this will create an Rmd file and render an HTML file):
 # DON'T rin ith within this chunk, RStudio will hang
 
-if (FALSE){
+if (run_randomForestExplainer){
   explain_forest(model2, interactions = TRUE, data = train_set, 
                  path = "C:/Data/seksjon 317/icpw-R/160_randomforest_James_data_model2.html")
 }
 ```
+## 6c. Logistic regression, exclude coordinates    
+
+```r
+fm <- glm(
+  no3_decline ~ altitude + mixed_forest + TOC + NO3 + TOTN_dep + 
+    slope_dep_vs_time + deciduous + pre + wetland + tmp + lake +
+    altitude:lake + altitude:TOTN_dep + altitude:tmp,
+  data = df_analysis, 
+  family = "binomial",
+  na.action = "na.fail")
+
+# dd2b <- dredge(fm)                       # only once
+# saveRDS(dd2b, "Data/160_all_dd2b.rds")    # save it as it takes a couple of minutes
+
+dd2b <- readRDS("Data/160_all_dd2b.rds")
+
+# subset(dd2b, delta < 1)
+subset(dd2b, delta < 2)
+
+cat("\n\nR2: \n")
+dd2b_mod1 <- get.models(dd2b, 1)[[1]]  
+# summary(dd2b_mod1)  
+
+par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
+visreg(dd2b_mod1, scale = "response")
+```
+
+![](160_Time_series_results_James_files/figure-html/unnamed-chunk-34-1.png)<!-- -->
+
+```r
+mtext("All data, exclude coordinates", outer = TRUE)
+```
+
+![](160_Time_series_results_James_files/figure-html/unnamed-chunk-34-2.png)<!-- -->
+
+```
+## Global model call: glm(formula = no3_decline ~ altitude + mixed_forest + TOC + NO3 + 
+##     TOTN_dep + slope_dep_vs_time + deciduous + pre + wetland + 
+##     tmp + lake + altitude:lake + altitude:TOTN_dep + altitude:tmp, 
+##     family = "binomial", data = df_analysis, na.action = "na.fail")
+## ---
+## Model selection table 
+##        (Int)       alt       dcd     lak  mxd_frs       NO3       pre
+## 1516 -0.6817 0.0011920 -0.010480         -0.02593           0.0009390
+## 1280 -1.4300 0.0012210 -0.008898 0.01921 -0.02640 0.0011240 0.0012450
+## 1278 -1.3770 0.0011920           0.01878 -0.02855 0.0010890 0.0011790
+## 1260 -1.1280 0.0013730 -0.008520         -0.02738           0.0011320
+## 1258 -1.0810 0.0013340                   -0.02935           0.0010700
+## 1276 -1.0790 0.0011950 -0.008688         -0.02673 0.0009056 0.0012060
+## 1514 -0.7153 0.0011820                   -0.02856           0.0009057
+## 1274 -1.0350 0.0011650                   -0.02876 0.0008774 0.0011420
+## 1790 -1.4310 0.0013450           0.02091 -0.02671 0.0015510 0.0011670
+## 1264 -1.4250 0.0014220 -0.008645 0.01560 -0.02713           0.0011520
+## 1262 -1.3720 0.0013830           0.01531 -0.02919           0.0010890
+## 1532 -0.7211 0.0010960 -0.010260         -0.02569 0.0006341 0.0010230
+## 1520 -0.9568 0.0012560 -0.010250 0.01115 -0.02603           0.0009803
+## 1792 -1.4650 0.0013470 -0.007881 0.02078 -0.02512 0.0015150 0.0012260
+## 1536 -1.1150 0.0011500 -0.009894 0.01548 -0.02579 0.0008872 0.0011110
+## 2028 -0.6661 0.0012670 -0.010150         -0.02537           0.0009050
+## 3326 -1.5800 0.0015750           0.03294 -0.02844 0.0010420 0.0012110
+## 3328 -1.6170 0.0015770 -0.008649 0.03223 -0.02635 0.0010760 0.0012740
+## 5612 -0.5896 0.0008488 -0.010750         -0.02548           0.0009766
+## 1530 -0.7569 0.0010840                   -0.02824 0.0006726 0.0009950
+##      slp_dep_vs_tim     tmp      TOC    TOT_dep     wtl    alt:lak   alt:tmp df
+## 1516       -0.06398 -0.3846 -0.05957            0.04532                       9
+## 1280       -0.06452 -0.4517                     0.04285                      10
+## 1278       -0.06489 -0.4632                     0.03814                       9
+## 1260       -0.06564 -0.4213                     0.03808                       8
+## 1258       -0.06615 -0.4341                     0.03382                       7
+## 1276       -0.06095 -0.4377                     0.04002                       9
+## 1514       -0.06481 -0.4067 -0.04771            0.03881                       8
+## 1274       -0.06170 -0.4507                     0.03566                       8
+## 1790       -0.08451 -0.4093          -0.0010870 0.03859                      10
+## 1264       -0.06999 -0.4312                     0.04002                       9
+## 1262       -0.07015 -0.4427                     0.03553                       8
+## 1532       -0.06098 -0.4021 -0.04979            0.04548                      10
+## 1520       -0.06708 -0.3962 -0.05124            0.04569                      10
+## 1792       -0.08080 -0.4073          -0.0009132 0.04272                      11
+## 1536       -0.06376 -0.4240 -0.03450            0.04609                      11
+## 2028       -0.07185 -0.3602 -0.06329 -0.0003983 0.04528                      10
+## 3326       -0.06556 -0.4708                     0.03962 -3.202e-05           10
+## 3328       -0.06524 -0.4591                     0.04413 -2.984e-05           11
+## 5612       -0.06404 -0.4157 -0.05699            0.04535            7.211e-05 10
+## 1530       -0.06170 -0.4252 -0.03767            0.03917                       9
+##        logLik  AICc delta weight
+## 1516 -216.362 451.2  0.00  0.088
+## 1280 -215.528 451.6  0.43  0.071
+## 1278 -216.637 451.7  0.55  0.067
+## 1260 -217.807 452.0  0.80  0.059
+## 1258 -218.853 452.0  0.82  0.058
+## 1276 -216.835 452.1  0.95  0.055
+## 1514 -217.882 452.1  0.95  0.054
+## 1274 -217.916 452.2  1.02  0.053
+## 1790 -215.828 452.2  1.03  0.052
+## 1264 -216.921 452.3  1.12  0.050
+## 1262 -217.981 452.3  1.15  0.049
+## 1532 -215.906 452.3  1.19  0.049
+## 1520 -215.929 452.4  1.23  0.047
+## 1792 -214.987 452.6  1.45  0.042
+## 1536 -215.135 452.9  1.75  0.037
+## 2028 -216.235 453.0  1.84  0.035
+## 3326 -216.250 453.0  1.87  0.034
+## 3328 -215.207 453.0  1.89  0.034
+## 5612 -216.280 453.1  1.93  0.033
+## 1530 -217.358 453.1  1.99  0.032
+## Models ranked by AICc(x) 
+## 
+## 
+## R2:
+```
 
 
-
-## 7a. Data EXCLUDING catchment_area, TOC and NO3    
-* Includes USA data, still missing UK and most German data      
+## 7a. Data EXCLUDING catchment_area and TOC    
+* Includes USA data, still missing Estonia (missing altitude) and UK (mising land cover)      
 *  Germany is missing TOC (87%), UK is missing land cover (100%)
 
 ```r
@@ -1166,44 +1281,70 @@ df_analysis <- dat %>%
       slope_no3_vs_time < 0 & p_no3_vs_time <= 0.05 ~ 1,
       TRUE ~ 0)
   ) %>%
-  select(country, station_code, no3_decline, slope_dep_vs_time,
-    latitude, longitude, altitude, 
-    pre, tmp, 
-    coniferous, deciduous, lake, mixed_forest, wetland)
+  select(country,
+         no3_decline, slope_dep_vs_time, 
+         TOTN_dep, NO3,
+         latitude, longitude, altitude, 
+         pre, tmp, 
+         urban, cultivated, deciduous, coniferous, mixed_forest, total_shrub_herbaceous, 
+         wetland, lake, bare_sparse)
 
-# Complete cases
-apply(is.na(df_analysis), 2, sum)
 
-complete <- complete.cases(df_analysis)
-table(complete)
-table(df_analysis$country, complete)
+cat("Number of missing values per variable: \n")
+apply(is.na(df_analysis), 2, sum) 
+cat("\n")
 
-# What is missing? (long output)  
-# Germany is missing NO3 (87%)
+# What is missing? (long output)
 if (FALSE){
-df_analysis %>% 
-  split(.$country) %>%
-  purrr::map(~apply(is.na(.), 2, mean))
+  df <- df_analysis %>% 
+    mutate(country = substr(country, 1, 8)) %>%
+    split(.$country) %>%
+    purrr::map_dfr(~apply(is.na(.), 2, mean) %>% round(2), .id = "Country")
+  names(df) <- substr(names(df), 1, 9)
+  df
 }
 
+cat("Number of complete observations: \n")
+complete <- complete.cases(df_analysis)
+table(complete)
+
+cat("\n\n")
+cat("Number of complete observations by country: \n")
+table(dat$country, complete)
 
 # Keep only complete cases
 df_analysis <- df_analysis[complete.cases(df_analysis),] %>%
-  select(-country, -station_code)
+  select(-country)
+
+cat("\n\n")
+cat("Original data: n =", nrow(dat), "\n")
+cat("Analysis: n =", nrow(df_analysis), "\n")
 ```
 
 ```
-##           country      station_code       no3_decline slope_dep_vs_time 
-##                 0                 0                 0                 0 
-##          latitude         longitude          altitude               pre 
-##                 0                 0                 9                 0 
-##               tmp        coniferous         deciduous              lake 
-##                 0                43                43                37 
-##      mixed_forest           wetland 
-##                43                37 
+## Number of missing values per variable: 
+##                country            no3_decline      slope_dep_vs_time 
+##                      0                      0                      0 
+##               TOTN_dep                    NO3               latitude 
+##                      0                      0                      0 
+##              longitude               altitude                    pre 
+##                      0                      9                      0 
+##                    tmp                  urban             cultivated 
+##                      0                     37                     37 
+##              deciduous             coniferous           mixed_forest 
+##                     43                     43                     43 
+## total_shrub_herbaceous                wetland                   lake 
+##                     37                     37                     37 
+##            bare_sparse 
+##                     37 
+## 
+## Number of complete observations: 
 ## complete
 ## FALSE  TRUE 
 ##    52   446 
+## 
+## 
+## Number of complete observations by country: 
 ##                 complete
 ##                  FALSE TRUE
 ##   Canada             0  114
@@ -1222,124 +1363,15 @@ df_analysis <- df_analysis[complete.cases(df_analysis),] %>%
 ##   Switzerland        6    0
 ##   United Kingdom    21    0
 ##   United States     16   75
-```
-
-
-## 7b. Logistic regression, all variables  
-
-```r
-# Full model  
-fm <- glm(
-  no3_decline ~ .,
-  data = df_analysis, 
-  family = "binomial",
-  na.action = "na.fail")
-
-# Dredging for best model
-# dd3a <- dredge(fm)                           # only once
-# saveRDS(dd3a, "Data/160_all_dd3a.rds")    # save it as it takes a couple of minutes
-
-# Read dredge result
-dd3a <- readRDS("Data/160_all_dd3a.rds")
-
-# Check best models  
-subset(dd3a, delta < 1)
-
-cat("\n\nR2: \n")
-dd3a_mod1 <- get.models(dd3a, 1)[[1]]  
-# summary(dd3a_mod1)  
-
-par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
-visreg(dd3a_mod1, scale = "response")
-```
-
-![](160_Time_series_results_James_files/figure-html/unnamed-chunk-35-1.png)<!-- -->
-
-```r
-mtext("All data, include coordinates", outer = TRUE)
-```
-
-![](160_Time_series_results_James_files/figure-html/unnamed-chunk-35-2.png)<!-- -->
-
-```
-## Global model call: glm(formula = no3_decline ~ ., family = "binomial", data = df_analysis, 
-##     na.action = "na.fail")
-## ---
-## Model selection table 
-##       (Int)      alt       cnf      dcd     lak     ltt      lng  mxd_frs
-## 1912 -7.941 0.002360 -0.010580 -0.02099         0.12690 -0.02112 -0.02442
-## 1946 -6.391 0.002386                    0.01851 0.07396                  
-## 2040 -7.587 0.002243 -0.008066 -0.01867         0.11420 -0.01744 -0.02289
-## 2010 -5.443 0.002224                    0.01777 0.06218          -0.01083
-## 2038 -9.088 0.002394           -0.01160         0.12870 -0.01808 -0.01745
-##            pre slp_dep_vs_tim     tmp     wtl df   logLik  AICc delta weight
-## 1912                 -0.05274 -0.1741 0.02500 10 -231.604 483.7  0.00  0.255
-## 1946 0.0008399       -0.04426 -0.2419 0.04024  8 -233.774 483.9  0.16  0.235
-## 2040 0.0004384       -0.05149 -0.2013 0.02671 11 -230.829 484.3  0.55  0.194
-## 2010 0.0008713       -0.04212 -0.2560 0.03553  9 -233.115 484.6  0.93  0.160
-## 2038 0.0006525       -0.05048 -0.2114 0.03090 10 -232.101 484.7  1.00  0.155
-## Models ranked by AICc(x) 
 ## 
 ## 
-## R2:
-```
-
-## 7c. Logistic regression, exclude coordinates    
-
-```r
-fm <- glm(
-  no3_decline ~ slope_dep_vs_time + 
-    altitude + 
-    pre + tmp + 
-    coniferous + deciduous + lake + mixed_forest + 
-    wetland,
-  data = df_analysis, 
-  family = "binomial",
-  na.action = "na.fail")
-
-# dd3b <- dredge(fm)                       # only once
-# saveRDS(dd3b, "Data/160_all_dd3b.rds")    # save it as it takes a couple of minutes
-
-dd3b <- readRDS("Data/160_all_dd3b.rds")
-
-subset(dd3b, delta < 1)
-
-cat("\n\nR2: \n")
-dd3b_mod1 <- get.models(dd3b, 1)[[1]]  
-# summary(dd3b_mod1)  
-
-par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
-visreg(dd3b_mod1, scale = "response")
-```
-
-![](160_Time_series_results_James_files/figure-html/unnamed-chunk-36-1.png)<!-- -->
-
-```r
-mtext("All data, exclude coordinates", outer = TRUE)
-```
-
-![](160_Time_series_results_James_files/figure-html/unnamed-chunk-36-2.png)<!-- -->
-
-```
-## Global model call: glm(formula = no3_decline ~ slope_dep_vs_time + altitude + pre + 
-##     tmp + coniferous + deciduous + lake + mixed_forest + wetland, 
-##     family = "binomial", data = df_analysis, na.action = "na.fail")
-## ---
-## Model selection table 
-##       (Int)      alt      cnf      dcd  mxd_frs       pre slp_dep_vs_tim
-## 504 -0.1051 0.001499 -0.01073 -0.02134 -0.02682 0.0005955       -0.04688
-##         tmp     wtl df   logLik  AICc delta weight
-## 504 -0.3155 0.02418  9 -233.587 485.6     0      1
-## Models ranked by AICc(x) 
-## 
-## 
-## R2:
+## Original data: n = 498 
+## Analysis: n = 446
 ```
 
 
 
-
-## 7d. Tree and forest classification
+## 7b. Tree and forest classification
 
 
 ### Split into training and validation data   
@@ -1367,7 +1399,7 @@ valid_set <- df_analysis[!train,] %>%
 plot(ct, main="Conditional Inference Tree")
 ```
 
-![](160_Time_series_results_James_files/figure-html/unnamed-chunk-38-1.png)<!-- -->
+![](160_Time_series_results_James_files/figure-html/unnamed-chunk-37-1.png)<!-- -->
 
 ```r
 cat("\n\n")
@@ -1385,40 +1417,44 @@ table(tr.pred[,"P1"] > 0.5, valid_set$no3_decline_f)
 ```
 ## 
 ## Model formula:
-## no3_decline_f ~ slope_dep_vs_time + altitude + pre + tmp + coniferous + 
-##     deciduous + lake + mixed_forest + wetland
+## no3_decline_f ~ slope_dep_vs_time + TOTN_dep + NO3 + altitude + 
+##     pre + tmp + urban + cultivated + deciduous + coniferous + 
+##     mixed_forest + total_shrub_herbaceous + wetland + lake + 
+##     bare_sparse
 ## 
 ## Fitted party:
 ## [1] root
 ## |   [2] altitude <= 226
-## |   |   [3] mixed_forest <= 0.056: 1 (n = 12, err = 41.7%)
-## |   |   [4] mixed_forest > 0.056
-## |   |   |   [5] slope_dep_vs_time <= -36.99988: 1 (n = 13, err = 38.5%)
-## |   |   |   [6] slope_dep_vs_time > -36.99988
-## |   |   |   |   [7] tmp <= 1.22633: 1 (n = 9, err = 44.4%)
-## |   |   |   |   [8] tmp > 1.22633: 0 (n = 143, err = 8.4%)
+## |   |   [3] total_shrub_herbaceous <= 41
+## |   |   |   [4] mixed_forest <= 7.44: 0 (n = 63, err = 27.0%)
+## |   |   |   [5] mixed_forest > 7.44
+## |   |   |   |   [6] NO3 <= 69.5: 0 (n = 90, err = 2.2%)
+## |   |   |   |   [7] NO3 > 69.5: 0 (n = 11, err = 36.4%)
+## |   |   [8] total_shrub_herbaceous > 41: 1 (n = 13, err = 30.8%)
 ## |   [9] altitude > 226
 ## |   |   [10] mixed_forest <= 29.71
-## |   |   |   [11] deciduous <= 39.189: 1 (n = 147, err = 30.6%)
-## |   |   |   [12] deciduous > 39.189: 0 (n = 36, err = 33.3%)
-## |   |   [13] mixed_forest > 29.71: 0 (n = 42, err = 21.4%)
+## |   |   |   [11] bare_sparse <= 15.861
+## |   |   |   |   [12] wetland <= 3.385: 0 (n = 88, err = 43.2%)
+## |   |   |   |   [13] wetland > 3.385: 1 (n = 63, err = 28.6%)
+## |   |   |   [14] bare_sparse > 15.861: 1 (n = 32, err = 3.1%)
+## |   |   [15] mixed_forest > 29.71: 0 (n = 42, err = 21.4%)
 ## 
-## Number of inner nodes:    6
-## Number of terminal nodes: 7
+## Number of inner nodes:    7
+## Number of terminal nodes: 8
 ## 
 ## 
 ## Table of prediction errors 
 ##    
 ##       0   1
-##   0 188  33
-##   1  59 122
+##   0 224  70
+##   1  23  85
 ## 
 ## 
 ## Classification of training set 
 ##        
 ##          0  1
-##   FALSE 13  8
-##   TRUE  12 11
+##   FALSE 16 12
+##   TRUE   9  7
 ```
 
 ### b. Evtree (Evolutionary Learning)   
@@ -1429,7 +1465,7 @@ ev.raw = evtree(no3_decline_f ~ ., data = train_set)
 plot(ev.raw)
 ```
 
-![](160_Time_series_results_James_files/figure-html/unnamed-chunk-39-1.png)<!-- -->
+![](160_Time_series_results_James_files/figure-html/unnamed-chunk-38-1.png)<!-- -->
 
 ```r
 cat("Predicted in training data: \n")
@@ -1443,12 +1479,12 @@ cat("\n\nPrediction errors in training data: \n")
 ## Predicted in training data: 
 ##    
 ##       0   1
-##   0 217  40
-##   1  30 115
+##   0 218  32
+##   1  29 123
 ## 
 ## 
 ## Prediction errors in training data: 
-## [1] 0.1741294
+## [1] 0.1517413
 ```
 
 
@@ -1473,11 +1509,11 @@ model3
 ##                      Number of trees: 500
 ## No. of variables tried at each split: 5
 ## 
-##         OOB estimate of  error rate: 23.13%
+##         OOB estimate of  error rate: 21.89%
 ## Confusion matrix:
 ##     0   1 class.error
 ## 0 206  41   0.1659919
-## 1  52 103   0.3354839
+## 1  47 108   0.3032258
 ```
 
 
@@ -1493,8 +1529,8 @@ table(pred_valid, valid_set$no3_decline_f)
 ```
 ##           
 ## pred_valid  0  1
-##          0 16  5
-##          1  9 14
+##          0 13  5
+##          1 12 14
 ```
 
 #### Random forest, importance (but see separate result file)  
@@ -1505,19 +1541,41 @@ randomForest::importance(model3)
 varImpPlot(model3)
 ```
 
-![](160_Time_series_results_James_files/figure-html/unnamed-chunk-42-1.png)<!-- -->
+![](160_Time_series_results_James_files/figure-html/unnamed-chunk-41-1.png)<!-- -->
 
 ```
-##                           0         1 MeanDecreaseAccuracy MeanDecreaseGini
-## slope_dep_vs_time 23.034237 14.127789             28.79625         24.05739
-## altitude          25.788833 24.494315             35.17994         34.68589
-## pre               16.130808  6.386841             17.65983         17.87176
-## tmp               14.761984 12.049136             19.19591         20.34166
-## coniferous        15.010933  6.115884             16.10507         18.50820
-## deciduous         12.312695 11.408504             17.31096         19.14110
-## lake               4.040603 13.157780             12.23178         16.87249
-## mixed_forest      15.822622 10.344455             20.33389         22.18817
-## wetland            9.365063 11.640628             14.89312         16.49332
+##                                0         1 MeanDecreaseAccuracy
+## slope_dep_vs_time      12.857850 13.038614            18.831576
+## TOTN_dep               15.221682 10.056648            19.499895
+## NO3                    15.358800  3.306000            15.643063
+## altitude               24.634847 17.031452            29.104974
+## pre                    11.975014  8.155094            14.347745
+## tmp                    12.504180  9.789694            16.908435
+## urban                   4.106631  5.683185             6.996606
+## cultivated              4.686450  2.836035             5.825127
+## deciduous              10.108216  9.353473            13.845286
+## coniferous              9.848063  7.743308            13.402567
+## mixed_forest           12.297965 10.736269            16.131290
+## total_shrub_herbaceous  7.952128  1.629962             7.624967
+## wetland                 8.016795  7.381024            11.842598
+## lake                    5.054014  6.950792             8.245094
+## bare_sparse            14.138220 16.797696            20.663706
+##                        MeanDecreaseGini
+## slope_dep_vs_time             15.940905
+## TOTN_dep                      16.309146
+## NO3                           12.808820
+## altitude                      24.915097
+## pre                           12.448483
+## tmp                           14.613253
+## urban                          4.243877
+## cultivated                     2.347348
+## deciduous                     13.821808
+## coniferous                    12.806151
+## mixed_forest                  15.017802
+## total_shrub_herbaceous         8.887573
+## wetland                       11.195916
+## lake                          11.505811
+## bare_sparse                   13.100836
 ```
 
 #### Random forest, partial effects   
@@ -1540,7 +1598,7 @@ for (i in seq_along(impvar1)) {
 }
 ```
 
-![](160_Time_series_results_James_files/figure-html/unnamed-chunk-43-1.png)<!-- -->
+![](160_Time_series_results_James_files/figure-html/unnamed-chunk-42-1.png)<!-- -->![](160_Time_series_results_James_files/figure-html/unnamed-chunk-42-2.png)<!-- -->
 #### randomForestExplainer
 
 ```r
@@ -1550,9 +1608,86 @@ library(randomForestExplainer)
 # COPY to console and run (this will create an Rmd file and render an HTML file):
 # DON'T rin ith within this chunk, RStudio will hang
 
-if (FALSE){
+if (run_randomForestExplainer){
   explain_forest(model3, interactions = TRUE, data = train_set, 
                  path = "C:/Data/seksjon 317/icpw-R/160_randomforest_James_data_model3.html")
 }
+```
+## 7c. Logistic regression, exclude coordinates    
+
+```r
+fm <- glm(
+  no3_decline ~ altitude + mixed_forest + NO3 + TOTN_dep +       # removed TOC
+    slope_dep_vs_time + deciduous + pre + wetland + tmp + lake +
+    altitude:lake + altitude:TOTN_dep + altitude:tmp,
+  data = df_analysis, 
+  family = "binomial",
+  na.action = "na.fail")
+
+# dd3b <- dredge(fm)                       # only once
+# saveRDS(dd3b, "Data/160_all_dd3b.rds")    # save it as it takes a couple of minutes
+
+dd3b <- readRDS("Data/160_all_dd3b.rds")
+
+# subset(dd3b, delta < 1)
+subset(dd3b, delta < 2)
+
+cat("\n\nR2: \n")
+dd3b_mod1 <- get.models(dd3b, 1)[[1]]  
+# summary(dd3b_mod1)  
+
+par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
+visreg(dd3b_mod1, scale = "response")
+```
+
+![](160_Time_series_results_James_files/figure-html/unnamed-chunk-44-1.png)<!-- -->
+
+```r
+mtext("All data, exclude coordinates", outer = TRUE)
+```
+
+![](160_Time_series_results_James_files/figure-html/unnamed-chunk-44-2.png)<!-- -->
+
+```
+## Global model call: glm(formula = no3_decline ~ altitude + mixed_forest + NO3 + TOTN_dep + 
+##     slope_dep_vs_time + deciduous + pre + wetland + tmp + lake + 
+##     altitude:lake + altitude:TOTN_dep + altitude:tmp, family = "binomial", 
+##     data = df_analysis, na.action = "na.fail")
+## ---
+## Model selection table 
+##        (Int)      alt      dcd     lak  mxd_frs       NO3       pre
+## 748  -0.8028 0.001544 -0.01404         -0.02463           0.0008357
+## 752  -1.0540 0.001633 -0.01393 0.01366 -0.02479           0.0008393
+## 768  -1.0720 0.001502 -0.01461 0.01708 -0.02409 0.0006587 0.0009164
+## 764  -0.7734 0.001439 -0.01450         -0.02409 0.0004394 0.0008863
+## 1776 -1.1990 0.001987 -0.01354 0.02487 -0.02481           0.0008726
+## 2800 -0.8956 0.001002 -0.01457 0.01537 -0.02380           0.0008987
+## 1792 -1.2080 0.001844 -0.01419 0.02767 -0.02412 0.0006497 0.0009478
+## 2796 -0.7000 0.001191 -0.01441         -0.02404           0.0008677
+## 1004 -0.7961 0.001484 -0.01435         -0.02501           0.0008602
+##      slp_dep_vs_tim     tmp   TOT_dep     wtl    alt:lak   alt:tmp df   logLik
+## 748        -0.04075 -0.3233           0.02886                       8 -237.997
+## 752        -0.04181 -0.3233           0.03039                       9 -237.050
+## 768        -0.03829 -0.3400           0.03267                      10 -236.197
+## 764        -0.03833 -0.3347           0.03015                       9 -237.581
+## 1776       -0.04113 -0.3302           0.03161 -3.099e-05           10 -236.621
+## 2800       -0.04254 -0.3764           0.03183            1.259e-04 10 -236.765
+## 1792       -0.03760 -0.3467           0.03382 -2.990e-05           11 -235.789
+## 2796       -0.04111 -0.3522           0.02958            6.895e-05  9 -237.907
+## 1004       -0.03536 -0.3395 0.0002688 0.02897                       9 -237.915
+##       AICc delta weight
+## 748  492.3  0.00  0.190
+## 752  492.5  0.19  0.172
+## 768  492.9  0.58  0.142
+## 764  493.6  1.25  0.101
+## 1776 493.7  1.42  0.093
+## 2800 494.0  1.71  0.081
+## 1792 494.2  1.86  0.075
+## 2796 494.2  1.90  0.073
+## 1004 494.2  1.92  0.073
+## Models ranked by AICc(x) 
+## 
+## 
+## R2:
 ```
 

@@ -10,17 +10,27 @@ output:
 
 ---
 
+**NOTE: this script has been 'abandoned'**   
+* instead see script '160parm...' which is run using '160parm_run...', producing 160a, b and c 
+
 Analysis of NO3 decrease, based on James' trend results    
 * Taken from `https://github.com/JamesSample/icpw2/tree/master/thematic_report_2020/results`   
-* Sen slope of NO3, TOTN, TOC/TON etc.  
-* Predictor variable in all analyses are *whether NO3 decreases or not*     
-* Basically 3 sets of identical analyses (5,6,7) which only differ in data set (5 has the largest set of variables and the lowest sample size)  
+* Sen slope of NO3, TOTN, TOC/TON etc. 1992-2016
+* Response variable in all analyses are *whether NO3 decreases or not*     
+* Predictors:
+    - slope_dep_vs_time: Trend in Tot-N deposition 1992-2016    
+    - NO3, TOTN_dep: Medians of NO3, TOTN_dep (Tot-N deposition) 1992-2016   
+    - TOC: Medians of TOC 1992-2016 (section 5 and 6 only)     
+    - pre, tmp: mean precipitation + temp   
+    - catchment_area (section 5 only)   
+    - Land cover   
+* Basically 3 sets of identical analyses (5,6,7) which only differ in data set (5 has the largest set of variables and the lowest sample size)   
 
 
 ## 1. Libraries  
 ```{r, results='hide', message=FALSE, warning=FALSE}
 
-# All of tehse packages cn be loaded at once using library(tidyverse). (I just like to be specific.)
+# All of these packages cn be loaded at once using library(tidyverse). (I just like to be specific.)
 library(dplyr)
 library(tidyr)
 library(purrr)
@@ -48,6 +58,8 @@ library(party)
 library(evtree)
 # install.packages("randomForest")
 library(randomForest)
+library(randomForestExplainer)
+library(pdp)
 
 library(maps)
 my_map <- map_data("world")
@@ -59,6 +71,14 @@ knitr::opts_chunk$set(results = 'hold')
 knitr::opts_chunk$set(warning = FALSE)
 
 ```
+
+```{r}
+
+# run_randomForestExplainer <- TRUE
+run_randomForestExplainer <- FALSE
+
+```
+
 
 
 ## 2. Data
@@ -83,49 +103,68 @@ df_station <- read_excel(
 
 ```
 
-### James results  
+### James' trends and medians     
 ```{r}
 
 #
 # Regression results
 #
-# fn <- "https://raw.githubusercontent.com/JamesSample/icpw2/master/thematic_report_2020/results/trends_1992-2016_toc_totn_no3_relax_italy/trends_1992-2016_toc_totn_no3_relax_italy_results.csv"
-fn <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/trends_1992-2016_no3/trends_1992-2016_no3_results.csv"
+folder <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/trends_1992-2016_no3"
+file <- "trends_1992-2016_no3_results.csv"
+fn <- paste0(folder, "/", file)
+
 reg_no3 <- read.csv(fn, encoding = "UTF-8")
-nrow(reg_no3)
+cat("Regression results:", sQuote(file), ",n =", nrow(reg_no3), "\n\n")
 
 # Station metadata
-fn <- "https://raw.githubusercontent.com/JamesSample/icpw2/master/thematic_report_2020/results/trends_1992-2016_toc_totn_no3_relax_italy/trends_1992-2016_toc_totn_no3_relax_italy_stations.csv"
-fn <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/trends_1992-2016_no3/trends_1992-2016_no3_stations.csv"
-reg_no3_st <- read.csv(fn, encoding = "UTF-8")
+file <- "trends_1992-2016_no3_stations.csv"
+fn <- paste0(folder, "/", file)
 
-# xtabs(~variable, reg_no3)  
+reg_no3_st <- read.csv(fn, encoding = "UTF-8")
+cat("Regression result metadata:", sQuote(file), ",n =", nrow(reg_no3_st), "\n\n")
+
+cat("Countries with trends: \n")
 xtabs(~country, reg_no3_st)  
 
 #
-# Medians
+# Medians NO3
 #
-fn <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/medians_2012-2016/medians_2012-2016_no3.csv"
-medians_no3 <- read.csv(fn, encoding = "UTF-8")
-nrow(medians_no3)
-
 
 if (FALSE){
-  # Check Germany:
-  x <- reg_no3_st %>% filter(country == "Germany") %>% pull(station_id)
-  medians_no3 %>% filter(station_id %in% x) %>% View()  # only 3 stations??
 
-  # Dounle check by reading and adding metadata 
-  fn <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/medians_2012-2016/medians_2012-2016_no3_stations.csv"
+  # OLD: 2012-2016 medians NO3  
+
+  cat("--------------------------------------------------------------------------\n")
+  folder <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/medians_2012-2016"
+  file <- "medians_2012-2016_no3.csv"
+  fn <- paste0(folder, "/", file)
+  # data:
+  medians_no3 <- read.csv(fn, encoding = "UTF-8")
+  cat("Medians NO3:", sQuote(file), ",n =", nrow(medians_no3), "\n\n")
+  file <- "medians_2012-2016_no3_stations.csv"
+  fn <- paste0(folder, "/", file)
+  # metadata:
   medians_no3_st <- read.csv(fn, encoding = "UTF-8")
-  medians_no3 <- medians_no3 %>% left_join(medians_no3_st)
-  medians_no3 %>% filter(country %in% "Germany") %>% View()  # still only 3 stations
-
+  cat("Median metadata (not used):", sQuote(file), "n =", nrow(medians_no3_st), "\n\n")
+  # stats:
+  cat("Countries with medians: \n")
+  xtabs(~country, medians_no3_st)  
+  
+  #
+  #  OLD: 2012-2016 Medians TOC
+  #
+  cat("--------------------------------------------------------------------------\n")
+  
+  file <- "medians_2012-2016_toc_totn_no3_nh4.csv"
+  fn <- paste0(folder, "/", file)
+  
+  medians_toc <- read.csv(fn, encoding = "UTF-8")
+  cat("Medians TOC:", sQuote(file), ",n =", nrow(medians_toc), "\n\n")
+  
+  cat("Countries with medians: \n")
+  xtabs(~country, medians_no3_st)  
+  
 }
-
-fn <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/medians_2012-2016/medians_2012-2016_toc_totn_no3_nh4.csv"
-medians_toc <- read.csv(fn, encoding = "UTF-8")
-nrow(medians_toc)
 
 
 ```
@@ -134,74 +173,148 @@ With slope regression data
 * Make one line per station  
 ```{r}
 
+# table(reg_no3$variable)
+
+# Slope 
 df1 <- reg_no3 %>%
   filter(variable %in% c("NO3-N_µg/l N", "TOC/TON")) %>%
   select(station_id, variable, sen_slp) %>%
-  tidyr::pivot_wider(names_from = "variable", values_from = "sen_slp")
+  tidyr::pivot_wider(names_from = "variable", values_from = "sen_slp") %>%
+  rename(slope_no3_vs_time = `NO3-N_µg/l N`, 
+         slope_tocton_vs_time = `TOC/TON`)
+  
+# Slope p-value
 df2 <- reg_no3 %>%
   filter(variable %in% c("NO3-N_µg/l N", "TOC/TON")) %>%
   select(station_id, variable, mk_p_val) %>%
-  tidyr::pivot_wider(names_from = "variable", values_from = "mk_p_val")
+  tidyr::pivot_wider(names_from = "variable", values_from = "mk_p_val") %>%
+  rename(p_no3_vs_time = `NO3-N_µg/l N`, 
+         p_tocton_vs_time = `TOC/TON`)
 
-names(df1)[2:3] <- c("slope_no3_vs_time", "slope_tocton_vs_time")
-names(df2)[2:3] <- c("p_no3_vs_time", "p_tocton_vs_time")
+# Medians
+df3 <- reg_no3 %>%
+  filter(variable %in% c("NO3-N_µg/l N", "TOC_mg C/l")) %>%
+  select(station_id, variable, median) %>%
+  tidyr::pivot_wider(names_from = "variable", values_from = "median") %>%
+  rename(NO3 = `NO3-N_µg/l N`, 
+         TOC = `TOC_mg C/l`)
 
-dat <- full_join(df1, df2, by = "station_id")
+cat("\n")
+cat("df1, n =", nrow(df1), "\n")
+cat("df2, n =", nrow(df2), "\n")
+cat("df3, n =", nrow(df3), "\n")
+
+dat <- df1 %>%
+  full_join(df2, by = "station_id") %>%
+  full_join(df3, by = "station_id")
+
+cat("dat, n =", nrow(dat), "\n")
 
 ```
 
-### Deposition Theil-Senslope   
-```{r}
+```{r, echo = FALSE}
 
-### Get deposition  
-df_deposition <- readRDS("Data/100_Deposition.rds") %>%
-  as.data.frame()
+# ### Deposition OLD    
+# * Data from K or github 
+# * calculate regression (Theil-Senslope 1992-2016)  
+# * calculate medians (2012-2016)
 
-# TEST Senslope
-# df_test <- df_deposition %>% filter(station_id == 38115)
-# result <- rkt(df_test$year, df_test$TOTN_dep)
-# data.frame(station_id = 38115, TOTN_dep_P = result$sl, TOTN_dep_slope = result$B)
-
-# Function for Sen slope
-get_senslope <- function(data){
-  result <- rkt(data$year, data$TOTN_dep)
-  data.frame(station_id = data$station_id[1], slope_dep_vs_time = result$B, p_dep_vs_time = result$sl)
+if (FALSE){
+  
+  ### version 1: Get deposition (annual) from K     
+  # df_deposition <- readRDS("Data/100_Deposition.rds") %>%
+  #   as.data.frame()
+  
+  ### version 2: Get deposition (annual) from github     
+  fn <- "https://github.com/JamesSample/icpw2/raw/master/deposition_data/csv/icpw_totn_dep_1990-2016_all_stns.csv"
+  df_deposition <- read.csv(fn) %>%
+    tidyr::pivot_longer(-station_id,
+                        names_to = "year", names_prefix = "X", names_transform = list(year = as.numeric),
+                        values_to = "TOTN_dep")
+  
+  cat("n =", nrow(df_deposition), "\n")
+  cat("range =", range(df_deposition$year), "\n")
+  
+  df_deposition <- df_deposition %>%
+    filter(year %in% 1992:2016)
+  
+  cat("\nNumber of years per station: \n")
+  df_deposition %>%
+    count(station_id) %>%
+    xtabs(~n, .)  
+  cat("\n")
+  
+  # test Senslope function
+  # df_test <- df_deposition %>% filter(station_id == 38115)
+  # result <- rkt(df_test$year, df_test$TOTN_dep)
+  # data.frame(station_id = 38115, TOTN_dep_P = result$sl, TOTN_dep_slope = result$B)
+  
+  # Function for Sen slope
+  get_senslope <- function(data){
+    result <- rkt(data$year, data$TOTN_dep)
+    data.frame(station_id = data$station_id[1], slope_dep_vs_time = result$B, p_dep_vs_time = result$sl)
+  }
+  
+  df_deposition_slope <- df_deposition %>%
+    split(.$station_id) %>% # str()
+    purrr::map_dfr(get_senslope)  
+  cat("Slope: n =", nrow(df_deposition_slope), "\n")
+  
+  
+  df_deposition_median <- df_deposition %>%
+    filter(year %in% 2012:2016) %>%
+    group_by(station_id) %>%
+    summarise(TOTN_dep = median(TOTN_dep))  
+  cat("Median: n =", nrow(df_deposition_median), "\n")
+  
 }
 
-df_deposition_slope <- df_deposition %>%
-  split(.$station_id) %>% # str()
-  purrr::map_dfr(get_senslope)  
+```
+### Deposition trends and median 1992-2006     
+```{r}
+
+fn <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/deposition/totn_dep_trends_icpw_stns.csv"  
+
+df_deposition <- read.csv(fn) %>% 
+  filter(variable == "totn_mgNpm2")  
+
+cat("n =", nrow(df_deposition), "\n")
 
 ```
 
-
-### Add deposition slope to data  
+### Add deposition slope and medians to data  
 ```{r}
 
-nrow(dat)
-dat <- left_join(dat, 
-                 df_deposition_slope,
+cat("dat, n =", nrow(dat), "\n")
+
+dat <- dat %>% 
+  left_join(df_deposition %>% 
+              select(station_id, median, sen_slp, mk_p_val) %>%
+              rename(TOTN_dep = median,
+                     slope_dep_vs_time = sen_slp,
+                     p_dep_vs_time = mk_p_val),
                  by = "station_id")
 
-nrow(dat)
+cat("dat, n =", nrow(dat), "\n")
 
+# names(dat)
 
 ```
 ### Add medians and station metadata   
 ```{r}
 
-nrow(dat)
 dat <- dat %>%
-  left_join(medians_no3, by = "station_id") %>%
-  # left_join(medians_toc, by = "station_id") %>%   # not needed, overlap in variables  
   left_join(reg_no3_st, by = "station_id")
-nrow(dat)
+
+cat("dat, n =", nrow(dat), "\n")
 
 # Simplify names by removing units
 # names(dat)
-names(dat) <- sub(".N_µg.l.N", "", names(dat))
-names(dat) <- sub("_mg.C.l", "", names(dat))
-names(dat) <- sub("_µg.l.P", "", names(dat))
+# names(dat) <- sub(".N_µg.l.N", "", names(dat))
+# names(dat) <- sub("_mg.C.l", "", names(dat))
+# names(dat) <- sub("_µg.l.P", "", names(dat))
+
+cat("\nVariable names: \n")
 names(dat)
 
 
@@ -210,32 +323,33 @@ names(dat)
 ### Add climate and deposition means 
 ```{r}
 
-df_climate <- readRDS("Data/100_Climate.rds")
+df_climate <- readRDS("Data/100_Climate.rds") %>%
+  filter(year %in% 1992:2006)
 
 df_climate_mean <- df_climate %>%
   group_by(station_id, variable) %>% 
-  summarise(mean = mean(value)) %>%
+  summarise(mean = mean(value), .groups = "drop") %>%
   tidyr::pivot_wider(names_from = "variable", values_from = "mean")
-
-df_deposition_mean <-
-  df_deposition %>% 
-  group_by(station_id) %>% 
-  summarise(Mean_dep = mean(TOTN_dep))
 
 # Add
 dat <- dat %>%
-  left_join(df_climate_mean, by = "station_id") %>%
-  left_join(df_deposition_mean, by = "station_id")
-nrow(dat)
+  left_join(df_climate_mean, by = "station_id")
+
+cat("dat, n =", nrow(dat), "\n")
 
 ```
 
 ### Add land cover    
+* Combine: bare_sparse = bare_rock + sparsely_vegetated + glacier   
+* Select: coniferous, deciduous, lake, mixed_forest, wetland, bare_sparse   
 ```{r}
 
 fn <- "K:/Prosjekter/langtransporterte forurensninger/O-23300 - ICP-WATERS - HWI/Faglige rapporter/2020 report/Land cover/ICPW_All_Stations_2020_2020_05_04.xlsx"
 
-df_station <- read_excel(fn)
+df_station <- read_excel(fn) %>%
+  mutate(bare_sparse = bare_rock + sparsely_vegetated + glacier,
+         decid_mixed = deciduous + mixed_forest,
+         lake_water = lake + water_ex_lake)
 
 nrow(dat)
 dat <- left_join(dat, 
@@ -244,9 +358,42 @@ dat <- left_join(dat,
 )
 
 nrow(dat)
+names(dat) %>% paste(collapse = " + ") 
 
 ```
 
+```{r, echo = FALSE}
+
+### Check other land cover files  
+
+if (FALSE){
+  
+  df1 <- read_excel(fn)
+  nrow(df1)
+  
+  fn <- "K:/Prosjekter/langtransporterte forurensninger/O-23300 - ICP-WATERS - HWI/Faglige rapporter/2020 report/Land cover/all_icpw_sites_may_2020.xlsx" 
+  
+  df2 <- read_excel(fn)
+  nrow(df2)
+  
+  fn <- "K:/Prosjekter/langtransporterte forurensninger/O-23300 - ICP-WATERS - HWI/Faglige rapporter/2020 report/Land cover/ICPW_All_Stations_2020_land cover_2020_05_04.xlsx"
+  
+  df3 <- read_excel(fn)
+  nrow(df3)
+  
+  names(df1)
+  names(df2)
+  names(df3)
+  
+  names(df1) == names(df3)
+  apply(is.na(df1), 2, sum) == apply(is.na(df3), 2, sum)
+  
+  for (i in 1:19)
+    cat(i, ":", mean(df1[[i]] != df3[[i]], na.rm = TRUE), "\n")
+  
+}
+
+```
 
 
 ## 3. Plot estimates  
@@ -299,13 +446,20 @@ df_analysis <- dat %>%
       TRUE ~ 0)
   ) %>%
   select(no3_decline, slope_dep_vs_time,
-         NO3, TOC,
-    latitude, longitude, altitude, 
-    pre, tmp, catchment_area,
-    coniferous, deciduous, lake, mixed_forest, wetland)
+         NO3, TOC, TOTN_dep,
+         latitude, longitude, altitude,
+         pre, tmp, catchment_area,
+         urban, cultivated, 
+         coniferous, decid_mixed, 
+         total_shrub_herbaceous, 
+         wetland, lake_water, 
+         bare_sparse)
 
-# Complete cases
-apply(is.na(df_analysis), 2, sum)
+# names(dat) %>% paste(collapse = ", ")
+
+cat("Number of missing values per variable: \n")
+apply(is.na(df_analysis), 2, sum) 
+cat("\n")
 
 # What is missing? (long output)
 if (FALSE){
@@ -314,84 +468,31 @@ dat %>%
   purrr::map(~apply(is.na(.), 2, mean))
 }
 
+cat("Number of complete observations: \n")
 complete <- complete.cases(df_analysis)
 table(complete)
+
+cat("\n\n")
+cat("Number of complete observations by country: \n")
 table(dat$country, complete)
 
 # Keep only complete cases
 df_analysis <- df_analysis[complete.cases(df_analysis),]
 
+cat("\n\n")
+cat("Original data: n =", nrow(dat), "\n")
+cat("Analysis: n =", nrow(df_analysis), "\n")
 
 
 ```
 
 
-## 5b. Logistic regression, all variables  
-```{r, results  = "hold"}
-
-
-# Full model  
-fm <- glm(
-  no3_decline ~ .,
-  data = df_analysis, 
-  family = "binomial",
-  na.action = "na.fail")
-
-# Dredging for best model
-# dd1a <- dredge(fm)                           # only once
-# saveRDS(dd1a, "Data/160_all_dd1a.rds")    # save it as it takes a couple of minutes
-
-# Read dredge result
-dd1a <- readRDS("Data/160_all_dd1a.rds")
-
-# Check best models  
-subset(dd1a, delta < 1)
-
-cat("\n\nR2: \n")
-dd1a_mod1 <- get.models(dd1a, 1)[[1]]  
-# summary(dd1a_mod1)  
-
-par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
-visreg(dd1a_mod1, scale = "response")
-mtext("All data, include coordinates", outer = TRUE)
-
-```
-
-## 5c. Logistic regression, exclude coordinates    
-```{r, results  = "hold"}
-
-fm <- glm(
-  no3_decline ~ slope_dep_vs_time + NO3 + TOC +
-    altitude + 
-    pre + tmp + catchment_area +
-    coniferous + deciduous + lake + mixed_forest + 
-    wetland,
-  data = df_analysis, 
-  family = "binomial",
-  na.action = "na.fail")
-
-# dd1b <- dredge(fm)                       # only once
-# saveRDS(dd1b, "Data/160_all_dd1b.rds")    # save it as it takes a couple of minutes
-
-dd1b <- readRDS("Data/160_all_dd1b.rds")
-
-subset(dd1b, delta < 1)
-
-cat("\n\nR2: \n")
-dd1b_mod1 <- get.models(dd1b, 1)[[1]]  
-# summary(dd1b_mod1)  
-
-par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
-visreg(dd1b_mod1, scale = "response")
-mtext("All data, exclude coordinates", outer = TRUE)
-
-```
 
 
 
 
-## 5d. Tree and forest classification
 
+## 5b. Tree and forest classification
 
 
 ### Split into training and validation data
@@ -472,53 +573,84 @@ table(pred_valid, valid_set$no3_decline_f)
 
 ```
 
-#### Random forest, importance (but see separate result file)  
-High MeanDecreaseGini = high importance in model  
+#### Random forest, importance of variables
 ```{r}
 
-randomForest::importance(model1)
-varImpPlot(model1)
+# Calculation
+importance <- measure_importance(model1)
 
 ```
 
-#### Random forest, partial effects   
-* NOt easy to interpret    
-```{r, fig.height=7, fig.width = 10}
-
-imp <- randomForest::importance(model1)
-impvar1 <- rownames(imp)[order(imp[, 2], decreasing=TRUE)]
-
-# impvar1 <- readRDS("Data/130_impvar1.rmd")
-
-par(mfrow=c(3,4))
-
-for (i in seq_along(impvar1)) {
-  partialPlot(x = model1, 
-              pred.data = train_set, 
-              x.var = impvar1[i], 
-              which.class = "1",
-              main=paste("Effect of", impvar1[i]))
-}
-
-
-
-```
-#### randomForestExplainer
 ```{r}
 
-# install.packages("randomForestExplainer")
-library(randomForestExplainer)
+plot_multi_way_importance(importance, size_measure = "no_of_nodes", no_of_labels = 12)  
+plot_multi_way_importance(importance, x_measure = "accuracy_decrease", y_measure = "gini_decrease", 
+                          size_measure = "p_value", no_of_labels = 12)
 
-# COPY to console and run (this will create an Rmd file and render an HTML file):
-# DON'T rin ith within this chunk, RStudio will hang
+```
 
-if (FALSE){
-  explain_forest(model1, interactions = TRUE, data = train_set, 
-                 path = "C:/Data/seksjon 317/icpw-R/160_randomforest_James_data_model1.html")
+#### Random forest, show partial effects  
+
+```{r, warning=FALSE, message=FALSE, results='hide'}
+
+variables_for_plot <- importance %>%
+  mutate(variable = levels(variable)[as.numeric(variable)]) %>%
+  arrange(desc(gini_decrease)) %>%
+  pull(variable) %>%
+  head(12)
+
+
+# Caclulation
+plotdata <- NULL  # will be list for storing results
+
+for (i in 1:6){
+  varno1 <- c(1,3,5,7,9,11)[i]
+  varno2 <- varno1 + 1
+  plotdata[[i]] <- model1 %>%
+    partial(pred.var = variables_for_plot[c(varno1, varno2)], chull = TRUE, progress = "text", 
+            which.class = "1", prob = TRUE) 
 }
 
 ```
 
+
+```{r, warning=FALSE}
+
+for (i in 1:6){
+    autoplot(plotdata[[i]], contour = TRUE, legend.title = "Probability\nNO3 decline") %>%
+    print()
+}
+
+```
+
+
+## 5c. Logistic regression, exclude coordinates    
+```{r, results  = "hold"}
+
+fm <- glm(
+  no3_decline ~ catchment_area + TOC + 
+    altitude + decid_mixed + slope_dep_vs_time + 
+    TOC + NO3 + TOTN_dep + catchment_area + coniferous +
+    tmp + lake_water + wetland,
+  data = df_analysis, 
+  family = "binomial",
+  na.action = "na.fail")
+
+dd1b <- dredge(fm)                       # only once
+saveRDS(dd1b, "Data/160_all_dd1b.rds")    # save it as it takes a couple of minutes
+# dd1b <- readRDS("Data/160_all_dd1b.rds")
+
+# subset(dd1b, delta < 1)
+subset(dd1b, delta < 2)
+
+cat("\n\nR2: \n")
+dd1b_mod1 <- get.models(dd1b, 1)[[1]]  
+# summary(dd1b_mod1)  
+
+par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
+visreg(dd1b_mod1, scale = "response")
+
+```
 
 
 
@@ -534,101 +666,54 @@ df_analysis <- dat %>%
       slope_no3_vs_time < 0 & p_no3_vs_time <= 0.05 ~ 1,
       TRUE ~ 0)
   ) %>%
-  select(no3_decline, slope_dep_vs_time,
-         NO3, TOC,
-    latitude, longitude, altitude, 
-    pre, tmp, 
-    coniferous, deciduous, lake, mixed_forest, wetland)
+  select(country, no3_decline, slope_dep_vs_time,
+         NO3, TOC, TOTN_dep,
+         latitude, longitude, altitude, 
+         pre, tmp, 
+         urban, cultivated, deciduous, coniferous, mixed_forest, total_shrub_herbaceous, 
+         wetland, lake, bare_sparse)
+  
+  
 
-# Complete cases
-apply(is.na(df_analysis), 2, sum)
+cat("Number of missing values per variable: \n")
+apply(is.na(df_analysis), 2, sum) 
+cat("\n")
 
-complete <- complete.cases(df_analysis)
-table(complete)
-table(dat$country, complete)
-
-# What is missing? (long output)  
-# Germany is missing TOC (87%)
+# What is missing? (long output)
 if (FALSE){
-dat %>% 
-  split(.$country) %>%
-  purrr::map(~apply(is.na(.), 2, mean))
+  df <- df_analysis %>% 
+    mutate(country = substr(country, 1, 3)) %>%
+    split(.$country) %>%
+    purrr::map_dfr(~apply(is.na(.), 2, mean) %>% round(2), .id = "Country")
+  names(df) <- substr(names(df), 1, 9)
+  df
+  
 }
 
+cat("Number of complete observations: \n")
+complete <- complete.cases(df_analysis)
+table(complete)
+
+cat("\n\n")
+cat("Number of complete observations by country: \n")
+table(dat$country, complete)
 
 # Keep only complete cases
-df_analysis <- df_analysis[complete.cases(df_analysis),]
+df_analysis <- df_analysis[complete.cases(df_analysis),] %>%
+  select(-country)
+
+cat("\n\n")
+cat("Original data: n =", nrow(dat), "\n")
+cat("Analysis: n =", nrow(df_analysis), "\n")
 
 
 
 ```
 
 
-## 6b. Logistic regression, all variables  
-```{r, results  = "hold"}
 
 
-# Full model  
-fm <- glm(
-  no3_decline ~ .,
-  data = df_analysis, 
-  family = "binomial",
-  na.action = "na.fail")
-
-# Dredging for best model
-# dd2a <- dredge(fm)                           # only once
-# saveRDS(dd2a, "Data/160_all_dd2a.rds")    # save it as it takes a couple of minutes
-
-# Read dredge result
-dd2a <- readRDS("Data/160_all_dd2a.rds")
-
-# Check best models  
-subset(dd2a, delta < 1)
-
-cat("\n\nR2: \n")
-dd2a_mod1 <- get.models(dd2a, 1)[[1]]  
-# summary(dd2a_mod1)  
-
-par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
-visreg(dd2a_mod1, scale = "response")
-mtext("All data, include coordinates", outer = TRUE)
-
-```
-
-## 6c. Logistic regression, exclude coordinates    
-```{r, results  = "hold"}
-
-fm <- glm(
-  no3_decline ~ slope_dep_vs_time + NO3 + TOC +
-    altitude + 
-    pre + tmp + 
-    coniferous + deciduous + lake + mixed_forest + 
-    wetland,
-  data = df_analysis, 
-  family = "binomial",
-  na.action = "na.fail")
-
-# dd2b <- dredge(fm)                       # only once
-# saveRDS(dd2b, "Data/160_all_dd2b.rds")    # save it as it takes a couple of minutes
-
-dd2b <- readRDS("Data/160_all_dd2b.rds")
-
-subset(dd2b, delta < 1)
-
-cat("\n\nR2: \n")
-dd2b_mod1 <- get.models(dd2b, 1)[[1]]  
-# summary(dd2b_mod1)  
-
-par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
-visreg(dd2b_mod1, scale = "response")
-mtext("All data, exclude coordinates", outer = TRUE)
-
-```
-
-
-
-
-## 6d. Tree and forest classification
+## 6b. Tree and forest classification
 
 
 ### Split into training and validation data
@@ -710,57 +795,88 @@ table(pred_valid, valid_set$no3_decline_f)
 
 ```
 
-#### Random forest, importance (but see separate result file)  
-High MeanDecreaseGini = high importance in model  
+
+#### Random forest, importance of variables
 ```{r}
 
-randomForest::importance(model2)
-varImpPlot(model2)
+# Calculation
+importance <- measure_importance(model2)
 
 ```
 
-#### Random forest, partial effects   
-* NOt easy to interpret    
-```{r, fig.height=7, fig.width = 10}
-
-imp <- randomForest::importance(model2)
-impvar1 <- rownames(imp)[order(imp[, 2], decreasing=TRUE)]
-
-# impvar1 <- readRDS("Data/130_impvar1.rmd")
-
-par(mfrow=c(3,4))
-
-for (i in seq_along(impvar1)) {
-  partialPlot(x = model2, 
-              pred.data = train_set, 
-              x.var = impvar1[i], 
-              which.class = "1",
-              main=paste("Effect of", impvar1[i]))
-}
-
-
-
-```
-#### randomForestExplainer
 ```{r}
 
-# install.packages("randomForestExplainer")
-library(randomForestExplainer)
+plot_multi_way_importance(importance, size_measure = "no_of_nodes", no_of_labels = 12)  
+plot_multi_way_importance(importance, x_measure = "accuracy_decrease", y_measure = "gini_decrease", 
+                          size_measure = "p_value", no_of_labels = 12)
 
-# COPY to console and run (this will create an Rmd file and render an HTML file):
-# DON'T rin ith within this chunk, RStudio will hang
+```
 
-if (FALSE){
-  explain_forest(model2, interactions = TRUE, data = train_set, 
-                 path = "C:/Data/seksjon 317/icpw-R/160_randomforest_James_data_model2.html")
+#### Random forest, show partial effects  
+
+```{r, warning=FALSE, message=FALSE, results='hide'}
+
+variables_for_plot <- importance %>%
+  mutate(variable = levels(variable)[as.numeric(variable)]) %>%
+  arrange(desc(gini_decrease)) %>%
+  pull(variable) %>%
+  head(12)
+
+# Caclulation
+plotdata <- NULL  # will be list for storing results
+
+for (i in 1:6){
+  varno1 <- c(1,3,5,7,9,11)[i]
+  varno2 <- varno1 + 1
+  plotdata[[i]] <- model2 %>%
+    partial(pred.var = variables_for_plot[c(varno1, varno2)], chull = TRUE, progress = "text", 
+            which.class = "1", prob = TRUE) 
 }
 
 ```
 
 
+```{r, warning=FALSE}
 
-## 7a. Data EXCLUDING catchment_area, TOC and NO3    
-* Includes USA data, still missing UK and most German data      
+for (i in 1:6){
+    autoplot(plotdata[[i]], contour = TRUE, legend.title = "Probability\nNO3 decline") %>%
+    print()
+}
+
+```
+
+
+## 6c. Logistic regression, exclude coordinates    
+```{r, results  = "hold"}
+
+fm <- glm(
+  no3_decline ~ TOC + 
+    altitude + decid_mixed + slope_dep_vs_time + 
+    TOC + NO3 + TOTN_dep + catchment_area + coniferous +
+    tmp + lake_water + wetland,
+  data = df_analysis, 
+  family = "binomial",
+  na.action = "na.fail")
+
+dd2b <- dredge(fm)                       # only once
+saveRDS(dd2b, "Data/160_all_dd2b.rds")    # save it as it takes a couple of minutes
+# dd2b <- readRDS("Data/160_all_dd2b.rds")
+
+# subset(dd2b, delta < 1)
+subset(dd2b, delta < 2)
+
+cat("\n\nR2: \n")
+dd2b_mod1 <- get.models(dd2b, 1)[[1]]  
+# summary(dd2b_mod1)  
+
+par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
+visreg(dd2b_mod1, scale = "response")
+
+```
+
+
+## 7a. Data EXCLUDING catchment_area and TOC    
+* Includes USA data, still missing Estonia (missing altitude) and UK (mising land cover)      
 *  Germany is missing TOC (87%), UK is missing land cover (100%)
 ```{r}
 
@@ -771,101 +887,52 @@ df_analysis <- dat %>%
       slope_no3_vs_time < 0 & p_no3_vs_time <= 0.05 ~ 1,
       TRUE ~ 0)
   ) %>%
-  select(country, station_code, no3_decline, slope_dep_vs_time,
-    latitude, longitude, altitude, 
-    pre, tmp, 
-    coniferous, deciduous, lake, mixed_forest, wetland)
+  select(country,
+         no3_decline, slope_dep_vs_time, 
+         TOTN_dep, NO3,
+         latitude, longitude, altitude, 
+         pre, tmp, 
+         urban, cultivated, deciduous, coniferous, mixed_forest, total_shrub_herbaceous, 
+         wetland, lake, bare_sparse)
 
-# Complete cases
-apply(is.na(df_analysis), 2, sum)
 
-complete <- complete.cases(df_analysis)
-table(complete)
-table(df_analysis$country, complete)
+cat("Number of missing values per variable: \n")
+apply(is.na(df_analysis), 2, sum) 
+cat("\n")
 
-# What is missing? (long output)  
-# Germany is missing NO3 (87%)
+# What is missing? (long output)
 if (FALSE){
-df_analysis %>% 
-  split(.$country) %>%
-  purrr::map(~apply(is.na(.), 2, mean))
+  df <- df_analysis %>% 
+    mutate(country = substr(country, 1, 8)) %>%
+    split(.$country) %>%
+    purrr::map_dfr(~apply(is.na(.), 2, mean) %>% round(2), .id = "Country")
+  names(df) <- substr(names(df), 1, 9)
+  df
 }
 
+cat("Number of complete observations: \n")
+complete <- complete.cases(df_analysis)
+table(complete)
+
+cat("\n\n")
+cat("Number of complete observations by country: \n")
+table(dat$country, complete)
 
 # Keep only complete cases
 df_analysis <- df_analysis[complete.cases(df_analysis),] %>%
-  select(-country, -station_code)
+  select(-country)
+
+cat("\n\n")
+cat("Original data: n =", nrow(dat), "\n")
+cat("Analysis: n =", nrow(df_analysis), "\n")
 
 
 
 ```
 
 
-## 7b. Logistic regression, all variables  
-```{r, results  = "hold"}
 
-
-# Full model  
-fm <- glm(
-  no3_decline ~ .,
-  data = df_analysis, 
-  family = "binomial",
-  na.action = "na.fail")
-
-# Dredging for best model
-# dd3a <- dredge(fm)                           # only once
-# saveRDS(dd3a, "Data/160_all_dd3a.rds")    # save it as it takes a couple of minutes
-
-# Read dredge result
-dd3a <- readRDS("Data/160_all_dd3a.rds")
-
-# Check best models  
-subset(dd3a, delta < 1)
-
-cat("\n\nR2: \n")
-dd3a_mod1 <- get.models(dd3a, 1)[[1]]  
-# summary(dd3a_mod1)  
-
-par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
-visreg(dd3a_mod1, scale = "response")
-mtext("All data, include coordinates", outer = TRUE)
-
-```
-
-## 7c. Logistic regression, exclude coordinates    
-```{r, results  = "hold"}
-
-fm <- glm(
-  no3_decline ~ slope_dep_vs_time + 
-    altitude + 
-    pre + tmp + 
-    coniferous + deciduous + lake + mixed_forest + 
-    wetland,
-  data = df_analysis, 
-  family = "binomial",
-  na.action = "na.fail")
-
-# dd3b <- dredge(fm)                       # only once
-# saveRDS(dd3b, "Data/160_all_dd3b.rds")    # save it as it takes a couple of minutes
-
-dd3b <- readRDS("Data/160_all_dd3b.rds")
-
-subset(dd3b, delta < 1)
-
-cat("\n\nR2: \n")
-dd3b_mod1 <- get.models(dd3b, 1)[[1]]  
-# summary(dd3b_mod1)  
-
-par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
-visreg(dd3b_mod1, scale = "response")
-mtext("All data, exclude coordinates", outer = TRUE)
-
-```
-
-
-
-
-## 7d. Tree and forest classification
+## 7b. Tree and forest classification
 
 
 ### Split into training and validation data   
@@ -947,50 +1014,79 @@ table(pred_valid, valid_set$no3_decline_f)
 
 ```
 
-#### Random forest, importance (but see separate result file)  
-High MeanDecreaseGini = high importance in model  
+#### Random forest, importance of variables
 ```{r}
 
-randomForest::importance(model3)
-varImpPlot(model3)
+# Calculation
+importance <- measure_importance(model3)
 
 ```
 
-#### Random forest, partial effects   
-* NOt easy to interpret    
-```{r, fig.height=7, fig.width = 10}
-
-imp <- randomForest::importance(model3)
-impvar1 <- rownames(imp)[order(imp[, 2], decreasing=TRUE)]
-
-# impvar1 <- readRDS("Data/130_impvar1.rmd")
-
-par(mfrow=c(3,4))
-
-for (i in seq_along(impvar1)) {
-  partialPlot(x = model3, 
-              pred.data = train_set, 
-              x.var = impvar1[i], 
-              which.class = "1",
-              main=paste("Effect of", impvar1[i]))
-}
-
-
-
-```
-#### randomForestExplainer
 ```{r}
 
-# install.packages("randomForestExplainer")
-library(randomForestExplainer)
+plot_multi_way_importance(importance, size_measure = "no_of_nodes", no_of_labels = 12)  
+plot_multi_way_importance(importance, x_measure = "accuracy_decrease", y_measure = "gini_decrease", 
+                          size_measure = "p_value", no_of_labels = 12)
 
-# COPY to console and run (this will create an Rmd file and render an HTML file):
-# DON'T rin ith within this chunk, RStudio will hang
+```
 
-if (FALSE){
-  explain_forest(model3, interactions = TRUE, data = train_set, 
-                 path = "C:/Data/seksjon 317/icpw-R/160_randomforest_James_data_model3.html")
+#### Random forest, show partial effects  
+
+```{r, warning=FALSE, message=FALSE, results='hide'}
+
+variables_for_plot <- importance %>%
+  mutate(variable = levels(variable)[as.numeric(variable)]) %>%
+  arrange(desc(gini_decrease)) %>%
+  pull(variable) %>%
+  head(12)
+
+# Caclulation
+plotdata <- NULL  # will be list for storing results
+
+for (i in 1:6){
+  varno1 <- c(1,3,5,7,9,11)[i]
+  varno2 <- varno1 + 1
+  plotdata[[i]] <- model3 %>%
+    partial(pred.var = variables_for_plot[c(varno1, varno2)], chull = TRUE, progress = "text", 
+            which.class = "1", prob = TRUE) 
 }
+
+```
+
+```{r, warning=FALSE}
+
+# Plot
+for (i in 1:6){
+    autoplot(plotdata[[i]], contour = TRUE, legend.title = "Probability\nNO3 decline") %>%
+    print()
+}
+
+```
+
+## 7c. Logistic regression, exclude coordinates    
+```{r, results  = "hold"}
+
+fm <- glm(
+  no3_decline ~ altitude + decid_mixed + slope_dep_vs_time + 
+    TOC + NO3 + TOTN_dep + catchment_area + coniferous +
+    tmp + lake_water + wetland,
+  data = df_analysis, 
+  family = "binomial",
+  na.action = "na.fail")
+
+dd3b <- dredge(fm)                       # only once
+saveRDS(dd3b, "Data/160_all_dd3b.rds")    # save it as it takes a couple of minutes
+# dd3b <- readRDS("Data/160_all_dd3b.rds")
+
+# subset(dd3b, delta < 1)
+subset(dd3b, delta < 2)
+
+cat("\n\nR2: \n")
+dd3b_mod1 <- get.models(dd3b, 1)[[1]]  
+# summary(dd3b_mod1)  
+
+par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
+visreg(dd3b_mod1, scale = "response")
 
 ```
 
