@@ -36,22 +36,21 @@ params:
     - TOC: Medians of TOC 1992-2016 (section 5 and 6 only)     
     - catchment_area (section 5 only)   
     - pre, tmp: mean precipitation + temp   
-    - Land cover   
+    - Land cover 
+  
+Technical details: This html file was created was 
 
 ## 1. Libraries  
 
 ```r
 # All of these packages cn be loaded at once using library(tidyverse). (I just like to be specific.)
 library(dplyr)
-library(tidyr)
-library(purrr)
-library(lubridate)
+library(tidyr)      # pivot_wider
+library(purrr)      # 'map' functions  
+library(lubridate)  
 library(ggplot2)
 
 # Too many packages, not all are used
-# library(forcats)
-# library(mgcv)
-# library(nlme)
 library(mapview)
 library(visreg)     # visreg
 library(rkt)        # Theil -Sen Regression
@@ -59,56 +58,25 @@ library(rkt)        # Theil -Sen Regression
 library(MuMIn)      
 
 # Trees and forests
-# install.packages("party")
-# install.packages("modeltools")
-# install.packages("coin")
-# install.packages("multcomp")
-# install.packages("TH.data")
-library(party)
-# install.packages("evtree")
-library(evtree)
-# install.packages("randomForest")
+library(party)                  # ctree
+library(evtree)                 # evtree
 library(randomForest)
-library(randomForestExplainer)
-library(pdp)
+library(randomForestExplainer)  # measure_importance, plot_multi_way_importance
+library(pdp)                    # partial, autoplot
 
 library(maps)
 my_map <- map_data("world")
 
 library(effects)    # handles lme models  
 library(readxl)
+library(readr)
 
-knitr::opts_chunk$set(results = 'hold')
-knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(results = 'hold') # collect the results from a chunk  
+knitr::opts_chunk$set(warning = FALSE)  
 ```
-
-
-```r
-# run_randomForestExplainer <- TRUE
-run_randomForestExplainer <- FALSE
-```
-
 
 
 ## 2. Data
-
-```r
-dat_annual_sel <- readRDS("Data/120_dat_annual_sel.rds")
-# ts_model_list <- readRDS("Data/120_ts_model_list_linear.rds")
-# ts_model_list_wout_TOC <- readRDS("Data/120_ts_model_list_wout_TOC.rds")
-
-df_stations <- readRDS("Data/100_Stations.rds")
-df_deposition <- readRDS("Data/100_Deposition.rds")
-df_climate <- readRDS("Data/100_Climate.rds")
-```
-
-### Station metadata
-
-```r
-df_station <- read_excel(
-  "K:/Prosjekter/langtransporterte forurensninger/O-23300 - ICP-WATERS - HWI/Faglige rapporter/2020 report/Land cover/ICPW_All_Stations_2020_2020_05_04.xlsx") %>%
-  mutate(station_id = as.character(station_id))
-```
 
 ### James' trends and medians     
 
@@ -181,10 +149,12 @@ if (FALSE){
 ## 
 ## Countries with trends: 
 ## country
-##         Canada Czech Republic        Estonia        Finland        Germany        Ireland          Italy         Latvia    Netherlands 
-##            114              8              1             26             23              3              6              3              3 
-##         Norway         Poland       Slovakia         Sweden    Switzerland United Kingdom  United States 
-##             83              6             12             92              6             21             91
+##         Canada Czech Republic        Estonia        Finland        Germany        Ireland 
+##            114              8              1             26             23              3 
+##          Italy         Latvia    Netherlands         Norway         Poland       Slovakia 
+##              6              3              3             83              6             12 
+##         Sweden    Switzerland United Kingdom  United States 
+##             92              6             21             91
 ```
 ### Start 'dat'  
 With slope regression data  
@@ -246,7 +216,6 @@ cat("dat, n =", nrow(dat), "\n")
 # lm(as.formula(str), data = dat)
 ```
 
-
 ### Deposition trends and median 1992-2006     
 
 ```r
@@ -306,22 +275,38 @@ names(dat)
 ## dat, n = 498 
 ## 
 ## Variable names: 
-##  [1] "station_id"           "slope_no3_vs_time"    "slope_tocton_vs_time" "p_no3_vs_time"        "p_tocton_vs_time"     "NO3"                 
-##  [7] "TOC"                  "TOTN_dep"             "slope_dep_vs_time"    "p_dep_vs_time"        "station_code"         "station_name"        
-## [13] "latitude"             "longitude"            "altitude"             "continent"            "country"              "region"              
-## [19] "group"
+##  [1] "station_id"           "slope_no3_vs_time"    "slope_tocton_vs_time" "p_no3_vs_time"       
+##  [5] "p_tocton_vs_time"     "NO3"                  "TOC"                  "TOTN_dep"            
+##  [9] "slope_dep_vs_time"    "p_dep_vs_time"        "station_code"         "station_name"        
+## [13] "latitude"             "longitude"            "altitude"             "continent"           
+## [17] "country"              "region"               "group"
 ```
 
-### Add climate and deposition means 
+### Add climate and deposition medians 
 
 ```r
-df_climate <- readRDS("Data/100_Climate.rds") %>%
-  filter(year %in% 1992:2006)
+fn <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/climate/cru_climate_trends_icpw_stns.csv"
+df_climate_mean <- read_csv(fn) %>%
+  select(station_id, variable, median) %>%
+  pivot_wider(names_from = "variable", values_from = "median")
+```
 
-df_climate_mean <- df_climate %>%
-  group_by(station_id, variable) %>% 
-  summarise(mean = mean(value), .groups = "drop") %>%
-  tidyr::pivot_wider(names_from = "variable", values_from = "mean")
+```
+## Parsed with column specification:
+## cols(
+##   station_id = col_double(),
+##   variable = col_character(),
+##   median = col_double(),
+##   mk_p_val = col_double(),
+##   mk_trend = col_character(),
+##   sen_slp = col_double(),
+##   sen_incpt = col_double(),
+##   sen_trend = col_character()
+## )
+```
+
+```r
+# names(df_climate_mean)
 
 # Add
 dat <- dat %>%
@@ -376,7 +361,7 @@ ggplot(dat, aes(slope_dep_vs_time, slope_no3_vs_time)) +
   geom_vline(xintercept = 0, linetype = 2) 
 ```
 
-![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-16-1.png)<!-- -->
+![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-12-1.png)<!-- -->
 
 ```r
 ggplot(dat, aes(slope_dep_vs_time, slope_no3_vs_time,
@@ -388,7 +373,7 @@ ggplot(dat, aes(slope_dep_vs_time, slope_no3_vs_time,
   labs(title = "A selection of countries")
 ```
 
-![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-16-2.png)<!-- -->
+![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-12-2.png)<!-- -->
 
 ```r
 dat %>%
@@ -403,7 +388,7 @@ dat %>%
   ylim(-50, 25)
 ```
 
-![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-16-3.png)<!-- -->
+![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-12-3.png)<!-- -->
 
 
 ## 4. Select data   
@@ -465,14 +450,16 @@ cat("Analysis: n =", nrow(df_analysis), "\n")
 ## no3_decline,catchment_area, TOC,slope_dep_vs_time, NO3, TOTN_dep, latitude, longitude, altitude,pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse
 ## -------------------------------------------------------------
 ## Number of missing values per variable: 
-##            no3_decline         catchment_area                    TOC      slope_dep_vs_time                    NO3               TOTN_dep 
-##                      0                     93                     33                      0                      0                      0 
-##               latitude              longitude               altitude                    pre                    tmp                  urban 
-##                      0                      0                      9                      0                      0                     37 
-##             cultivated             coniferous            decid_mixed total_shrub_herbaceous                wetland             lake_water 
-##                     37                     43                     43                     37                     37                     37 
-##            bare_sparse 
-##                     37 
+##            no3_decline         catchment_area                    TOC      slope_dep_vs_time 
+##                      0                     93                     33                      0 
+##                    NO3               TOTN_dep               latitude              longitude 
+##                      0                      0                      0                      0 
+##               altitude                    pre                    tmp                  urban 
+##                      9                      0                      0                     37 
+##             cultivated             coniferous            decid_mixed total_shrub_herbaceous 
+##                     37                     43                     43                     37 
+##                wetland             lake_water            bare_sparse 
+##                     37                     37                     37 
 ## 
 ## Number of complete observations: 
 ## complete
@@ -538,7 +525,7 @@ valid_set <- df_analysis[!train,] %>%
 plot(ct, main="Conditional Inference Tree")
 ```
 
-![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-19-1.png)<!-- -->
+![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-15-1.png)<!-- -->
 
 ```r
 cat("\n\n")
@@ -598,7 +585,7 @@ ev.raw = evtree(no3_decline_f ~ ., data = train_set)
 plot(ev.raw)
 ```
 
-![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-20-1.png)<!-- -->
+![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-16-1.png)<!-- -->
 
 ```r
 cat("Predicted in training data: \n")
@@ -612,12 +599,12 @@ cat("\n\nPrediction errors in training data: \n")
 ## Predicted in training data: 
 ##    
 ##       0   1
-##   0 180  47
-##   1  20  73
+##   0 179  28
+##   1  21  92
 ## 
 ## 
 ## Prediction errors in training data: 
-## [1] 0.209375
+## [1] 0.153125
 ```
 
 
@@ -642,11 +629,11 @@ model1
 ##                      Number of trees: 500
 ## No. of variables tried at each split: 5
 ## 
-##         OOB estimate of  error rate: 24.06%
+##         OOB estimate of  error rate: 22.81%
 ## Confusion matrix:
 ##     0  1 class.error
-## 0 165 35       0.175
-## 1  42 78       0.350
+## 0 167 33   0.1650000
+## 1  40 80   0.3333333
 ```
 
 
@@ -662,8 +649,8 @@ table(pred_valid, valid_set$no3_decline_f)
 ```
 ##           
 ## pred_valid  0  1
-##          0 13  4
-##          1  6 10
+##          0 14  4
+##          1  5 10
 ```
 
 #### c2. Importance of variables
@@ -680,14 +667,14 @@ importance <- measure_importance(model1)
 plot_multi_way_importance(importance, size_measure = "no_of_nodes", no_of_labels = 12)  
 ```
 
-![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-23-1.png)<!-- -->
+![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-19-1.png)<!-- -->
 
 ```r
 plot_multi_way_importance(importance, x_measure = "accuracy_decrease", y_measure = "gini_decrease", 
                           size_measure = "p_value", no_of_labels = 12)
 ```
 
-![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-23-2.png)<!-- -->
+![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-19-2.png)<!-- -->
 
 
 
@@ -731,7 +718,7 @@ for (i in 1:max_number_of_plots){
 }
 ```
 
-![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-24-1.png)<!-- -->![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-24-2.png)<!-- -->![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-24-3.png)<!-- -->![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-24-4.png)<!-- -->![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-24-5.png)<!-- -->![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-24-6.png)<!-- -->
+![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-20-1.png)<!-- -->![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-20-2.png)<!-- -->![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-20-3.png)<!-- -->![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-20-4.png)<!-- -->![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-20-5.png)<!-- -->![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-20-6.png)<!-- -->
 
 
 ## 6. Logistic regression      
@@ -767,21 +754,27 @@ par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
 visreg(dd1b_mod1, scale = "response")
 ```
 
-![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-25-1.png)<!-- -->![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-25-2.png)<!-- -->
+![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-21-1.png)<!-- -->![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-21-2.png)<!-- -->
 
 ```
 ## Global model call: glm(formula = as.formula(params$logistic_formula), family = "binomial", 
 ##     data = df_analysis, na.action = "na.fail")
 ## ---
 ## Model selection table 
-##       (Int)      alt   ctc_are      cnf  dcd_mxd       NO3 slp_dep_vs_tim     tmp      TOC    TOT_dep     wtl df   logLik  AICc delta weight
-## 1486 0.4342 0.001181           -0.01131 -0.02310                 -0.06108 -0.2625 -0.08786            0.04687  8 -173.121 362.7  0.00  0.272
-## 1488 0.4955 0.001156 -0.001827 -0.01114 -0.02324                 -0.06141 -0.2714 -0.08649            0.04619  9 -172.672 363.9  1.21  0.149
-## 1998 0.3903 0.001316           -0.01066 -0.02175                 -0.07611 -0.2216 -0.09565 -0.0007553 0.04536  9 -172.715 364.0  1.29  0.143
-## 1482 0.1914 0.001198                    -0.01667                 -0.05547 -0.2660 -0.13430            0.05287  7 -174.977 364.3  1.62  0.121
-## 462  0.6888 0.001088           -0.01327 -0.02623                 -0.06335 -0.2878 -0.05855                     7 -175.080 364.5  1.82  0.109
-## 1518 0.4728 0.001128           -0.01167 -0.02340 0.0003108       -0.05924 -0.2681 -0.08277            0.04689  9 -173.030 364.6  1.92  0.104
-## 206  0.5055 0.001297           -0.01768 -0.02772                 -0.06670 -0.3069                              6 -176.193 364.6  1.97  0.102
+##       (Int)      alt   ctc_are      cnf  dcd_mxd       NO3 slp_dep_vs_tim     tmp      TOC
+## 1486 0.5028 0.001185           -0.01159 -0.02391                 -0.06027 -0.2551 -0.08935
+## 1998 0.4416 0.001333           -0.01085 -0.02230                 -0.07687 -0.2108 -0.09762
+## 1488 0.5640 0.001161 -0.001738 -0.01145 -0.02407                 -0.06057 -0.2634 -0.08807
+## 1482 0.2503 0.001202                    -0.01733                 -0.05437 -0.2567 -0.13720
+## 1518 0.5417 0.001133           -0.01195 -0.02421 0.0002982       -0.05853 -0.2606 -0.08448
+## 462  0.7696 0.001090           -0.01359 -0.02715                 -0.06249 -0.2804 -0.05986
+##         TOT_dep     wtl df   logLik  AICc delta weight
+## 1486            0.04766  8 -173.512 363.4  0.00  0.306
+## 1998 -0.0008299 0.04585  9 -173.013 364.6  1.11  0.176
+## 1488            0.04701  9 -173.083 364.7  1.25  0.164
+## 1482            0.05378  7 -175.470 365.3  1.82  0.123
+## 1518            0.04768  9 -173.428 365.4  1.94  0.116
+## 462                      7 -175.532 365.4  1.95  0.116
 ## Models ranked by AICc(x) 
 ## 
 ## 

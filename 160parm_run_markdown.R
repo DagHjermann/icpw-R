@@ -60,7 +60,7 @@ vars <- paste(
 form <- paste(
   "no3_decline ~ catchment_area + TOC +",                # change here
   "altitude + decid_mixed + slope_dep_vs_time +", 
-  "NO3 + TOTN_dep + cconiferous +",
+  "NO3 + TOTN_dep + coniferous +",
   "tmp + lake_water + wetland"
 )
 
@@ -152,7 +152,7 @@ rmarkdown::render(
   input = '160parm_Time_series_results_James.Rmd',          
   output_file = '160c_Time_series_results_James_no_catcharea_TOC.html',                     # change here
   params = list(
-    document_title = "160b Analyse NO3 decline - excl. catchment_area and TOC",                 # change here
+    document_title = "160c Analyse NO3 decline - excl. catchment_area and TOC",                 # change here
     text_dataset = "Dataset: all variables except catchment area and TOC",  # change here
     selected_vars = vars,
     logistic_formula = form)
