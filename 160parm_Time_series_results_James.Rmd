@@ -45,7 +45,7 @@ params:
     - pre, tmp: mean precipitation + temp   
     - Land cover 
   
-Technical details: This html file was created was 
+Technical details: This html file was rendered with `160parm_run_markdown.R` which runs the script `160parm_Time_series_results_James.Rmd` with different inputs, resulting in html files 160a, 160b and 160c.    
 
 ## 1. Libraries  
 ```{r, results='hide', message=FALSE, warning=FALSE}
@@ -100,14 +100,17 @@ reg_no3 <- read.csv(fn, encoding = "UTF-8")
 cat("Regression results:", sQuote(file), ",n =", nrow(reg_no3), "\n\n")
 
 # Station metadata
-file <- "trends_1992-2016_no3_stations.csv"
-fn <- paste0(folder, "/", file)
 
-reg_no3_st <- read.csv(fn, encoding = "UTF-8")
-cat("Regression result metadata:", sQuote(file), ",n =", nrow(reg_no3_st), "\n\n")
+# THESE WILL BE ADDED TOGETHER WITH LAND COVER  
 
-cat("Countries with trends: \n")
-xtabs(~country, reg_no3_st)  
+# file <- "trends_1992-2016_no3_stations.csv"
+# fn <- paste0(folder, "/", file)
+# 
+# df_metadata <- read.csv(fn, encoding = "UTF-8")
+# cat("Regression result metadata:", sQuote(file), ",n =", nrow(df_metadata), "\n\n")
+# 
+# cat("Countries with trends: \n")
+# xtabs(~country, df_metadata)  
 
 #
 # Medians NO3
@@ -237,8 +240,8 @@ cat("dat, n =", nrow(dat), "\n")
 ### Add medians and station metadata   
 ```{r}
 
-dat <- dat %>%
-  left_join(reg_no3_st, by = "station_id")
+# dat <- dat %>%
+#   left_join(df_metadata, by = "station_id")
 
 cat("dat, n =", nrow(dat), "\n")
 
@@ -272,61 +275,37 @@ cat("dat, n =", nrow(dat), "\n")
 
 ```
 
-### Add land cover    
-* Combine: bare_sparse = bare_rock + sparsely_vegetated + glacier   
+
+### Combine land cover types   
+* Data including UK read using script 159  
+* bare_sparse = bare_rock + sparsely_vegetated + glacier   
 * Select: coniferous, deciduous, lake, mixed_forest, wetland, bare_sparse   
 ```{r}
 
-fn <- "K:/Prosjekter/langtransporterte forurensninger/O-23300 - ICP-WATERS - HWI/Faglige rapporter/2020 report/Land cover/ICPW_All_Stations_2020_2020_05_04.xlsx"
+df_landcover3 <- readRDS("Data/159_df_landcover3.rds")
 
-df_station <- read_excel(fn) %>%
+df_landcover3 <- df_landcover3 %>%
   mutate(bare_sparse = bare_rock + sparsely_vegetated + glacier,
          decid_mixed = deciduous + mixed_forest,
-         lake_water = lake + water_ex_lake)
+         lake_water = lake + water_ex_lake) %>%
+  select(-c(bare_rock, sparsely_vegetated, glacier, deciduous, mixed_forest, lake, water_ex_lake))
 
-nrow(dat)
+
+```
+
+
+### Add land cover columns to main data    
+```{r}
+
 dat <- left_join(dat, 
-                 df_station %>% select(-(station_code:longitude), -(altitude:region)), 
+                 df_landcover3, 
                  by = "station_id"
 )
 
-nrow(dat)
-names(dat) %>% paste(collapse = " + ") 
+cat("dat, n =", nrow(dat), "\n")
 
 ```
 
-```{r, echo = FALSE}
-
-### Check other land cover files  
-
-if (FALSE){
-  
-  df1 <- read_excel(fn)
-  nrow(df1)
-  
-  fn <- "K:/Prosjekter/langtransporterte forurensninger/O-23300 - ICP-WATERS - HWI/Faglige rapporter/2020 report/Land cover/all_icpw_sites_may_2020.xlsx" 
-  
-  df2 <- read_excel(fn)
-  nrow(df2)
-  
-  fn <- "K:/Prosjekter/langtransporterte forurensninger/O-23300 - ICP-WATERS - HWI/Faglige rapporter/2020 report/Land cover/ICPW_All_Stations_2020_land cover_2020_05_04.xlsx"
-  
-  df3 <- read_excel(fn)
-  nrow(df3)
-  
-  names(df1)
-  names(df2)
-  names(df3)
-  
-  names(df1) == names(df3)
-  apply(is.na(df1), 2, sum) == apply(is.na(df3), 2, sum)
-  
-  for (i in 1:19)
-    cat(i, ":", mean(df1[[i]] != df3[[i]], na.rm = TRUE), "\n")
-  
-}
-
-```
 
 
 ## 3. Plot slopes    
@@ -548,6 +527,35 @@ for (i in 1:max_number_of_plots){
             which.class = "1", prob = TRUE)
 }
 
+#
+# Two extra plots:
+#
+i <- i + 1
+varno1 <- "slope_dep_vs_time"
+varno2 <- "TOTN_dep"
+plotdata[[i]] <- model1 %>%
+  partial(pred.var = c(varno1, varno2), chull = TRUE, progress = "text",
+          which.class = "1", prob = TRUE)
+
+if ("TOC" %in% names(train)){
+  i <- i + 1
+  varno1 <- "TOC"
+  varno2 <- "NO3"
+  plotdata[[i]] <- model1 %>%
+    partial(pred.var = c(varno1, varno2), chull = TRUE, progress = "text",
+            which.class = "1", prob = TRUE)
+}
+
+if (substr(params$document_title,1,4) == "160b"){
+  i <- i + 1
+  varno1 <- "altitude"
+  varno2 <- "decid_mixed"
+  plotdata[[i]] <- model1 %>%
+    partial(pred.var = c(varno1, varno2), chull = TRUE, progress = "text",
+            which.class = "1", prob = TRUE)
+}
+
+
 # saveRDS(plotdata, "Data/160a_plotdata.Rmd")
 
 # plotdata <- readRDS("Data/160a_plotdata.Rmd")
@@ -559,9 +567,26 @@ for (i in 1:max_number_of_plots){
 ```{r, warning=FALSE}
 
 # Plot the plots 
-for (i in 1:max_number_of_plots){
+for (i in 1:length(plotdata)){
   autoplot(plotdata[[i]], contour = TRUE, legend.title = "Probability\nNO3 decline") %>%
-    print()
+    print() 
+}
+
+
+if (FALSE) {
+  
+  # Put on same color scale
+  
+  # Find range of predicted values for each graph
+  ranges <- plotdata %>% purrr::map_dfc(~range(.$yhat))
+  
+  # use range of all the ranges
+  for (i in 1:length(plotdata)){
+    gg <- autoplot(plotdata[[i]], contour = TRUE, legend.title = "Probability\nNO3 decline") +
+      scale_fill_viridis_c(limits = range(ranges))
+    print(gg) 
+  }
+  
 }
 
 ```

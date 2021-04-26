@@ -1,0 +1,264 @@
+---
+title: "159parm_get_landcover"
+author: "DHJ"
+date: "26 4 2021"
+output: html_document
+---
+
+
+## 1. Packages  
+```{r}
+
+library(readxl)
+library(dplyr)
+
+```
+
+```{r}
+
+
+```
+
+## 2. Data   
+
+### Get land cover and catchment_area    
+* Main land cover file has lines for UK data, but they are mostly empty  
+* Read UK data separately and add to data  
+```{r}
+
+#
+# Define names of land cover variables
+#
+vars_landcover <- c("catchment_area",
+                    "urban", "cultivated", "total_forest", "deciduous", "coniferous", 
+                    "mixed_forest", "total_shrub_herbaceous", "grasslands", "heathlands", 
+                    "transitional_woodland_shrub", "bare_rock", "sparsely_vegetated", 
+                    "glacier", "wetland", "lake", "water_ex_lake", "other")
+
+#
+# MAIN LAND COVER FILE  
+#
+fn <- "K:/Prosjekter/langtransporterte forurensninger/O-23300 - ICP-WATERS - HWI/Faglige rapporter/2020 report/Land cover/ICPW_All_Stations_2020_2020_05_04.xlsx"
+df_landcover1 <- read_excel(fn)
+cat(nrow(df_landcover1), "lines of data read into df_landcover1 \n")
+# names(df_landcover1); cat("\n")
+
+
+#
+# EXTRA UK DATA  
+#
+# UK data 'df_landcover_uk1'
+fn <- "K:/Prosjekter/langtransporterte forurensninger/O-23300 - ICP-WATERS - HWI/Faglige rapporter/2020 report/Land cover/Excel documents - received/icpw_land_cover_United Kingdom_29-01-2021.xlsx"
+df_landcover_uk1 <- read_excel(fn, 
+                               sheet = "uk", 
+                               range = "A1:U23",    # NOTE: specific range! 
+                               col_types = c("numeric", rep("text", 2), rep("numeric", 18))) %>%
+  as.data.frame()
+cat(nrow(df_landcover_uk1), "lines of UK data read into df_landcover_uk1 \n")
+
+#
+# REMOVE UK LINES FROM MAIN DATA
+#
+
+# Existing UK data in 'df_landcover1'  
+stations <- df_landcover_uk1$station_id
+sel_uk <- df_landcover1$station_id %in% stations
+# Check existing data - just have altitide, a few (erronous) catchment area, and no land cover: 
+# unique(df_landcover1$station_id[sel_uk])
+# df_landcover1[sel_uk,] %>% View()
+# df_landcover1[sel_uk,] %>% select(-(station_code:longitude), -(altitude:region)) %>% View()
+
+# Remove existing UK data:
+df_landcover2 <- df_landcover1[!sel_uk,]
+cat(sum(sel_uk), "lines of UK data removed from df_landcover1 \n")
+cat(nrow(df_landcover2), "lines of data in df_landcover2 \n")
+
+#
+# MAKE UK DATA READY FOR BEING ADDED  
+#
+
+# All empty cells are replaced with zeros
+df_landcover_uk1[is.na(df_landcover_uk1)] <- 0
+
+# Get new column names for UK data 
+# str(df_landcover_uk1)
+new_names <- names(df_landcover_uk1) %>% 
+  tolower() %>% 
+  gsub(" (%)", "", ., fixed = TRUE) %>%
+  gsub(" ", "_", ., fixed = TRUE)
+# Check (compare):
+# names(df_landcover)
+# new_names
+
+# Change all names (most are correct)
+df_landcover_uk2 <- df_landcover_uk1
+names(df_landcover_uk2) <- new_names
+
+# Change the rest of the names
+df_landcover_uk2 <- df_landcover_uk2 %>%
+  select(-station_code, -station_name) %>%
+  rename(
+    catchment_area = `catchment_area_(km2)`,
+    total_shrub_herbaceous = `total_shrub_and/or_herbaceous_vegetation`,
+    transitional_woodland_shrub = `transitional_woodland/scrub`,
+    water_ex_lake = `water_(excl._lake)`
+  )
+
+# Check column names
+check <- !(names(df_landcover_uk2) %in% c("station_id", vars_landcover))
+if (sum(check) > 0){
+  names(df_landcover_uk2)[check] %>% print()
+  stop("Some names don't fit")
+} 
+
+#
+# ADD UK DATA TO MAIN DATA (without metadata)
+#
+
+
+# Combine 
+df_landcover3 <- bind_rows(
+  df_landcover2[c("station_id", vars_landcover)],
+  df_landcover_uk3[c("station_id", vars_landcover)],
+)
+cat(nrow(df_landcover3), "lines of data in df_landcover3 after adding UK data \n")
+
+#
+# ADD NEW METADATA
+#
+
+# Put in newer metadata (variable Continent has values, includes variable Group)
+fn <- "K:/Prosjekter/langtransporterte forurensninger/O-23300 - ICP-WATERS - HWI/Faglige rapporter/2020 report/Land cover/all_icpw_sites_may_2020.xlsx"
+df_meta <- read_excel(fn)
+
+n1 <- nrow(df_landcover3)
+df_landcover3 <- df_landcover3 %>% 
+  left_join(df_meta, by = "station_id")
+n2 <- nrow(df_landcover3)
+
+# Check that join is ok
+if (n2 != n1)
+  stop("Number of rows changed; check whether there are only unique values of 'station_id'")
+
+# Order columns
+df_landcover3 <- df_landcover3[c(names(df_meta), vars_landcover)]
+
+# names(df_landcover1); cat("\n")
+
+cat(nrow(df_landcover3), "lines of data in df_landcover3 after adding new metadata \n")
+
+#
+# SAVE
+#
+
+saveRDS(df_landcover3, "Data/159_df_landcover3.rds")
+writexl::write_xlsx(df_landcover3, "Data/159_df_landcover_including_UK.xlsx")
+
+# df_landcover3 <- readRDS("Data/159_df_landcover3.rds")
+
+cat("\n------------------------------------------\n")
+cat("Coverage per country\n")
+xtabs(~country + is.na(total_forest), df_landcover3)
+
+```
+
+### Combine land cover types 'df_landcover4'      
+* bare_sparse = bare_rock + sparsely_vegetated + glacier   
+* Select: coniferous, deciduous, lake, mixed_forest, wetland, bare_sparse   
+* Also: removes all metadata (keeps only station_id, catchment_area, and land cover columns)  
+```{r}
+
+# df_landcover2 %>% select(-(station_code:longitude), -(altitude:region)) %>% names() %>% dput()
+
+# Select columns
+sel_columns <- c("station_id", "catchment_area", "urban", "cultivated", "total_forest", 
+                   "deciduous", "coniferous", "mixed_forest", "total_shrub_herbaceous", 
+                   "grasslands", "heathlands", "transitional_woodland_shrub", "bare_rock", 
+                   "sparsely_vegetated", "glacier", "wetland", "lake", "water_ex_lake", "other")
+  
+df_landcover4 <- df_landcover3[sel_columns] %>%
+  mutate(bare_sparse = bare_rock + sparsely_vegetated + glacier,
+         decid_mixed = deciduous + mixed_forest,
+         lake_water = lake + water_ex_lake) %>%
+  select(-c(bare_rock, sparsely_vegetated, glacier, deciduous, mixed_forest, lake, water_ex_lake))
+
+cat("df_landcover4, n =", nrow(df_landcover4), "\n")
+
+
+```
+
+
+
+## Save  
+```{r}
+
+saveRDS(df_landcover4, "Data/159_df_landcover4.rds")
+writexl::write_xlsx(df_landcover4, "Data/159_df_landcover_merged_categories.xlsx")
+
+```
+
+
+## Appendix: compare with other metadata    
+```{r}
+
+run_this <- FALSE
+run_this <- TRUE
+
+### Check other land cover files
+if (run_this){
+  
+  # Station metadata
+  # THESE WILL BE ADDED TOGETHER WITH LAND COVER  
+  
+  folder <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/trends_1992-2016_no3"
+  file <- "trends_1992-2016_no3_stations.csv"
+  fn <- paste0(folder, "/", file)
+  df1 <- read.csv(fn, encoding = "UTF-8") %>% 
+    arrange(station_id)
+  nrow(df1)
+  
+  fn <- "K:/Prosjekter/langtransporterte forurensninger/O-23300 - ICP-WATERS - HWI/Faglige rapporter/2020 report/Land cover/all_icpw_sites_may_2020.xlsx"
+  df2 <- read_excel(fn) %>% 
+    arrange(station_id)
+  nrow(df2)
+  
+  # Column names:
+  n1 <- names(df1)
+  n2 <- names(df2)
+  cat("Missing in df1: \n")
+  n2[!n2 %in% n1]
+  cat("Missing in df2: \n")
+  n1[!n1 %in% n2]
+  
+  cat("\n")
+  cat("---------------------------------------------------------------\n")
+  cat("Compare common variables: \n")
+  cat("---------------------------------------------------------------\n")
+  n_common <- n1[n1 %in% n2]
+  for (col in n_common){
+    # col <- "station_id"
+    x1 <- sum(!df1[[col]] == df2[[col]], na.rm = TRUE)
+    x2a <- sum(is.na(df1[[col]]))
+    x2b <- sum(is.na(df2[[col]]))
+    x3 <- sum(is.na(df1[[col]]) != is.na(df2[[col]]))
+    cat(col, ": \n  n differences (rows with values):", x1, "\n")
+    cat("  Rows lacking values:", x2a, "/", x2b, "\n")
+    cat("  Rows lacking values different places:", x3, "\n")
+  }
+
+
+# View side by side
+df1_forjoin <- df1[n_common]
+names(df1_forjoin) <- paste0(n_common, "_1")  
+df2_forjoin <- df2[n_common]
+names(df2_forjoin) <- paste0(n_common, "_2")
+# bind_cols(df1_forjoin, df2_forjoin) %>% View()
+bind_cols(df1_forjoin$region_1, df2_forjoin$region_2) %>% View()
+# fn <- "K:/Prosjekter/langtransporterte forurensninger/O-23300 - ICP-WATERS - HWI/Faglige rapporter/2020 report/Land cover/ICPW_All_Stations_2020_land cover_2020_05_04.xlsx"
+  # df3 <- read_excel(fn)
+
+}
+
+
+```
+

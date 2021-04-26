@@ -33,8 +33,8 @@ params:
 * Predictors:
     - slope_dep_vs_time: Trend in Tot-N deposition 1992-2016    
     - NO3, TOTN_dep: Medians of NO3, TOTN_dep (Tot-N deposition) 1992-2016   
-    - TOC: Medians of TOC 1992-2016 (section 5 and 6 only)     
-    - catchment_area (section 5 only)   
+    - catchment_area (if included in data)      
+    - TOC: Medians of TOC 1992-2016 (if included in data)     
     - pre, tmp: mean precipitation + temp   
     - Land cover 
   
@@ -92,14 +92,17 @@ reg_no3 <- read.csv(fn, encoding = "UTF-8")
 cat("Regression results:", sQuote(file), ",n =", nrow(reg_no3), "\n\n")
 
 # Station metadata
-file <- "trends_1992-2016_no3_stations.csv"
-fn <- paste0(folder, "/", file)
 
-reg_no3_st <- read.csv(fn, encoding = "UTF-8")
-cat("Regression result metadata:", sQuote(file), ",n =", nrow(reg_no3_st), "\n\n")
+# THESE WILL BE ADDED TOGETHER WITH LAND COVER  
 
-cat("Countries with trends: \n")
-xtabs(~country, reg_no3_st)  
+# file <- "trends_1992-2016_no3_stations.csv"
+# fn <- paste0(folder, "/", file)
+# 
+# df_metadata <- read.csv(fn, encoding = "UTF-8")
+# cat("Regression result metadata:", sQuote(file), ",n =", nrow(df_metadata), "\n\n")
+# 
+# cat("Countries with trends: \n")
+# xtabs(~country, df_metadata)  
 
 #
 # Medians NO3
@@ -143,18 +146,7 @@ if (FALSE){
 ```
 
 ```
-## Regression results: 'trends_1992-2016_no3_results.csv' ,n = 3176 
-## 
-## Regression result metadata: 'trends_1992-2016_no3_stations.csv' ,n = 498 
-## 
-## Countries with trends: 
-## country
-##         Canada Czech Republic        Estonia        Finland        Germany        Ireland 
-##            114              8              1             26             23              3 
-##          Italy         Latvia    Netherlands         Norway         Poland       Slovakia 
-##              6              3              3             83              6             12 
-##         Sweden    Switzerland United Kingdom  United States 
-##             92              6             21             91
+## Regression results: 'trends_1992-2016_no3_results.csv' ,n = 3176
 ```
 ### Start 'dat'  
 With slope regression data  
@@ -256,8 +248,8 @@ cat("dat, n =", nrow(dat), "\n")
 ### Add medians and station metadata   
 
 ```r
-dat <- dat %>%
-  left_join(reg_no3_st, by = "station_id")
+# dat <- dat %>%
+#   left_join(df_metadata, by = "station_id")
 
 cat("dat, n =", nrow(dat), "\n")
 
@@ -277,9 +269,7 @@ names(dat)
 ## Variable names: 
 ##  [1] "station_id"           "slope_no3_vs_time"    "slope_tocton_vs_time" "p_no3_vs_time"       
 ##  [5] "p_tocton_vs_time"     "NO3"                  "TOC"                  "TOTN_dep"            
-##  [9] "slope_dep_vs_time"    "p_dep_vs_time"        "station_code"         "station_name"        
-## [13] "latitude"             "longitude"            "altitude"             "continent"           
-## [17] "country"              "region"               "group"
+##  [9] "slope_dep_vs_time"    "p_dep_vs_time"
 ```
 
 ### Add climate and deposition medians 
@@ -319,34 +309,37 @@ cat("dat, n =", nrow(dat), "\n")
 ## dat, n = 498
 ```
 
-### Add land cover    
-* Combine: bare_sparse = bare_rock + sparsely_vegetated + glacier   
+
+### Combine land cover types   
+* Data including UK read using script 159  
+* bare_sparse = bare_rock + sparsely_vegetated + glacier   
 * Select: coniferous, deciduous, lake, mixed_forest, wetland, bare_sparse   
 
 ```r
-fn <- "K:/Prosjekter/langtransporterte forurensninger/O-23300 - ICP-WATERS - HWI/Faglige rapporter/2020 report/Land cover/ICPW_All_Stations_2020_2020_05_04.xlsx"
+df_landcover3 <- readRDS("Data/159_df_landcover3.rds")
 
-df_station <- read_excel(fn) %>%
+df_landcover3 <- df_landcover3 %>%
   mutate(bare_sparse = bare_rock + sparsely_vegetated + glacier,
          decid_mixed = deciduous + mixed_forest,
-         lake_water = lake + water_ex_lake)
+         lake_water = lake + water_ex_lake) %>%
+  select(-c(bare_rock, sparsely_vegetated, glacier, deciduous, mixed_forest, lake, water_ex_lake))
+```
 
-nrow(dat)
+
+### Add land cover columns to main data    
+
+```r
 dat <- left_join(dat, 
-                 df_station %>% select(-(station_code:longitude), -(altitude:region)), 
+                 df_landcover3, 
                  by = "station_id"
 )
 
-nrow(dat)
-names(dat) %>% paste(collapse = " + ") 
+cat("dat, n =", nrow(dat), "\n")
 ```
 
 ```
-## [1] 498
-## [1] 498
-## [1] "station_id + slope_no3_vs_time + slope_tocton_vs_time + p_no3_vs_time + p_tocton_vs_time + NO3 + TOC + TOTN_dep + slope_dep_vs_time + p_dep_vs_time + station_code + station_name + latitude + longitude + altitude + continent + country + region + group + pre + tmp + catchment_area + urban + cultivated + total_forest + deciduous + coniferous + mixed_forest + total_shrub_herbaceous + grasslands + heathlands + transitional_woodland_shrub + bare_rock + sparsely_vegetated + glacier + wetland + lake + water_ex_lake + other + bare_sparse + decid_mixed + lake_water"
+## dat, n = 498
 ```
-
 
 
 
@@ -451,20 +444,20 @@ cat("Analysis: n =", nrow(df_analysis), "\n")
 ## -------------------------------------------------------------
 ## Number of missing values per variable: 
 ##            no3_decline         catchment_area                    TOC      slope_dep_vs_time 
-##                      0                     93                     33                      0 
+##                      0                     77                     33                      0 
 ##                    NO3               TOTN_dep               latitude              longitude 
 ##                      0                      0                      0                      0 
 ##               altitude                    pre                    tmp                  urban 
-##                      9                      0                      0                     37 
+##                      2                      0                      0                     16 
 ##             cultivated             coniferous            decid_mixed total_shrub_herbaceous 
-##                     37                     43                     43                     37 
+##                     16                     22                     22                     16 
 ##                wetland             lake_water            bare_sparse 
-##                     37                     37                     37 
+##                     16                     16                     16 
 ## 
 ## Number of complete observations: 
 ## complete
 ## FALSE  TRUE 
-##   145   353 
+##   123   375 
 ## 
 ## 
 ## Number of complete observations by country: 
@@ -474,7 +467,7 @@ cat("Analysis: n =", nrow(df_analysis), "\n")
 ##   Czech Republic     1    7
 ##   Estonia            1    0
 ##   Finland            0   26
-##   Germany            6   17
+##   Germany            5   18
 ##   Ireland            3    0
 ##   Italy              6    0
 ##   Latvia             3    0
@@ -484,12 +477,12 @@ cat("Analysis: n =", nrow(df_analysis), "\n")
 ##   Slovakia           0   12
 ##   Sweden             6   86
 ##   Switzerland        6    0
-##   United Kingdom    21    0
+##   United Kingdom     0   21
 ##   United States     91    0
 ## 
 ## 
 ## Original data: n = 498 
-## Analysis: n = 353
+## Analysis: n = 375
 ```
 
 
@@ -550,31 +543,33 @@ table(tr.pred[,"P1"] > 0.5, valid_set$no3_decline_f)
 ## 
 ## Fitted party:
 ## [1] root
-## |   [2] altitude <= 223
-## |   |   [3] slope_dep_vs_time <= -36.2425: 1 (n = 15, err = 26.7%)
-## |   |   [4] slope_dep_vs_time > -36.2425
-## |   |   |   [5] decid_mixed <= 0.395: 1 (n = 10, err = 30.0%)
-## |   |   |   [6] decid_mixed > 0.395: 0 (n = 139, err = 8.6%)
-## |   [7] altitude > 223
-## |   |   [8] decid_mixed <= 19.367: 1 (n = 98, err = 28.6%)
-## |   |   [9] decid_mixed > 19.367: 0 (n = 58, err = 34.5%)
+## |   [2] altitude <= 227
+## |   |   [3] NO3 <= 63.5
+## |   |   |   [4] tmp <= 1.05: 1 (n = 8, err = 37.5%)
+## |   |   |   [5] tmp > 1.05: 0 (n = 126, err = 7.9%)
+## |   |   [6] NO3 > 63.5: 1 (n = 33, err = 48.5%)
+## |   [7] altitude > 227
+## |   |   [8] decid_mixed <= 70.405
+## |   |   |   [9] bare_sparse <= 23.181: 1 (n = 126, err = 43.7%)
+## |   |   |   [10] bare_sparse > 23.181: 1 (n = 28, err = 3.6%)
+## |   |   [11] decid_mixed > 70.405: 0 (n = 20, err = 10.0%)
 ## 
-## Number of inner nodes:    4
-## Number of terminal nodes: 5
+## Number of inner nodes:    5
+## Number of terminal nodes: 6
 ## 
 ## 
 ## Table of prediction errors 
 ##    
 ##       0   1
-##   0 165  32
-##   1  35  88
+##   0 134  12
+##   1  75 120
 ## 
 ## 
 ## Classification of training set 
 ##        
 ##          0  1
-##   FALSE 12  6
-##   TRUE   7  8
+##   FALSE  9  4
+##   TRUE   9 12
 ```
 
 ### b. Evtree (Evolutionary Learning)   
@@ -599,12 +594,12 @@ cat("\n\nPrediction errors in training data: \n")
 ## Predicted in training data: 
 ##    
 ##       0   1
-##   0 179  28
-##   1  21  92
+##   0 188  35
+##   1  21  97
 ## 
 ## 
 ## Prediction errors in training data: 
-## [1] 0.153125
+## [1] 0.1642229
 ```
 
 
@@ -629,11 +624,11 @@ model1
 ##                      Number of trees: 500
 ## No. of variables tried at each split: 5
 ## 
-##         OOB estimate of  error rate: 22.81%
+##         OOB estimate of  error rate: 24.63%
 ## Confusion matrix:
 ##     0  1 class.error
-## 0 167 33   0.1650000
-## 1  40 80   0.3333333
+## 0 167 42   0.2009569
+## 1  42 90   0.3181818
 ```
 
 
@@ -649,8 +644,8 @@ table(pred_valid, valid_set$no3_decline_f)
 ```
 ##           
 ## pred_valid  0  1
-##          0 14  4
-##          1  5 10
+##          0 16  7
+##          1  2  9
 ```
 
 #### c2. Importance of variables
@@ -703,6 +698,22 @@ for (i in 1:max_number_of_plots){
             which.class = "1", prob = TRUE)
 }
 
+# Two extra:
+i <- i + 1
+varno1 <- "slope_dep_vs_time"
+varno2 <- "TOTN_dep"
+plotdata[[i]] <- model1 %>%
+  partial(pred.var = c(varno1, varno2), chull = TRUE, progress = "text",
+          which.class = "1", prob = TRUE)
+
+i <- i + 1
+varno1 <- "TOC"
+varno2 <- "NO3"
+plotdata[[i]] <- model1 %>%
+  partial(pred.var = c(varno1, varno2), chull = TRUE, progress = "text",
+          which.class = "1", prob = TRUE)
+
+
 # saveRDS(plotdata, "Data/160a_plotdata.Rmd")
 
 # plotdata <- readRDS("Data/160a_plotdata.Rmd")
@@ -712,13 +723,13 @@ for (i in 1:max_number_of_plots){
 
 ```r
 # Plot the plots 
-for (i in 1:max_number_of_plots){
+for (i in 1:length(plotdata)){
   autoplot(plotdata[[i]], contour = TRUE, legend.title = "Probability\nNO3 decline") %>%
     print()
 }
 ```
 
-![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-20-1.png)<!-- -->![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-20-2.png)<!-- -->![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-20-3.png)<!-- -->![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-20-4.png)<!-- -->![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-20-5.png)<!-- -->![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-20-6.png)<!-- -->
+![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-20-1.png)<!-- -->![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-20-2.png)<!-- -->![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-20-3.png)<!-- -->![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-20-4.png)<!-- -->![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-20-5.png)<!-- -->![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-20-6.png)<!-- -->![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-20-7.png)<!-- -->![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-20-8.png)<!-- -->
 
 
 ## 6. Logistic regression      
@@ -761,20 +772,28 @@ visreg(dd1b_mod1, scale = "response")
 ##     data = df_analysis, na.action = "na.fail")
 ## ---
 ## Model selection table 
-##       (Int)      alt   ctc_are      cnf  dcd_mxd       NO3 slp_dep_vs_tim     tmp      TOC
-## 1486 0.5028 0.001185           -0.01159 -0.02391                 -0.06027 -0.2551 -0.08935
-## 1998 0.4416 0.001333           -0.01085 -0.02230                 -0.07687 -0.2108 -0.09762
-## 1488 0.5640 0.001161 -0.001738 -0.01145 -0.02407                 -0.06057 -0.2634 -0.08807
-## 1482 0.2503 0.001202                    -0.01733                 -0.05437 -0.2567 -0.13720
-## 1518 0.5417 0.001133           -0.01195 -0.02421 0.0002982       -0.05853 -0.2606 -0.08448
-## 462  0.7696 0.001090           -0.01359 -0.02715                 -0.06249 -0.2804 -0.05986
+##       (Int)      alt   ctc_are      cnf  dcd_mxd  lak_wtr slp_dep_vs_tim     tmp      TOC
+## 1486 0.6318 0.001162           -0.01542 -0.02905                -0.05288 -0.1943 -0.07612
+## 1998 0.5743 0.001326           -0.01513 -0.02807                -0.06966 -0.1386 -0.08380
+## 1502 0.9683 0.001049           -0.01607 -0.02907 -0.01314       -0.05243 -0.2036 -0.08148
+## 462  0.8596 0.001086           -0.01686 -0.03165                -0.05444 -0.2144 -0.05448
+## 1488 0.6854 0.001139 -0.001467 -0.01533 -0.02922                -0.05305 -0.2004 -0.07507
+## 206  0.6853 0.001296           -0.02091 -0.03312                -0.05743 -0.2307         
+## 1870 0.2065 0.001574           -0.01406 -0.02712                -0.07384         -0.09772
+## 1230 0.4764 0.001403           -0.02105 -0.03169                -0.05714 -0.2204         
+## 2014 0.9699 0.001204           -0.01609 -0.02802 -0.01567       -0.07233 -0.1442 -0.09027
+## 974  0.7750 0.001283           -0.01645 -0.03037                -0.07298 -0.1490 -0.06436
 ##         TOT_dep     wtl df   logLik  AICc delta weight
-## 1486            0.04766  8 -173.512 363.4  0.00  0.306
-## 1998 -0.0008299 0.04585  9 -173.013 364.6  1.11  0.176
-## 1488            0.04701  9 -173.083 364.7  1.25  0.164
-## 1482            0.05378  7 -175.470 365.3  1.82  0.123
-## 1518            0.04768  9 -173.428 365.4  1.94  0.116
-## 462                      7 -175.532 365.4  1.95  0.116
+## 1486            0.04020  8 -189.925 396.2  0.00  0.182
+## 1998 -0.0008775 0.03781  9 -189.276 397.0  0.80  0.122
+## 1502            0.03857  9 -189.494 397.5  1.24  0.098
+## 462                      7 -191.606 397.5  1.27  0.096
+## 1488            0.03968  9 -189.540 397.6  1.33  0.094
+## 206                      6 -192.691 397.6  1.37  0.092
+## 1870 -0.0016290 0.04047  8 -190.748 397.9  1.65  0.080
+## 1230            0.02854  7 -191.794 397.9  1.65  0.080
+## 2014 -0.0009991 0.03567 10 -188.657 397.9  1.67  0.079
+## 974  -0.0009895          8 -190.768 397.9  1.69  0.078
 ## Models ranked by AICc(x) 
 ## 
 ## 
