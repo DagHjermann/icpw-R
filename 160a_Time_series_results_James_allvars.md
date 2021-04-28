@@ -13,7 +13,11 @@ params:
   text_dataset: 
     value: 'Data with slope_dep_vs_time, NO3, and TOTN_dep'
   selected_vars: 
-    value: 'no3_decline, slope_dep_vs_time, longitude, latitude, NO3, TOTN_dep'
+    value: 'no3_decline,TOC,slope_dep_vs_time, NO3, TOTN_dep, latitude, longitude, altitude,pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse'
+  extra_pairwise_plots:
+    value: 'TOC,NO3; slope_dep_vs_time,TOTN_dep; altitude,decid_mixed'
+  pairwise_plots_same_scale:
+    value: 'FALSE'
   logistic_formula: 
     value: 'no3_decline ~ slope_dep_vs_time + NO3 + TOTN_dep'
 
@@ -34,11 +38,11 @@ params:
     - slope_dep_vs_time: Trend in Tot-N deposition 1992-2016    
     - NO3, TOTN_dep: Medians of NO3, TOTN_dep (Tot-N deposition) 1992-2016   
     - catchment_area (if included in data)      
-    - TOC: Medians of TOC 1992-2016 (if included in data)     
+    - TOC: Medians of TOC       
     - pre, tmp: mean precipitation + temp   
     - Land cover 
   
-Technical details: This html file was created was 
+Technical details: This html file was rendered with `160parm_run_markdown.R` which runs the script `160parm_Time_series_results_James.Rmd` with different inputs, resulting in html files 160a, 160b and 160c.    
 
 ## 1. Libraries  
 
@@ -267,9 +271,10 @@ names(dat)
 ## dat, n = 498 
 ## 
 ## Variable names: 
-##  [1] "station_id"           "slope_no3_vs_time"    "slope_tocton_vs_time" "p_no3_vs_time"       
-##  [5] "p_tocton_vs_time"     "NO3"                  "TOC"                  "TOTN_dep"            
-##  [9] "slope_dep_vs_time"    "p_dep_vs_time"
+##  [1] "station_id"           "slope_no3_vs_time"    "slope_tocton_vs_time"
+##  [4] "p_no3_vs_time"        "p_tocton_vs_time"     "NO3"                 
+##  [7] "TOC"                  "TOTN_dep"             "slope_dep_vs_time"   
+## [10] "p_dep_vs_time"
 ```
 
 ### Add climate and deposition medians 
@@ -311,7 +316,8 @@ cat("dat, n =", nrow(dat), "\n")
 
 
 ### Combine land cover types   
-* Data including UK read using script 159  
+* Data including UK read using script 159   
+* Note: also includes metadata (country, etc.)
 * bare_sparse = bare_rock + sparsely_vegetated + glacier   
 * Select: coniferous, deciduous, lake, mixed_forest, wetland, bare_sparse   
 
@@ -697,39 +703,64 @@ for (i in 1:max_number_of_plots){
     partial(pred.var = variables_for_plot[c(varno1, varno2)], chull = TRUE, progress = "text",
             which.class = "1", prob = TRUE)
 }
-
-# Two extra:
-i <- i + 1
-varno1 <- "slope_dep_vs_time"
-varno2 <- "TOTN_dep"
-plotdata[[i]] <- model1 %>%
-  partial(pred.var = c(varno1, varno2), chull = TRUE, progress = "text",
-          which.class = "1", prob = TRUE)
-
-i <- i + 1
-varno1 <- "TOC"
-varno2 <- "NO3"
-plotdata[[i]] <- model1 %>%
-  partial(pred.var = c(varno1, varno2), chull = TRUE, progress = "text",
-          which.class = "1", prob = TRUE)
-
-
-# saveRDS(plotdata, "Data/160a_plotdata.Rmd")
-
-# plotdata <- readRDS("Data/160a_plotdata.Rmd")
 ```
 
 
 
 ```r
-# Plot the plots 
-for (i in 1:length(plotdata)){
-  autoplot(plotdata[[i]], contour = TRUE, legend.title = "Probability\nNO3 decline") %>%
-    print()
+### Extra plots
+
+i <- max_number_of_plots
+
+plotpairs <- params$extra_pairwise_plots %>%
+  gsub(" ", "", ., fixed = TRUE) %>%
+  strsplit(x, split = ";") %>%
+  .[[1]] %>%
+  purrr::map(~strsplit(., split = ",")[[1]])
+
+for (plotvar in plotpairs){
+  # print(plotvar)
+  if (plotvar[1] %in% names(train_set) & plotvar[2] %in% names(train_set)){
+    i <- i + 1
+    plotdata[[i]] <- model1 %>%
+      partial(pred.var = c(plotvar[1], plotvar[2]), chull = TRUE, progress = "text",
+             which.class = "1", prob = TRUE)
+  }
 }
 ```
 
-![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-20-1.png)<!-- -->![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-20-2.png)<!-- -->![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-20-3.png)<!-- -->![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-20-4.png)<!-- -->![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-20-5.png)<!-- -->![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-20-6.png)<!-- -->![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-20-7.png)<!-- -->![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-20-8.png)<!-- -->
+
+
+
+```r
+# params$pairwise_plots_same_scale
+
+if (params$pairwise_plots_same_scale == "TRUE"){
+
+  # Put on same color scale
+  
+  # Find range of predicted values for each graph
+  ranges <- plotdata %>% purrr::map_dfc(~range(.$yhat))
+  
+  # use range of all the ranges
+  for (i in 1:length(plotdata)){
+    gg <- autoplot(plotdata[[i]], contour = TRUE, legend.title = "Probability\nNO3 decline") +
+      scale_fill_viridis_c(limits = range(ranges))
+    print(gg) 
+  }
+  
+} else {
+
+  # Plot the plots 
+  for (i in 1:length(plotdata)){
+    gg <- autoplot(plotdata[[i]], contour = TRUE, legend.title = "Probability\nNO3 decline")
+    print(gg)
+  }
+  
+}
+```
+
+![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-20-1.png)<!-- -->![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-20-2.png)<!-- -->![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-20-3.png)<!-- -->![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-20-4.png)<!-- -->![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-20-5.png)<!-- -->![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-20-6.png)<!-- -->![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-20-7.png)<!-- -->![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-20-8.png)<!-- -->![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-20-9.png)<!-- -->
 
 
 ## 6. Logistic regression      

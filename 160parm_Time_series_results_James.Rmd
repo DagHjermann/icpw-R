@@ -13,9 +13,13 @@ params:
   text_dataset: 
     value: 'Data with slope_dep_vs_time, NO3, and TOTN_dep'
   selected_vars: 
-    value: 'no3_decline, slope_dep_vs_time, longitude, latitude, NO3, TOTN_dep'
+    value: 'no3_decline,TOC,slope_dep_vs_time, NO3, TOTN_dep, latitude, longitude, altitude,pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse'
+  extra_pairwise_plots:
+    value: 'TOC,NO3; slope_dep_vs_time,TOTN_dep; altitude,decid_mixed'
+  pairwise_plots_same_scale:
+    value: 'FALSE'
   logistic_formula: 
-    value: 'no3_decline ~ slope_dep_vs_time + NO3 + TOTN_dep'
+    value: 'no3_decline ~ TOC*altitude + TOTN_dep*slope_dep_vs_time + NO3 + decid_mixed + coniferous + tmp + lake_water + wetland'
 
 ---
 
@@ -41,7 +45,7 @@ params:
     - slope_dep_vs_time: Trend in Tot-N deposition 1992-2016    
     - NO3, TOTN_dep: Medians of NO3, TOTN_dep (Tot-N deposition) 1992-2016   
     - catchment_area (if included in data)      
-    - TOC: Medians of TOC 1992-2016 (if included in data)     
+    - TOC: Medians of TOC       
     - pre, tmp: mean precipitation + temp   
     - Land cover 
   
@@ -80,6 +84,8 @@ library(readr)
 
 knitr::opts_chunk$set(results = 'hold') # collect the results from a chunk  
 knitr::opts_chunk$set(warning = FALSE)  
+
+options(width = 95)
 
 ```
 
@@ -277,7 +283,8 @@ cat("dat, n =", nrow(dat), "\n")
 
 
 ### Combine land cover types   
-* Data including UK read using script 159  
+* Data including UK read using script 159   
+* Note: also includes metadata (country, etc.)
 * bare_sparse = bare_rock + sparsely_vegetated + glacier   
 * Select: coniferous, deciduous, lake, mixed_forest, wetland, bare_sparse   
 ```{r}
@@ -342,6 +349,8 @@ dat %>%
 
 
 ## 4. Select data   
+
+### a. Selection of variables  
 * Select variables to use, and thereby also cases  
 ```{r}
 
@@ -397,7 +406,17 @@ cat("Analysis: n =", nrow(df_analysis), "\n")
 ```
 
 
+### b. Correlations   
+```{r, fig.width=10, fig.height=10}
 
+gg <- GGally::ggcorr(df_analysis, method = c("complete.obs", "kendall"), label = TRUE) # +
+gg + theme(plot.margin = unit(c(.8, 2, .8, 2.5), "cm"))
+
+# SHOULD also workaccording to ?element_rect (update ggplot2?)
+# gg + theme(plot.margin = margin(.6, .5, .6, 1.7, "cm"))
+
+
+```  
 
 
 
@@ -504,7 +523,7 @@ plot_multi_way_importance(importance, x_measure = "accuracy_decrease", y_measure
 
 #### c3. Random forest, show partial effects  
 
-```{r 5c3_calculate_partial_effects, warning=FALSE, message=FALSE, results='hide'}
+```{r 5c3_calculate_partial_effects1, warning=FALSE, message=FALSE, results='hide'}
 
 # Which variables to include:
 variables_for_plot <- importance %>%
@@ -527,54 +546,42 @@ for (i in 1:max_number_of_plots){
             which.class = "1", prob = TRUE)
 }
 
-#
-# Two extra plots:
-#
-i <- i + 1
-varno1 <- "slope_dep_vs_time"
-varno2 <- "TOTN_dep"
-plotdata[[i]] <- model1 %>%
-  partial(pred.var = c(varno1, varno2), chull = TRUE, progress = "text",
-          which.class = "1", prob = TRUE)
+```
 
-if ("TOC" %in% names(train)){
-  i <- i + 1
-  varno1 <- "TOC"
-  varno2 <- "NO3"
-  plotdata[[i]] <- model1 %>%
-    partial(pred.var = c(varno1, varno2), chull = TRUE, progress = "text",
-            which.class = "1", prob = TRUE)
+
+```{r 5c3_calculate_partial_effects2, warning=FALSE, message=FALSE, results='hide'}
+
+### Extra plots
+
+i <- max_number_of_plots
+
+plotpairs <- params$extra_pairwise_plots %>%
+  gsub(" ", "", ., fixed = TRUE) %>%
+  strsplit(x, split = ";") %>%
+  .[[1]] %>%
+  purrr::map(~strsplit(., split = ",")[[1]])
+
+for (plotvar in plotpairs){
+  # print(plotvar)
+  if (plotvar[1] %in% names(train_set) & plotvar[2] %in% names(train_set)){
+    i <- i + 1
+    plotdata[[i]] <- model1 %>%
+      partial(pred.var = c(plotvar[1], plotvar[2]), chull = TRUE, progress = "text",
+             which.class = "1", prob = TRUE)
+  }
 }
-
-if (substr(params$document_title,1,4) == "160b"){
-  i <- i + 1
-  varno1 <- "altitude"
-  varno2 <- "decid_mixed"
-  plotdata[[i]] <- model1 %>%
-    partial(pred.var = c(varno1, varno2), chull = TRUE, progress = "text",
-            which.class = "1", prob = TRUE)
-}
-
-
-# saveRDS(plotdata, "Data/160a_plotdata.Rmd")
-
-# plotdata <- readRDS("Data/160a_plotdata.Rmd")
 
 
 ```
 
 
+
 ```{r, warning=FALSE}
 
-# Plot the plots 
-for (i in 1:length(plotdata)){
-  autoplot(plotdata[[i]], contour = TRUE, legend.title = "Probability\nNO3 decline") %>%
-    print() 
-}
+# params$pairwise_plots_same_scale
 
+if (params$pairwise_plots_same_scale == "TRUE"){
 
-if (FALSE) {
-  
   # Put on same color scale
   
   # Find range of predicted values for each graph
@@ -587,36 +594,133 @@ if (FALSE) {
     print(gg) 
   }
   
+} else {
+
+  # Plot the plots 
+  for (i in 1:length(plotdata)){
+    gg <- autoplot(plotdata[[i]], contour = TRUE, legend.title = "Probability\nNO3 decline")
+    print(gg)
+  }
+  
 }
+
+
 
 ```
 
 
-## 6. Logistic regression      
-```{r, results  = "hold"}
+```{r, echo = FALSE, results  = "hold"}
 
-#   no3_decline ~ as.formula(params$logistic_formula),
+# #   no3_decline ~ as.formula(params$logistic_formula),
+# 
+# fm <- glm(
+#   as.formula(params$logistic_formula),
+#   data = df_analysis, 
+#   family = "binomial",
+#   na.action = "na.fail")
+# 
+# dd1b <- dredge(fm)                       # only once
+# saveRDS(dd1b, "Data/160_all_dd1b.rds")    # save it as it takes a couple of minutes
+# # dd1b <- readRDS("Data/160_all_dd1b.rds")
+# 
+# # subset(dd1b, delta < 1)
+# subset(dd1b, delta < 2)
+# 
+# cat("\n\nR2: \n")
+# dd1b_mod1 <- get.models(dd1b, 1)[[1]]  
+# # summary(dd1b_mod1)  
+# 
+# par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
+# visreg(dd1b_mod1, scale = "response")
+
+```
+
+
+## 6. Logistic regression       
+Start model: **`r params$logistic_formula`**
+```{r, results  = "hold"}
 
 fm <- glm(
   as.formula(params$logistic_formula),
   data = df_analysis, 
-  family = "binomial",
+  family = "binomial",  
   na.action = "na.fail")
 
-dd1b <- dredge(fm)                       # only once
-saveRDS(dd1b, "Data/160_all_dd1b.rds")    # save it as it takes a couple of minutes
-# dd1b <- readRDS("Data/160_all_dd1b.rds")
+dredged_models <- dredge(fm)                       # only once
+# saveRDS(dredged_models, "Data/162_all_dredged_models.rds")    # save it as it takes a couple of minutes
+# dredged_models <- readRDS("Data/162_all_dredged_models.rds")
 
-# subset(dd1b, delta < 1)
-subset(dd1b, delta < 2)
+# cat("\n\nR2: \n")
+# mod1 <- get.models(dredged_models, 1)[[1]]  
+# summary(mod1)  
 
-cat("\n\nR2: \n")
-dd1b_mod1 <- get.models(dd1b, 1)[[1]]  
-# summary(dd1b_mod1)  
+```  
 
-par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
-visreg(dd1b_mod1, scale = "response")
+### Best models  
+```{r}
+# subset(dredged_models, delta < 1)
+
+subset(dredged_models, delta < 2)
+
+# Alternative way of showing result (didn't become any better)
+# df <- subset(dredged_models, delta < 2)
+# select(as.data.frame(df) %>% round(6), -`(Intercept)`, -logLik, -AICc)
 
 ```
+
+```{r, echo = FALSE}
+
+#
+# Function to get interactions and effects 
+#
+get_model_variables <- function(model){  
+  all_terms <- names(model$coefficients)
+  # Remove '(Intercept)'
+  all_terms <- all_terms[!all_terms %in% "(Intercept)"]
+  sel_interactions <- grepl(":", all_terms, fixed = TRUE)
+  # Removing interaction terms leaves us with the variables:
+  all_variables <- all_terms[!sel_interactions]
+  # Get interactions in a list
+  interaction_terms <- all_terms[sel_interactions]
+  interaction_list <- interaction_terms %>% strsplit(split = ":")
+  # Get additive variables
+  interaction_vars <- interaction_list %>% unlist()
+  additive_vars <- all_variables[!all_variables %in% interaction_vars]
+  list(
+    interaction_list = interaction_list,
+    additive_vars = additive_vars)
+}
+
+# Test
+# fit <- lm(sr ~ pop15*dpi + pop75*dpi + ddpi, data = LifeCycleSavings)
+# get_model_variables(fit)  
+
+```
+
+### Plots  
+```{r, message=FALSE}
+
+# Pick model with lowest AICc
+mod1 <- get.models(dredged_models, 1)[[1]]  
+
+modelvars <- get_model_variables(mod1)
+
+vars <- modelvars$interaction_list[[1]]
+
+# Interactions: 3D plot 
+# visreg2d(mod1, xvar = vars[1], yvar = vars[2], 
+#          type = 'conditional', scale = "response") 
+
+# Interactions: 2D plot 
+modelvars$interaction_list %>% purrr::walk(
+  ~visreg(mod1, .x[1], by = .x[2])
+)
+
+par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
+for (var in modelvars$additive_vars)
+  visreg(mod1, var)  
+
+```
+
 
 

@@ -13,9 +13,13 @@ params:
   text_dataset: 
     value: 'Data with slope_dep_vs_time, NO3, and TOTN_dep'
   selected_vars: 
-    value: 'no3_decline, slope_dep_vs_time, longitude, latitude, NO3, TOTN_dep'
+    value: 'no3_decline,TOC,slope_dep_vs_time, NO3, TOTN_dep, latitude, longitude, altitude,pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse'
+  extra_pairwise_plots:
+    value: 'TOC,NO3; slope_dep_vs_time,TOTN_dep; altitude,decid_mixed'
+  pairwise_plots_same_scale:
+    value: 'FALSE'
   logistic_formula: 
-    value: 'no3_decline ~ slope_dep_vs_time + NO3 + TOTN_dep'
+    value: 'no3_decline ~ TOC*altitude + TOTN_dep*slope_dep_vs_time + NO3 + decid_mixed + coniferous + tmp + lake_water + wetland'
 
 ---
 
@@ -34,7 +38,7 @@ params:
     - slope_dep_vs_time: Trend in Tot-N deposition 1992-2016    
     - NO3, TOTN_dep: Medians of NO3, TOTN_dep (Tot-N deposition) 1992-2016   
     - catchment_area (if included in data)      
-    - TOC: Medians of TOC 1992-2016 (if included in data)     
+    - TOC: Medians of TOC       
     - pre, tmp: mean precipitation + temp   
     - Land cover 
   
@@ -73,6 +77,8 @@ library(readr)
 
 knitr::opts_chunk$set(results = 'hold') # collect the results from a chunk  
 knitr::opts_chunk$set(warning = FALSE)  
+
+options(width = 95)
 ```
 
 
@@ -267,9 +273,10 @@ names(dat)
 ## dat, n = 498 
 ## 
 ## Variable names: 
-##  [1] "station_id"           "slope_no3_vs_time"    "slope_tocton_vs_time" "p_no3_vs_time"       
-##  [5] "p_tocton_vs_time"     "NO3"                  "TOC"                  "TOTN_dep"            
-##  [9] "slope_dep_vs_time"    "p_dep_vs_time"
+##  [1] "station_id"           "slope_no3_vs_time"    "slope_tocton_vs_time"
+##  [4] "p_no3_vs_time"        "p_tocton_vs_time"     "NO3"                 
+##  [7] "TOC"                  "TOTN_dep"             "slope_dep_vs_time"   
+## [10] "p_dep_vs_time"
 ```
 
 ### Add climate and deposition medians 
@@ -311,7 +318,8 @@ cat("dat, n =", nrow(dat), "\n")
 
 
 ### Combine land cover types   
-* Data including UK read using script 159  
+* Data including UK read using script 159   
+* Note: also includes metadata (country, etc.)
 * bare_sparse = bare_rock + sparsely_vegetated + glacier   
 * Select: coniferous, deciduous, lake, mixed_forest, wetland, bare_sparse   
 
@@ -385,6 +393,8 @@ dat %>%
 
 
 ## 4. Select data   
+
+### a. Selection of variables  
 * Select variables to use, and thereby also cases  
 
 ```r
@@ -443,14 +453,16 @@ cat("Analysis: n =", nrow(df_analysis), "\n")
 ## no3_decline,TOC,slope_dep_vs_time, NO3, TOTN_dep, latitude, longitude, altitude,pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse
 ## -------------------------------------------------------------
 ## Number of missing values per variable: 
-##            no3_decline                    TOC      slope_dep_vs_time                    NO3               TOTN_dep 
-##                      0                     33                      0                      0                      0 
-##               latitude              longitude               altitude                    pre                    tmp 
-##                      0                      0                      2                      0                      0 
-##                  urban             cultivated             coniferous            decid_mixed total_shrub_herbaceous 
-##                     16                     16                     22                     22                     16 
-##                wetland             lake_water            bare_sparse 
-##                     16                     16                     16 
+##            no3_decline                    TOC      slope_dep_vs_time                    NO3 
+##                      0                     33                      0                      0 
+##               TOTN_dep               latitude              longitude               altitude 
+##                      0                      0                      0                      2 
+##                    pre                    tmp                  urban             cultivated 
+##                      0                      0                     16                     16 
+##             coniferous            decid_mixed total_shrub_herbaceous                wetland 
+##                     22                     22                     16                     16 
+##             lake_water            bare_sparse 
+##                     16                     16 
 ## 
 ## Number of complete observations: 
 ## complete
@@ -484,7 +496,19 @@ cat("Analysis: n =", nrow(df_analysis), "\n")
 ```
 
 
+### b. Correlations   
 
+```r
+gg <- GGally::ggcorr(df_analysis, method = c("complete.obs", "kendall"), label = TRUE) # +
+gg + theme(plot.margin = unit(c(.8, 2, .8, 2.5), "cm"))
+```
+
+![](160b_Time_series_results_James_no_catcharea_files/figure-html/unnamed-chunk-14-1.png)<!-- -->
+
+```r
+# SHOULD also workaccording to ?element_rect (update ggplot2?)
+# gg + theme(plot.margin = margin(.6, .5, .6, 1.7, "cm"))
+```
 
 
 
@@ -516,7 +540,7 @@ valid_set <- df_analysis[!train,] %>%
 plot(ct, main="Conditional Inference Tree")
 ```
 
-![](160b_Time_series_results_James_no_catcharea_files/figure-html/unnamed-chunk-15-1.png)<!-- -->
+![](160b_Time_series_results_James_no_catcharea_files/figure-html/unnamed-chunk-16-1.png)<!-- -->
 
 ```r
 cat("\n\n")
@@ -577,7 +601,7 @@ ev.raw = evtree(no3_decline_f ~ ., data = train_set)
 plot(ev.raw)
 ```
 
-![](160b_Time_series_results_James_no_catcharea_files/figure-html/unnamed-chunk-16-1.png)<!-- -->
+![](160b_Time_series_results_James_no_catcharea_files/figure-html/unnamed-chunk-17-1.png)<!-- -->
 
 ```r
 cat("Predicted in training data: \n")
@@ -659,14 +683,14 @@ importance <- measure_importance(model1)
 plot_multi_way_importance(importance, size_measure = "no_of_nodes", no_of_labels = 12)  
 ```
 
-![](160b_Time_series_results_James_no_catcharea_files/figure-html/unnamed-chunk-19-1.png)<!-- -->
+![](160b_Time_series_results_James_no_catcharea_files/figure-html/unnamed-chunk-20-1.png)<!-- -->
 
 ```r
 plot_multi_way_importance(importance, x_measure = "accuracy_decrease", y_measure = "gini_decrease", 
                           size_measure = "p_value", no_of_labels = 12)
 ```
 
-![](160b_Time_series_results_James_no_catcharea_files/figure-html/unnamed-chunk-19-2.png)<!-- -->
+![](160b_Time_series_results_James_no_catcharea_files/figure-html/unnamed-chunk-20-2.png)<!-- -->
 
 
 
@@ -694,56 +718,40 @@ for (i in 1:max_number_of_plots){
     partial(pred.var = variables_for_plot[c(varno1, varno2)], chull = TRUE, progress = "text",
             which.class = "1", prob = TRUE)
 }
-
-#
-# Two extra plots:
-#
-i <- i + 1
-varno1 <- "slope_dep_vs_time"
-varno2 <- "TOTN_dep"
-plotdata[[i]] <- model1 %>%
-  partial(pred.var = c(varno1, varno2), chull = TRUE, progress = "text",
-          which.class = "1", prob = TRUE)
-
-if ("TOC" %in% names(train)){
-  i <- i + 1
-  varno1 <- "TOC"
-  varno2 <- "NO3"
-  plotdata[[i]] <- model1 %>%
-    partial(pred.var = c(varno1, varno2), chull = TRUE, progress = "text",
-            which.class = "1", prob = TRUE)
-}
-
-if (substr(params$document_title,1,4) == "160b"){
-  i <- i + 1
-  varno1 <- "altitude"
-  varno2 <- "decid_mixed"
-  plotdata[[i]] <- model1 %>%
-    partial(pred.var = c(varno1, varno2), chull = TRUE, progress = "text",
-            which.class = "1", prob = TRUE)
-}
-
-
-# saveRDS(plotdata, "Data/160a_plotdata.Rmd")
-
-# plotdata <- readRDS("Data/160a_plotdata.Rmd")
 ```
 
 
 
 ```r
-# Plot the plots 
-for (i in 1:length(plotdata)){
-  autoplot(plotdata[[i]], contour = TRUE, legend.title = "Probability\nNO3 decline") %>%
-    print() 
+### Extra plots
+
+i <- max_number_of_plots
+
+plotpairs <- params$extra_pairwise_plots %>%
+  gsub(" ", "", ., fixed = TRUE) %>%
+  strsplit(x, split = ";") %>%
+  .[[1]] %>%
+  purrr::map(~strsplit(., split = ",")[[1]])
+
+for (plotvar in plotpairs){
+  # print(plotvar)
+  if (plotvar[1] %in% names(train_set) & plotvar[2] %in% names(train_set)){
+    i <- i + 1
+    plotdata[[i]] <- model1 %>%
+      partial(pred.var = c(plotvar[1], plotvar[2]), chull = TRUE, progress = "text",
+             which.class = "1", prob = TRUE)
+  }
 }
 ```
 
-![](160b_Time_series_results_James_no_catcharea_files/figure-html/unnamed-chunk-20-1.png)<!-- -->![](160b_Time_series_results_James_no_catcharea_files/figure-html/unnamed-chunk-20-2.png)<!-- -->![](160b_Time_series_results_James_no_catcharea_files/figure-html/unnamed-chunk-20-3.png)<!-- -->![](160b_Time_series_results_James_no_catcharea_files/figure-html/unnamed-chunk-20-4.png)<!-- -->![](160b_Time_series_results_James_no_catcharea_files/figure-html/unnamed-chunk-20-5.png)<!-- -->![](160b_Time_series_results_James_no_catcharea_files/figure-html/unnamed-chunk-20-6.png)<!-- -->![](160b_Time_series_results_James_no_catcharea_files/figure-html/unnamed-chunk-20-7.png)<!-- -->![](160b_Time_series_results_James_no_catcharea_files/figure-html/unnamed-chunk-20-8.png)<!-- -->
+
+
 
 ```r
-if (FALSE) {
-  
+# params$pairwise_plots_same_scale
+
+if (params$pairwise_plots_same_scale == "TRUE"){
+
   # Put on same color scale
   
   # Find range of predicted values for each graph
@@ -756,22 +764,34 @@ if (FALSE) {
     print(gg) 
   }
   
+} else {
+
+  # Plot the plots 
+  for (i in 1:length(plotdata)){
+    gg <- autoplot(plotdata[[i]], contour = TRUE, legend.title = "Probability\nNO3 decline")
+    print(gg)
+  }
+  
 }
 ```
 
+![](160b_Time_series_results_James_no_catcharea_files/figure-html/unnamed-chunk-21-1.png)<!-- -->![](160b_Time_series_results_James_no_catcharea_files/figure-html/unnamed-chunk-21-2.png)<!-- -->![](160b_Time_series_results_James_no_catcharea_files/figure-html/unnamed-chunk-21-3.png)<!-- -->![](160b_Time_series_results_James_no_catcharea_files/figure-html/unnamed-chunk-21-4.png)<!-- -->![](160b_Time_series_results_James_no_catcharea_files/figure-html/unnamed-chunk-21-5.png)<!-- -->![](160b_Time_series_results_James_no_catcharea_files/figure-html/unnamed-chunk-21-6.png)<!-- -->![](160b_Time_series_results_James_no_catcharea_files/figure-html/unnamed-chunk-21-7.png)<!-- -->![](160b_Time_series_results_James_no_catcharea_files/figure-html/unnamed-chunk-21-8.png)<!-- -->![](160b_Time_series_results_James_no_catcharea_files/figure-html/unnamed-chunk-21-9.png)<!-- -->
 
-## 6. Logistic regression      
+
+
+
+
+## 6. Logistic regression       
+Start model: **no3_decline ~ TOC*altitude + TOTN_dep*slope_dep_vs_time + NO3 + decid_mixed + coniferous + tmp + lake_water + wetland**
 
 ```r
-#   no3_decline ~ as.formula(params$logistic_formula),
-
 fm <- glm(
   as.formula(params$logistic_formula),
   data = df_analysis, 
-  family = "binomial",
+  family = "binomial",  
   na.action = "na.fail")
 
-dd1b <- dredge(fm)                       # only once
+dredged_models <- dredge(fm)                       # only once
 ```
 
 ```
@@ -779,47 +799,110 @@ dd1b <- dredge(fm)                       # only once
 ```
 
 ```r
-saveRDS(dd1b, "Data/160_all_dd1b.rds")    # save it as it takes a couple of minutes
-# dd1b <- readRDS("Data/160_all_dd1b.rds")
+# saveRDS(dredged_models, "Data/162_all_dredged_models.rds")    # save it as it takes a couple of minutes
+# dredged_models <- readRDS("Data/162_all_dredged_models.rds")
 
-# subset(dd1b, delta < 1)
-subset(dd1b, delta < 2)
-
-cat("\n\nR2: \n")
-dd1b_mod1 <- get.models(dd1b, 1)[[1]]  
-# summary(dd1b_mod1)  
-
-par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
-visreg(dd1b_mod1, scale = "response")
+# cat("\n\nR2: \n")
+# mod1 <- get.models(dredged_models, 1)[[1]]  
+# summary(mod1)  
 ```
 
-![](160b_Time_series_results_James_no_catcharea_files/figure-html/unnamed-chunk-21-1.png)<!-- -->
+### Best models  
+
+```r
+# subset(dredged_models, delta < 1)
+
+subset(dredged_models, delta < 2)
+
+# Alternative way of showing result (didn't become any better)
+# df <- subset(dredged_models, delta < 2)
+# select(as.data.frame(df) %>% round(6), -`(Intercept)`, -logLik, -AICc)
+```
 
 ```
 ## Global model call: glm(formula = as.formula(params$logistic_formula), family = "binomial", 
 ##     data = df_analysis, na.action = "na.fail")
 ## ---
 ## Model selection table 
-##       (Int)      alt      cnf  dcd_mxd   lak_wtr       NO3 slp_dep_vs_tim     tmp      TOC    TOT_dep     wtl df
-## 616  0.4891 0.001497 -0.02122 -0.02908                           -0.05947 -0.2440                     0.03970  7
-## 744  0.5987 0.001345 -0.01797 -0.02782                           -0.05717 -0.2312 -0.04344            0.04447  8
-## 872  0.4220 0.001674 -0.02127 -0.02868                           -0.07116 -0.2008          -0.0006572 0.03857  8
-## 1000 0.5351 0.001532 -0.01760 -0.02715                           -0.07163 -0.1773 -0.04959 -0.0008114 0.04371  9
-## 888  0.5316 0.001563 -0.02159 -0.02806           0.0011280       -0.07468 -0.1821          -0.0011850 0.03971  9
-## 632  0.5638 0.001381 -0.02128 -0.02890           0.0005365       -0.05643 -0.2510                     0.04070  8
-## 624  0.5926 0.001477 -0.02161 -0.02926 -0.004047                 -0.05922 -0.2468                     0.03910  8
-##        logLik  AICc delta weight
-## 616  -235.590 485.4  0.00  0.241
-## 744  -234.822 486.0  0.54  0.184
-## 872  -235.172 486.7  1.24  0.130
-## 1000 -234.201 486.8  1.38  0.121
-## 888  -234.229 486.9  1.43  0.118
-## 632  -235.297 486.9  1.49  0.115
-## 624  -235.530 487.4  1.95  0.091
-## Models ranked by AICc(x) 
-## 
-## 
-## R2:
+##      (Int)        alt      cnf  dcd_mxd      NO3 slp_dep_vs_tim     tmp     TOC    TOT_dep
+## 4072 1.030 -0.0001112 -0.02626 -0.03440                 -0.1123 -0.2929 -0.1319  4.166e-04
+## 4088 1.174 -0.0002861 -0.02839 -0.03466 0.001176        -0.1161 -0.2832 -0.1217 -7.638e-05
+## 3560 1.244 -0.0002602 -0.02877 -0.03570                 -0.1184 -0.3139 -0.1259  4.384e-04
+## 3576 1.399 -0.0004450 -0.03099 -0.03597 0.001241        -0.1222 -0.3034 -0.1152 -8.541e-05
+##          wtl   alt:TOC slp_dep_vs_tim:TOT_dep df   logLik  AICc delta weight
+## 4072 0.02913 0.0003802              2.915e-05 11 -224.188 471.0  0.00  0.331
+## 4088 0.02879 0.0003990              2.854e-05 12 -223.292 471.3  0.32  0.282
+## 3560         0.0004237              3.074e-05 10 -225.730 472.0  0.98  0.202
+## 3576         0.0004418              2.982e-05 11 -224.772 472.1  1.17  0.185
+## Models ranked by AICc(x)
 ```
+
+
+
+### Plots  
+
+```r
+# Pick model with lowest AICc
+mod1 <- get.models(dredged_models, 1)[[1]]  
+
+modelvars <- get_model_variables(mod1)
+
+vars <- modelvars$interaction_list[[1]]
+
+# Interactions: 3D plot 
+# visreg2d(mod1, xvar = vars[1], yvar = vars[2], 
+#          type = 'conditional', scale = "response") 
+
+# Interactions: 2D plot 
+modelvars$interaction_list %>% purrr::walk(
+  ~visreg(mod1, .x[1], by = .x[2])
+)
+```
+
+![](160b_Time_series_results_James_no_catcharea_files/figure-html/unnamed-chunk-26-1.png)<!-- -->![](160b_Time_series_results_James_no_catcharea_files/figure-html/unnamed-chunk-26-2.png)<!-- -->
+
+```r
+par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
+for (var in modelvars$additive_vars)
+  visreg(mod1, var)  
+```
+
+![](160b_Time_series_results_James_no_catcharea_files/figure-html/unnamed-chunk-26-3.png)<!-- -->
+
+```
+## Conditions used in construction of plot
+## altitude: 276
+## decid_mixed: 16.8925
+## slope_dep_vs_time: -15.96809
+## tmp: 5.458334
+## TOC: 4.84
+## TOTN_dep: 603.1866
+## wetland: 1.2945
+## Conditions used in construction of plot
+## altitude: 276
+## coniferous: 21.1745
+## slope_dep_vs_time: -15.96809
+## tmp: 5.458334
+## TOC: 4.84
+## TOTN_dep: 603.1866
+## wetland: 1.2945
+## Conditions used in construction of plot
+## altitude: 276
+## coniferous: 21.1745
+## decid_mixed: 16.8925
+## slope_dep_vs_time: -15.96809
+## TOC: 4.84
+## TOTN_dep: 603.1866
+## wetland: 1.2945
+## Conditions used in construction of plot
+## altitude: 276
+## coniferous: 21.1745
+## decid_mixed: 16.8925
+## slope_dep_vs_time: -15.96809
+## tmp: 5.458334
+## TOC: 4.84
+## TOTN_dep: 603.1866
+```
+
 
 
