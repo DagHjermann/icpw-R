@@ -17,13 +17,13 @@ params:
   medians_filename:
     value: 'medians_2012-2016_no3.csv'        
   selected_vars: 
-    value: 'log_median_no3,catchment_area, log_median_totc,slope_dep_vs_time, TOTN_dep, latitude, longitude, altitude,pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse'
+    value: 'log_median_no3,catchment_area, log_median_toc,slope_dep_vs_time, TOTN_dep, latitude, longitude, altitude,pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse'
   tree_formula:
     value: 'log_median_no3 ~ .'
   extra_pairwise_plots:
     value: 'TOC,NO3; slope_dep_vs_time,TOTN_dep; altitude,decid_mixed'
   logistic_formula: 
-    value: 'log_median_no3 ~ TOTN_dep + slope_dep_vs_time + TOTN_dep:slope_dep_vs_time + log_median_totc + TOTN_dep:log_median_totc + tmp + pre + altitude + decid_mixed + bare_sparse + coniferous + catchment_area + lake_water + total_shrub_herbaceous'
+    value: 'log_median_no3 ~ TOTN_dep + slope_dep_vs_time + TOTN_dep:slope_dep_vs_time + log_median_toc + TOTN_dep:log_median_toc + tmp + pre + altitude + decid_mixed + bare_sparse + coniferous + catchment_area + lake_water + total_shrub_herbaceous'
 
 ---
 
@@ -159,14 +159,16 @@ Using medians
 
 # Medians 2012-2016  
 df1 <- df_medians %>%
-  select(station_id, `NO3.N_µg.l.N`, `TOTN_µg.l.N`, `TOC_mg.C.l`, TOC.TON) %>%
+  select(station_id, `NO3.N_µg.l.N`, `TOTN_µg.l.N`, `TON_µg.l.N`, `TOC_mg.C.l`, TOC.TON) %>%
   rename(median_no3 = `NO3.N_µg.l.N`,
          median_totn = `TOTN_µg.l.N`,
-         median_totc = `TOC_mg.C.l`,
+         median_ton = `TON_µg.l.N`,
+         median_toc = `TOC_mg.C.l`,
          median_tocton = `TOC.TON`) %>%
   mutate(log_median_no3 = log10(median_no3 + 0.1),
          log_median_totn = log10(median_totn),
-         log_median_totc = log10(median_totc),
+         log_median_ton = log10(median_ton),
+         log_median_toc = log10(median_toc),
          log_median_tocton = log10(median_tocton))
 
 # Some trends
@@ -358,7 +360,9 @@ gg
 
 
 ## 4. Select data   
-* Select variables to use, and thereby also cases  
+
+### a. Selection of variables    
+* Select variables to use, and thereby also cases
 
 ```r
 get_data_for_analysis <- function(data, variable_string){
@@ -415,10 +419,10 @@ cat("Analysis: n =", nrow(df_analysis), "\n")
 ```
 ## -------------------------------------------------------------
 ## Variables: 
-## log_median_tocton,catchment_area, log_median_totn, log_median_totc,slope_dep_vs_time, TOTN_dep, latitude, longitude, altitude,pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse
+## log_median_tocton,catchment_area, log_median_ton, log_median_toc,slope_dep_vs_time, TOTN_dep, latitude, longitude, altitude,pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse
 ## -------------------------------------------------------------
 ## Number of missing values per variable: 
-##      log_median_tocton         catchment_area        log_median_totn        log_median_totc 
+##      log_median_tocton         catchment_area         log_median_ton         log_median_toc 
 ##                      0                      0                      0                      0 
 ##      slope_dep_vs_time               TOTN_dep               latitude              longitude 
 ##                      0                      0                      0                      0 
@@ -454,7 +458,19 @@ cat("Analysis: n =", nrow(df_analysis), "\n")
 ```
 
 
+### b. Correlations   
 
+```r
+gg <- GGally::ggcorr(df_analysis, method = c("complete.obs", "kendall"), label = TRUE) # +
+gg + theme(plot.margin = unit(c(.8, 2, .8, 2.5), "cm"))
+```
+
+![](162c_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-13-1.png)<!-- -->
+
+```r
+# SHOULD also workaccording to ?element_rect (update ggplot2?)
+# gg + theme(plot.margin = margin(.6, .5, .6, 1.7, "cm"))
+```
 
 
 
@@ -476,10 +492,8 @@ valid_set <- df_analysis[!train,] %>%
   select(-longitude, - latitude) %>%
   as.data.frame()
 
-plot(train_set)
+# plot(train_set)
 ```
-
-![](162c_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-13-1.png)<!-- -->
 
 
 ### a. Tree classification using 'party'   
@@ -494,49 +508,57 @@ plot(train_set)
 plot(ct, main="Conditional Inference Tree")
 ```
 
-![](162c_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-14-1.png)<!-- -->
+![](162c_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-15-1.png)<!-- -->
 
 ```
 ## 
 ## Model formula:
-## log_median_tocton ~ catchment_area + log_median_totn + log_median_totc + 
+## log_median_tocton ~ catchment_area + log_median_ton + log_median_toc + 
 ##     slope_dep_vs_time + TOTN_dep + altitude + pre + tmp + urban + 
 ##     cultivated + coniferous + decid_mixed + total_shrub_herbaceous + 
 ##     wetland + lake_water + bare_sparse
 ## 
 ## Fitted party:
 ## [1] root
-## |   [2] log_median_totc <= 0.20412
-## |   |   [3] log_median_totc <= -0.36949: 0.792 (n = 8, err = 0.1)
-## |   |   [4] log_median_totc > -0.36949
-## |   |   |   [5] log_median_totn <= 2.37107: 1.118 (n = 21, err = 0.2)
-## |   |   |   [6] log_median_totn > 2.37107: 0.846 (n = 7, err = 0.1)
-## |   [7] log_median_totc > 0.20412
-## |   |   [8] log_median_totc <= 0.87795
-## |   |   |   [9] log_median_totc <= 0.64836
-## |   |   |   |   [10] lake_water <= 5.2: 1.455 (n = 11, err = 0.1)
-## |   |   |   |   [11] lake_water > 5.2: 1.281 (n = 64, err = 0.5)
-## |   |   |   [12] log_median_totc > 0.64836
-## |   |   |   |   [13] log_median_totn <= 2.43775
-## |   |   |   |   |   [14] log_median_totn <= 2.37107: 1.501 (n = 14, err = 0.0)
-## |   |   |   |   |   [15] log_median_totn > 2.37107: 1.433 (n = 8, err = 0.0)
-## |   |   |   |   [16] log_median_totn > 2.43775
-## |   |   |   |   |   [17] cultivated <= 1.304: 1.377 (n = 28, err = 0.1)
-## |   |   |   |   |   [18] cultivated > 1.304: 1.291 (n = 7, err = 0.2)
-## |   |   [19] log_median_totc > 0.87795
-## |   |   |   [20] urban <= 2.036
-## |   |   |   |   [21] log_median_totc <= 1.14457
-## |   |   |   |   |   [22] log_median_totn <= 2.51786
-## |   |   |   |   |   |   [23] log_median_totc <= 0.97313: 1.548 (n = 17, err = 0.0)
-## |   |   |   |   |   |   [24] log_median_totc > 0.97313: 1.631 (n = 11, err = 0.0)
-## |   |   |   |   |   [25] log_median_totn > 2.51786: 1.471 (n = 34, err = 0.2)
-## |   |   |   |   [26] log_median_totc > 1.14457: 1.599 (n = 25, err = 0.2)
-## |   |   |   [27] urban > 2.036
-## |   |   |   |   [28] log_median_totc <= 1.0569: 1.344 (n = 13, err = 0.1)
-## |   |   |   |   [29] log_median_totc > 1.0569: 1.479 (n = 14, err = 0.1)
+## |   [2] log_median_toc <= 0.20412
+## |   |   [3] log_median_toc <= -0.36949: 0.792 (n = 8, err = 0.1)
+## |   |   [4] log_median_toc > -0.36949
+## |   |   |   [5] slope_dep_vs_time <= -35.61848: 0.846 (n = 7, err = 0.1)
+## |   |   |   [6] slope_dep_vs_time > -35.61848: 1.118 (n = 21, err = 0.2)
+## |   [7] log_median_toc > 0.20412
+## |   |   [8] log_median_toc <= 0.87795
+## |   |   |   [9] log_median_toc <= 0.64836
+## |   |   |   |   [10] log_median_ton <= 2.15715
+## |   |   |   |   |   [11] log_median_toc <= 0.34242: 1.279 (n = 16, err = 0.1)
+## |   |   |   |   |   [12] log_median_toc > 0.34242
+## |   |   |   |   |   |   [13] decid_mixed <= 2.903: 1.488 (n = 9, err = 0.0)
+## |   |   |   |   |   |   [14] decid_mixed > 2.903: 1.377 (n = 11, err = 0.0)
+## |   |   |   |   [15] log_median_ton > 2.15715
+## |   |   |   |   |   [16] log_median_toc <= 0.50515: 1.188 (n = 14, err = 0.1)
+## |   |   |   |   |   [17] log_median_toc > 0.50515
+## |   |   |   |   |   |   [18] log_median_ton <= 2.27875: 1.340 (n = 13, err = 0.0)
+## |   |   |   |   |   |   [19] log_median_ton > 2.27875: 1.247 (n = 12, err = 0.0)
+## |   |   |   [20] log_median_toc > 0.64836
+## |   |   |   |   [21] log_median_ton <= 2.39116: 1.464 (n = 27, err = 0.1)
+## |   |   |   |   [22] log_median_ton > 2.39116
+## |   |   |   |   |   [23] cultivated <= 1.076
+## |   |   |   |   |   |   [24] log_median_toc <= 0.80618: 1.332 (n = 11, err = 0.0)
+## |   |   |   |   |   |   [25] log_median_toc > 0.80618: 1.408 (n = 12, err = 0.0)
+## |   |   |   |   |   [26] cultivated > 1.076: 1.283 (n = 7, err = 0.2)
+## |   |   [27] log_median_toc > 0.87795
+## |   |   |   [28] urban <= 2.036
+## |   |   |   |   [29] log_median_toc <= 1.14457
+## |   |   |   |   |   [30] log_median_ton <= 2.47857
+## |   |   |   |   |   |   [31] log_median_toc <= 0.98677: 1.539 (n = 26, err = 0.0)
+## |   |   |   |   |   |   [32] log_median_toc > 0.98677: 1.616 (n = 12, err = 0.0)
+## |   |   |   |   |   [33] log_median_ton > 2.47857: 1.452 (n = 24, err = 0.1)
+## |   |   |   |   [34] log_median_toc > 1.14457: 1.599 (n = 25, err = 0.2)
+## |   |   |   [35] urban > 2.036
+## |   |   |   |   [36] log_median_toc <= 1.0569: 1.344 (n = 13, err = 0.1)
+## |   |   |   |   [37] log_median_toc > 1.0569: 1.479 (n = 14, err = 0.1)
 ## 
-## Number of inner nodes:    14
-## Number of terminal nodes: 15
+## Number of inner nodes:    18
+## Number of terminal nodes: 19
 ```
 
 ### b. Evtree (Evolutionary Learning)   
@@ -548,7 +570,7 @@ ev.raw = evtree(as.formula(params$tree_formula),
 plot(ev.raw)
 ```
 
-![](162c_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-15-1.png)<!-- -->
+![](162c_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-16-1.png)<!-- -->
 
 
 ### c. Random forest  
@@ -571,8 +593,8 @@ model1
 ##                      Number of trees: 500
 ## No. of variables tried at each split: 5
 ## 
-##           Mean of squared residuals: 0.009343024
-##                     % Var explained: 77.83
+##           Mean of squared residuals: 0.008900312
+##                     % Var explained: 78.88
 ```
 
 
@@ -605,14 +627,14 @@ importance <- measure_importance(model1)
 plot_multi_way_importance(importance, size_measure = "no_of_nodes", no_of_labels = 12)  
 ```
 
-![](162c_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-17-1.png)<!-- -->
+![](162c_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-18-1.png)<!-- -->
 
 ```r
 plot_multi_way_importance(importance, x_measure = "mse_increase", y_measure = "node_purity_increase",
                           size_measure = "p_value", no_of_labels = 12)
 ```
 
-![](162c_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-17-2.png)<!-- -->
+![](162c_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-18-2.png)<!-- -->
 
 
 
@@ -674,7 +696,7 @@ for (i in 1:max_number_of_plots){
 }
 ```
 
-![](162c_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-18-1.png)<!-- -->![](162c_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-18-2.png)<!-- -->![](162c_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-18-3.png)<!-- -->![](162c_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-18-4.png)<!-- -->![](162c_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-18-5.png)<!-- -->![](162c_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-18-6.png)<!-- -->
+![](162c_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-19-1.png)<!-- -->![](162c_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-19-2.png)<!-- -->![](162c_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-19-3.png)<!-- -->![](162c_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-19-4.png)<!-- -->![](162c_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-19-5.png)<!-- -->![](162c_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-19-6.png)<!-- -->
 
 
 
@@ -721,16 +743,32 @@ subset(dredged_models, delta < 2)
 ##     na.action = "na.fail")
 ## ---
 ## Model selection table 
-##      (Int)    bar_spr   ctc_are        cnf    dcd_mxd   lak_wtr log_mdn_ttc log_mdn_ttn
-## 3835 2.090 -0.0005518           -0.0004887 -0.0006742 -0.002986       1.009     -0.4585
-## 3833 2.052                      -0.0004769 -0.0006457 -0.002878       1.075     -0.4491
-## 3839 2.091 -0.0005405 3.020e-05 -0.0004887 -0.0006726 -0.002935       1.012     -0.4603
-## 3837 2.054            3.122e-05 -0.0004771 -0.0006447 -0.002827       1.077     -0.4511
-##           tmp       urb log_mdn_ttc:log_mdn_ttn df  logLik   AICc delta weight
-## 3835 0.009725 -0.007817                 -0.1566 11 405.913 -788.9  0.00  0.306
-## 3833 0.009932 -0.007588                 -0.1781 10 404.769 -788.8  0.14  0.285
-## 3839 0.009988 -0.007970                 -0.1577 12 406.604 -788.2  0.78  0.207
-## 3837 0.010200 -0.007750                 -0.1788 11 405.502 -788.1  0.82  0.203
+##      (Int)        alt    bar_spr       cnf    dcd_mxd log_mdn_toc log_mdn_ton       pre
+## 3009 2.856                                                 1.0600     -0.9334 1.305e-05
+## 963  2.901            -0.0003084                           0.9930     -0.9522 1.475e-05
+## 3025 2.847                                 -0.0001025      1.0690     -0.9286 1.464e-05
+## 979  2.897            -0.0003681           -0.0001111      0.9919     -0.9497 1.681e-05
+## 4033 2.848                                                 1.0610     -0.9283 1.203e-05
+## 1987 2.894            -0.0003326                           0.9897     -0.9477 1.381e-05
+## 961  2.903                                                 1.0020     -0.9569 1.320e-05
+## 3011 2.870            -0.0001821                           1.0360     -0.9384 1.401e-05
+## 3017 2.854                       6.149e-05                 1.0580     -0.9334 1.449e-05
+## 971  2.898            -0.0003184 7.387e-05                 0.9902     -0.9518 1.653e-05
+## 3010 2.859 -5.563e-06                                      1.0540     -0.9332 1.359e-05
+## 3027 2.863            -0.0002326           -0.0001186      1.0390     -0.9343 1.613e-05
+##            tmp       urb log_mdn_toc:log_mdn_ton df  logLik    AICc delta weight
+## 3009 -0.004016                          -0.02767  7 583.719 -1153.1  0.00  0.138
+## 963  -0.004358                                    7 583.580 -1152.8  0.28  0.120
+## 3025 -0.004063                          -0.03154  8 584.392 -1152.3  0.76  0.094
+## 979  -0.004477                                    8 584.351 -1152.2  0.84  0.090
+## 4033 -0.003720 -0.001412                -0.02905  8 584.348 -1152.2  0.85  0.090
+## 1987 -0.004074 -0.001490                          8 584.275 -1152.1  1.00  0.084
+## 961  -0.004000                                    6 582.094 -1151.9  1.16  0.077
+## 3011 -0.004222                          -0.01852  8 584.062 -1151.6  1.42  0.068
+## 3017 -0.004064                          -0.02745  8 583.989 -1151.5  1.57  0.063
+## 971  -0.004428                                    8 583.968 -1151.5  1.61  0.062
+## 3010 -0.004177                          -0.02579  8 583.883 -1151.3  1.78  0.057
+## 3027 -0.004334                          -0.02046  9 584.939 -1151.3  1.79  0.056
 ## Models ranked by AICc(x)
 ```
 
@@ -753,7 +791,7 @@ modelvars$interaction_list %>% purrr::walk(
 )
 ```
 
-![](162c_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-22-1.png)<!-- -->
+![](162c_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-23-1.png)<!-- -->
 
 ```r
 par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
@@ -761,57 +799,17 @@ for (var in modelvars$additive_vars)
   visreg(mod1, var)  
 ```
 
-![](162c_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-22-2.png)<!-- -->
+![](162c_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-23-2.png)<!-- -->
 
 ```
 ## Conditions used in construction of plot
-## coniferous: 32.5605
-## decid_mixed: 10.8035
-## lake_water: 12.353
-## log_median_totc: 0.8014015
-## log_median_totn: 2.462398
+## log_median_toc: 0.8014015
+## log_median_ton: 2.384711
 ## tmp: 5.733333
-## urban: 0
 ## Conditions used in construction of plot
-## bare_sparse: 0
-## decid_mixed: 10.8035
-## lake_water: 12.353
-## log_median_totc: 0.8014015
-## log_median_totn: 2.462398
-## tmp: 5.733333
-## urban: 0
-## Conditions used in construction of plot
-## bare_sparse: 0
-## coniferous: 32.5605
-## lake_water: 12.353
-## log_median_totc: 0.8014015
-## log_median_totn: 2.462398
-## tmp: 5.733333
-## urban: 0
-## Conditions used in construction of plot
-## bare_sparse: 0
-## coniferous: 32.5605
-## decid_mixed: 10.8035
-## log_median_totc: 0.8014015
-## log_median_totn: 2.462398
-## tmp: 5.733333
-## urban: 0
-## Conditions used in construction of plot
-## bare_sparse: 0
-## coniferous: 32.5605
-## decid_mixed: 10.8035
-## lake_water: 12.353
-## log_median_totc: 0.8014015
-## log_median_totn: 2.462398
-## urban: 0
-## Conditions used in construction of plot
-## bare_sparse: 0
-## coniferous: 32.5605
-## decid_mixed: 10.8035
-## lake_water: 12.353
-## log_median_totc: 0.8014015
-## log_median_totn: 2.462398
-## tmp: 5.733333
+## log_median_toc: 0.8014015
+## log_median_ton: 2.384711
+## pre: 913.5
 ```
 
 

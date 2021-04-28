@@ -21,7 +21,7 @@
 #   (or let each part end with a comma)
 vars <- paste(
   "log_median_no3", 
-  "catchment_area, log_median_totc",     # change here
+  "catchment_area, log_median_toc",     # change here
   "slope_dep_vs_time, TOTN_dep, latitude, longitude, altitude",
   "pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous",
   "wetland, lake_water, bare_sparse",
@@ -32,7 +32,7 @@ vars
 form <- paste(
   "log_median_no3 ~ TOTN_dep +", 
   "slope_dep_vs_time + TOTN_dep:slope_dep_vs_time +",
-  "log_median_totc + TOTN_dep:log_median_totc +",
+  "log_median_toc + TOTN_dep:log_median_toc +",
   "tmp + pre + altitude +",
   "decid_mixed + bare_sparse + coniferous +",
   "catchment_area + lake_water + total_shrub_herbaceous"
@@ -62,7 +62,7 @@ rmarkdown::render(
 # 162b - log_median_no3 ~ excluding catchment_area + TOC ----
 #
 # Using dataset for NO3: 'medians_2012-2016_no3.csv'  
-# Without 'log_median_totc'  
+# Without 'log_median_toc'  
 #
 #o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
 
@@ -121,7 +121,7 @@ rmarkdown::render(
 #   (or let each part end with a comma)
 vars <- paste(
   "log_median_tocton", 
-  "catchment_area, log_median_totn, log_median_totc",     # change here
+  "catchment_area, log_median_ton, log_median_toc",     # change here
   "slope_dep_vs_time, TOTN_dep, latitude, longitude, altitude",
   "pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous",
   "wetland, lake_water, bare_sparse",
@@ -130,8 +130,8 @@ vars <- paste(
 # If long formula, split up the lines with a 'paste()'  
 # Remember to end each line with '+', or use sep = "+"  
 form <- paste(
-  "log_median_tocton ~ log_median_totn + log_median_totc +", 
-  "log_median_totn:log_median_totc +",
+  "log_median_tocton ~ log_median_ton + log_median_toc +", 
+  "log_median_ton:log_median_toc +",
   "tmp + pre +",                          # change here
   "altitude + bare_sparse + coniferous +",
   "lake_water + decid_mixed +", 

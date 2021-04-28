@@ -17,13 +17,13 @@ params:
   medians_filename:
     value: 'medians_2012-2016_no3.csv'        
   selected_vars: 
-    value: 'log_median_no3,catchment_area, log_median_totc,slope_dep_vs_time, TOTN_dep, latitude, longitude, altitude,pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse'
+    value: 'log_median_no3,catchment_area, log_median_toc,slope_dep_vs_time, TOTN_dep, latitude, longitude, altitude,pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse'
   tree_formula:
     value: 'log_median_no3 ~ .'
   extra_pairwise_plots:
     value: 'TOC,NO3; slope_dep_vs_time,TOTN_dep; altitude,decid_mixed'
   logistic_formula: 
-    value: 'log_median_no3 ~ TOTN_dep + slope_dep_vs_time + TOTN_dep:slope_dep_vs_time + log_median_totc + TOTN_dep:log_median_totc + tmp + pre + altitude + decid_mixed + bare_sparse + coniferous + catchment_area + lake_water + total_shrub_herbaceous'
+    value: 'log_median_no3 ~ TOTN_dep + slope_dep_vs_time + TOTN_dep:slope_dep_vs_time + log_median_toc + TOTN_dep:log_median_toc + tmp + pre + altitude + decid_mixed + bare_sparse + coniferous + catchment_area + lake_water + total_shrub_herbaceous'
 
 ---
 
@@ -162,10 +162,11 @@ df1 <- df_medians %>%
   select(station_id, `NO3.N_µg.l.N`, `TOTN_µg.l.N`, `TOC_mg.C.l`, TOC.TON) %>%
   rename(median_no3 = `NO3.N_µg.l.N`,
          median_totn = `TOTN_µg.l.N`,
-         median_totc = `TOC_mg.C.l`,
+         median_toc = `TOC_mg.C.l`,
          median_tocton = `TOC.TON`) %>%
   mutate(log_median_no3 = log10(median_no3 + 0.1),
-         log_median_totc = log10(median_totc),
+         log_median_totn = log10(median_totn),
+         log_median_toc = log10(median_toc),
          log_median_tocton = log10(median_tocton))
 
 # Some trends
@@ -357,7 +358,9 @@ gg
 
 
 ## 4. Select data   
-* Select variables to use, and thereby also cases  
+
+### a. Selection of variables    
+* Select variables to use, and thereby also cases
 
 ```r
 get_data_for_analysis <- function(data, variable_string){
@@ -459,7 +462,19 @@ cat("Analysis: n =", nrow(df_analysis), "\n")
 ```
 
 
+### b. Correlations   
 
+```r
+gg <- GGally::ggcorr(df_analysis, method = c("complete.obs", "kendall"), label = TRUE) # +
+gg + theme(plot.margin = unit(c(.8, 2, .8, 2.5), "cm"))
+```
+
+![](162b_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-13-1.png)<!-- -->
+
+```r
+# SHOULD also workaccording to ?element_rect (update ggplot2?)
+# gg + theme(plot.margin = margin(.6, .5, .6, 1.7, "cm"))
+```
 
 
 
@@ -481,10 +496,8 @@ valid_set <- df_analysis[!train,] %>%
   select(-longitude, - latitude) %>%
   as.data.frame()
 
-plot(train_set)
+# plot(train_set)
 ```
-
-![](162b_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-13-1.png)<!-- -->
 
 
 ### a. Tree classification using 'party'   
@@ -499,7 +512,7 @@ plot(train_set)
 plot(ct, main="Conditional Inference Tree")
 ```
 
-![](162b_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-14-1.png)<!-- -->
+![](162b_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-15-1.png)<!-- -->
 
 ```
 ## 
@@ -554,7 +567,7 @@ ev.raw = evtree(as.formula(params$tree_formula),
 plot(ev.raw)
 ```
 
-![](162b_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-15-1.png)<!-- -->
+![](162b_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-16-1.png)<!-- -->
 
 
 ### c. Random forest  
@@ -611,14 +624,14 @@ importance <- measure_importance(model1)
 plot_multi_way_importance(importance, size_measure = "no_of_nodes", no_of_labels = 12)  
 ```
 
-![](162b_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-17-1.png)<!-- -->
+![](162b_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-18-1.png)<!-- -->
 
 ```r
 plot_multi_way_importance(importance, x_measure = "mse_increase", y_measure = "node_purity_increase",
                           size_measure = "p_value", no_of_labels = 12)
 ```
 
-![](162b_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-17-2.png)<!-- -->
+![](162b_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-18-2.png)<!-- -->
 
 
 
@@ -680,7 +693,7 @@ for (i in 1:max_number_of_plots){
 }
 ```
 
-![](162b_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-18-1.png)<!-- -->![](162b_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-18-2.png)<!-- -->![](162b_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-18-3.png)<!-- -->![](162b_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-18-4.png)<!-- -->![](162b_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-18-5.png)<!-- -->![](162b_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-18-6.png)<!-- -->
+![](162b_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-19-1.png)<!-- -->![](162b_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-19-2.png)<!-- -->![](162b_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-19-3.png)<!-- -->![](162b_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-19-4.png)<!-- -->![](162b_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-19-5.png)<!-- -->![](162b_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-19-6.png)<!-- -->
 
 
 
@@ -745,8 +758,6 @@ mod1 <- get.models(dredged_models, 1)[[1]]
 
 modelvars <- get_model_variables(mod1)
 
-vars <- modelvars$interaction_list[[1]]
-
 # Interactions: 3D plot 
 # visreg2d(mod1, xvar = vars[1], yvar = vars[2], 
 #          type = 'conditional', scale = "response") 
@@ -757,7 +768,7 @@ modelvars$interaction_list %>% purrr::walk(
 )
 ```
 
-![](162b_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-22-1.png)<!-- -->
+![](162b_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-23-1.png)<!-- -->
 
 ```r
 par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
@@ -765,7 +776,7 @@ for (var in modelvars$additive_vars)
   visreg(mod1, var)  
 ```
 
-![](162b_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-22-2.png)<!-- -->
+![](162b_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-23-2.png)<!-- -->
 
 ```
 ## Conditions used in construction of plot
