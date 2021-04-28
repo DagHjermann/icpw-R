@@ -499,16 +499,19 @@ cat("Analysis: n =", nrow(df_analysis), "\n")
 ### b. Correlations   
 
 ```r
-gg <- GGally::ggcorr(df_analysis, method = c("complete.obs", "kendall"), label = TRUE) # +
-gg + theme(plot.margin = unit(c(.8, 2, .8, 2.5), "cm"))
+gg <- GGally::ggcorr(
+  df_analysis, 
+  method = c("complete.obs", "kendall"), 
+  label = TRUE,
+  hjust = 0.9, angle = -30) # +                    # slanted labels
+gg + coord_cartesian(x = c(-2, 20), y = c(-2,22))  # fix margins
+```
+
+```
+## Coordinate system already present. Adding new coordinate system, which will replace the existing one.
 ```
 
 ![](160b_Time_series_results_James_no_catcharea_files/figure-html/unnamed-chunk-14-1.png)<!-- -->
-
-```r
-# SHOULD also workaccording to ?element_rect (update ggplot2?)
-# gg + theme(plot.margin = margin(.6, .5, .6, 1.7, "cm"))
-```
 
 
 
