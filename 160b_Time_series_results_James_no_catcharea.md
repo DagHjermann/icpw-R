@@ -858,7 +858,7 @@ vars <- modelvars$interaction_list[[1]]
 
 # Interactions: 2D plot 
 modelvars$interaction_list %>% purrr::walk(
-  ~visreg(mod1, .x[1], by = .x[2])
+  ~visreg(mod1, .x[1], by = .x[2], scale = "response")
 )
 ```
 
@@ -867,7 +867,7 @@ modelvars$interaction_list %>% purrr::walk(
 ```r
 par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
 for (var in modelvars$additive_vars)
-  visreg(mod1, var)  
+  visreg(mod1, var, scale = "response")  
 ```
 
 ![](160b_Time_series_results_James_no_catcharea_files/figure-html/unnamed-chunk-26-3.png)<!-- -->

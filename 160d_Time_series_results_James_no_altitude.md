@@ -362,7 +362,7 @@ ggplot(dat, aes(slope_dep_vs_time, slope_no3_vs_time)) +
   geom_vline(xintercept = 0, linetype = 2) 
 ```
 
-![](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-chunk-36-1.png)<!-- -->
+![](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-chunk-12-1.png)<!-- -->
 
 ```r
 ggplot(dat, aes(slope_dep_vs_time, slope_no3_vs_time,
@@ -374,7 +374,7 @@ ggplot(dat, aes(slope_dep_vs_time, slope_no3_vs_time,
   labs(title = "A selection of countries")
 ```
 
-![](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-chunk-36-2.png)<!-- -->
+![](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-chunk-12-2.png)<!-- -->
 
 ```r
 dat %>%
@@ -389,10 +389,12 @@ dat %>%
   ylim(-50, 25)
 ```
 
-![](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-chunk-36-3.png)<!-- -->
+![](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-chunk-12-3.png)<!-- -->
 
 
 ## 4. Select data   
+
+### a. Selection of variables  
 * Select variables to use, and thereby also cases  
 
 ```r
@@ -494,7 +496,22 @@ cat("Analysis: n =", nrow(df_analysis), "\n")
 ```
 
 
+### b. Correlations   
 
+```r
+gg <- GGally::ggcorr(
+  df_analysis, 
+  method = c("complete.obs", "kendall"), 
+  label = TRUE,
+  hjust = 0.9, angle = -30) # +                    # slanted labels
+gg + coord_cartesian(x = c(-2, 20), y = c(-2,22))  # fix margins
+```
+
+```
+## Coordinate system already present. Adding new coordinate system, which will replace the existing one.
+```
+
+![](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-chunk-14-1.png)<!-- -->
 
 
 
@@ -526,7 +543,7 @@ valid_set <- df_analysis[!train,] %>%
 plot(ct, main="Conditional Inference Tree")
 ```
 
-![](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-chunk-39-1.png)<!-- -->
+![](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-chunk-16-1.png)<!-- -->
 
 ```r
 cat("\n\n")
@@ -589,7 +606,7 @@ ev.raw = evtree(no3_decline_f ~ ., data = train_set)
 plot(ev.raw)
 ```
 
-![](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-chunk-40-1.png)<!-- -->
+![](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-chunk-17-1.png)<!-- -->
 
 ```r
 cat("Predicted in training data: \n")
@@ -671,14 +688,14 @@ importance <- measure_importance(model1)
 plot_multi_way_importance(importance, size_measure = "no_of_nodes", no_of_labels = 12)  
 ```
 
-![](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-chunk-43-1.png)<!-- -->
+![](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-chunk-20-1.png)<!-- -->
 
 ```r
 plot_multi_way_importance(importance, x_measure = "accuracy_decrease", y_measure = "gini_decrease", 
                           size_measure = "p_value", no_of_labels = 12)
 ```
 
-![](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-chunk-43-2.png)<!-- -->
+![](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-chunk-20-2.png)<!-- -->
 
 
 
@@ -763,7 +780,7 @@ if (params$pairwise_plots_same_scale == "TRUE"){
 }
 ```
 
-![](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-chunk-44-1.png)<!-- -->![](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-chunk-44-2.png)<!-- -->![](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-chunk-44-3.png)<!-- -->![](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-chunk-44-4.png)<!-- -->![](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-chunk-44-5.png)<!-- -->![](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-chunk-44-6.png)<!-- -->![](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-chunk-44-7.png)<!-- -->![](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-chunk-44-8.png)<!-- -->
+![](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-chunk-21-1.png)<!-- -->![](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-chunk-21-2.png)<!-- -->![](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-chunk-21-3.png)<!-- -->![](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-chunk-21-4.png)<!-- -->![](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-chunk-21-5.png)<!-- -->![](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-chunk-21-6.png)<!-- -->![](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-chunk-21-7.png)<!-- -->![](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-chunk-21-8.png)<!-- -->
 
 
 
@@ -845,19 +862,19 @@ vars <- modelvars$interaction_list[[1]]
 
 # Interactions: 2D plot 
 modelvars$interaction_list %>% purrr::walk(
-  ~visreg(mod1, .x[1], by = .x[2])
+  ~visreg(mod1, .x[1], by = .x[2], scale = "response")
 )
 ```
 
-![](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-chunk-49-1.png)<!-- -->
+![](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-chunk-26-1.png)<!-- -->
 
 ```r
 par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
 for (var in modelvars$additive_vars)
-  visreg(mod1, var)  
+  visreg(mod1, var, scale = "response")  
 ```
 
-![](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-chunk-49-2.png)<!-- -->
+![](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-chunk-26-2.png)<!-- -->
 
 ```
 ## Conditions used in construction of plot

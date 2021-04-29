@@ -17,13 +17,13 @@ params:
   medians_filename:
     value: 'medians_2012-2016_no3.csv'        
   selected_vars: 
-    value: 'log_median_no3,catchment_area, log_median_totc,slope_dep_vs_time, TOTN_dep, latitude, longitude, altitude,pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse'
+    value: 'log_median_no3,catchment_area, log_median_toc,slope_dep_vs_time, TOTN_dep, latitude, longitude, altitude,pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse'
   tree_formula:
     value: 'log_median_no3 ~ .'
   extra_pairwise_plots:
     value: 'TOC,NO3; slope_dep_vs_time,TOTN_dep; altitude,decid_mixed'
   logistic_formula: 
-    value: 'log_median_no3 ~ TOTN_dep + slope_dep_vs_time + TOTN_dep:slope_dep_vs_time + log_median_totc + TOTN_dep:log_median_totc + tmp + pre + altitude + decid_mixed + bare_sparse + coniferous + catchment_area + lake_water + total_shrub_herbaceous'
+    value: 'log_median_no3 ~ TOTN_dep + slope_dep_vs_time + TOTN_dep:slope_dep_vs_time + log_median_toc + TOTN_dep:log_median_toc + tmp + pre + altitude + decid_mixed + bare_sparse + coniferous + catchment_area + lake_water + total_shrub_herbaceous'
 
 ---
 
@@ -159,13 +159,16 @@ Using medians
 
 # Medians 2012-2016  
 df1 <- df_medians %>%
-  select(station_id, `NO3.N_µg.l.N`, `TOTN_µg.l.N`, `TOC_mg.C.l`, TOC.TON) %>%
+  select(station_id, `NO3.N_µg.l.N`, `TOTN_µg.l.N`, `TON_µg.l.N`, `TOC_mg.C.l`, TOC.TON) %>%
   rename(median_no3 = `NO3.N_µg.l.N`,
          median_totn = `TOTN_µg.l.N`,
-         median_totc = `TOC_mg.C.l`,
+         median_ton = `TON_µg.l.N`,
+         median_toc = `TOC_mg.C.l`,
          median_tocton = `TOC.TON`) %>%
   mutate(log_median_no3 = log10(median_no3 + 0.1),
-         log_median_totc = log10(median_totc),
+         log_median_totn = log10(median_totn),
+         log_median_ton = log10(median_ton),
+         log_median_toc = log10(median_toc),
          log_median_tocton = log10(median_tocton))
 
 # Some trends
@@ -357,7 +360,9 @@ gg
 
 
 ## 4. Select data   
-* Select variables to use, and thereby also cases  
+
+### a. Selection of variables    
+* Select variables to use, and thereby also cases
 
 ```r
 get_data_for_analysis <- function(data, variable_string){
@@ -414,10 +419,10 @@ cat("Analysis: n =", nrow(df_analysis), "\n")
 ```
 ## -------------------------------------------------------------
 ## Variables: 
-## log_median_no3,catchment_area, log_median_totc,slope_dep_vs_time, TOTN_dep, latitude, longitude, altitude,pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse
+## log_median_no3,catchment_area, log_median_toc,slope_dep_vs_time, TOTN_dep, latitude, longitude, altitude,pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse
 ## -------------------------------------------------------------
 ## Number of missing values per variable: 
-##         log_median_no3         catchment_area        log_median_totc      slope_dep_vs_time 
+##         log_median_no3         catchment_area         log_median_toc      slope_dep_vs_time 
 ##                      0                     78                      7                      0 
 ##               TOTN_dep               latitude              longitude               altitude 
 ##                      0                      0                      0                     11 
@@ -461,7 +466,19 @@ cat("Analysis: n =", nrow(df_analysis), "\n")
 ```
 
 
+### b. Correlations   
 
+```r
+gg <- GGally::ggcorr(df_analysis, method = c("complete.obs", "kendall"), label = TRUE) # +
+gg + theme(plot.margin = unit(c(.8, 2, .8, 2.5), "cm"))
+```
+
+![](162a_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-13-1.png)<!-- -->
+
+```r
+# SHOULD also workaccording to ?element_rect (update ggplot2?)
+# gg + theme(plot.margin = margin(.6, .5, .6, 1.7, "cm"))
+```
 
 
 
@@ -483,10 +500,8 @@ valid_set <- df_analysis[!train,] %>%
   select(-longitude, - latitude) %>%
   as.data.frame()
 
-plot(train_set)
+# plot(train_set)
 ```
-
-![](162a_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-13-1.png)<!-- -->
 
 
 ### a. Tree classification using 'party'   
@@ -501,12 +516,12 @@ plot(train_set)
 plot(ct, main="Conditional Inference Tree")
 ```
 
-![](162a_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-14-1.png)<!-- -->
+![](162a_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-15-1.png)<!-- -->
 
 ```
 ## 
 ## Model formula:
-## log_median_no3 ~ catchment_area + log_median_totc + slope_dep_vs_time + 
+## log_median_no3 ~ catchment_area + log_median_toc + slope_dep_vs_time + 
 ##     TOTN_dep + altitude + pre + tmp + urban + cultivated + coniferous + 
 ##     decid_mixed + total_shrub_herbaceous + wetland + lake_water + 
 ##     bare_sparse
@@ -527,12 +542,12 @@ plot(ct, main="Conditional Inference Tree")
 ## |   |   |   |   |   [13] TOTN_dep > 173.96889: 0.978 (n = 25, err = 1.3)
 ## |   |   [14] slope_dep_vs_time > -2.5575: 0.409 (n = 16, err = 1.2)
 ## |   [15] TOTN_dep > 484.27
-## |   |   [16] log_median_totc <= 0.30103
+## |   |   [16] log_median_toc <= 0.30103
 ## |   |   |   [17] TOTN_dep <= 918.86
 ## |   |   |   |   [18] bare_sparse <= 58.569: 2.047 (n = 9, err = 0.2)
 ## |   |   |   |   [19] bare_sparse > 58.569: 2.405 (n = 13, err = 0.2)
 ## |   |   |   [20] TOTN_dep > 918.86: 2.584 (n = 7, err = 0.4)
-## |   |   [21] log_median_totc > 0.30103
+## |   |   [21] log_median_toc > 0.30103
 ## |   |   |   [22] cultivated <= 5.276
 ## |   |   |   |   [23] TOTN_dep <= 770.35: 1.570 (n = 71, err = 11.4)
 ## |   |   |   |   [24] TOTN_dep > 770.35
@@ -553,7 +568,7 @@ ev.raw = evtree(as.formula(params$tree_formula),
 plot(ev.raw)
 ```
 
-![](162a_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-15-1.png)<!-- -->
+![](162a_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-16-1.png)<!-- -->
 
 
 ### c. Random forest  
@@ -610,14 +625,14 @@ importance <- measure_importance(model1)
 plot_multi_way_importance(importance, size_measure = "no_of_nodes", no_of_labels = 12)  
 ```
 
-![](162a_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-17-1.png)<!-- -->
+![](162a_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-18-1.png)<!-- -->
 
 ```r
 plot_multi_way_importance(importance, x_measure = "mse_increase", y_measure = "node_purity_increase",
                           size_measure = "p_value", no_of_labels = 12)
 ```
 
-![](162a_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-17-2.png)<!-- -->
+![](162a_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-18-2.png)<!-- -->
 
 
 
@@ -679,13 +694,13 @@ for (i in 1:max_number_of_plots){
 }
 ```
 
-![](162a_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-18-1.png)<!-- -->![](162a_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-18-2.png)<!-- -->![](162a_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-18-3.png)<!-- -->![](162a_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-18-4.png)<!-- -->![](162a_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-18-5.png)<!-- -->![](162a_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-18-6.png)<!-- -->
+![](162a_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-19-1.png)<!-- -->![](162a_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-19-2.png)<!-- -->![](162a_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-19-3.png)<!-- -->![](162a_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-19-4.png)<!-- -->![](162a_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-19-5.png)<!-- -->![](162a_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-19-6.png)<!-- -->
 
 
 
 
 
-## 6. Logistic regression      
+## 6. Linear regression      
 
 ```r
 fm <- lm(
@@ -726,7 +741,7 @@ subset(dredged_models, delta < 2)
 ##     na.action = "na.fail")
 ## ---
 ## Model selection table 
-##        (Int)       alt  bar_spr   ctc_are        cnf   dcd_mxd   lak_wtr log_mdn_ttc       pre
+##        (Int)       alt  bar_spr   ctc_are        cnf   dcd_mxd   lak_wtr log_mdn_toc       pre
 ## 16254 0.8395 0.0001941          0.0005256 -0.0039710 -0.003077 -0.003734     0.09532          
 ## 16224 0.6273 0.0001530 0.003192 0.0005384 -0.0031250 -0.002236               0.20180          
 ## 16256 0.7337 0.0001471 0.002584 0.0005190 -0.0033180 -0.002367 -0.003056     0.15340          
@@ -735,7 +750,7 @@ subset(dredged_models, delta < 2)
 ## 16208 0.4984 0.0001390 0.004689 0.0005438 -0.0014140                         0.14990          
 ## 15184 0.4276 0.0001343 0.005202 0.0005390 -0.0009819                         0.18660          
 ## 16382 0.8764 0.0001933          0.0005158 -0.0040880 -0.003024 -0.004019     0.08575 -3.05e-05
-##       slp_dep_vs_tim     tmp ttl_shr_hrb  TOT_dep log_mdn_ttc:TOT_dep slp_dep_vs_tim:TOT_dep
+##       slp_dep_vs_tim     tmp ttl_shr_hrb  TOT_dep log_mdn_toc:TOT_dep slp_dep_vs_tim:TOT_dep
 ## 16254       -0.01336 0.05100   -0.004612 0.001136          -0.0004636              8.811e-06
 ## 16224       -0.01325 0.04942   -0.003415 0.001255          -0.0005221              9.560e-06
 ## 16256       -0.01293 0.04989   -0.003741 0.001200          -0.0004902              8.985e-06
@@ -765,27 +780,26 @@ mod1 <- get.models(dredged_models, 1)[[1]]
 
 modelvars <- get_model_variables(mod1)
 
-vars <- modelvars$interaction_list[[1]]
-
-# Interactions: 3D plot 
-# visreg2d(mod1, xvar = vars[1], yvar = vars[2], 
-#          type = 'conditional', scale = "response") 
-
 # Interactions: 2D plot 
-modelvars$interaction_list %>% purrr::walk(
-  ~visreg(mod1, .x[1], by = .x[2])
-)
+if (length(modelvars$interaction_list) > 0){
+  modelvars$interaction_list %>% purrr::walk(
+    ~visreg(mod1, .x[1], by = .x[2], scale = "response")
+  )
+}
 ```
 
-![](162a_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-22-1.png)<!-- -->![](162a_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-22-2.png)<!-- -->
+![](162a_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-23-1.png)<!-- -->![](162a_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-23-2.png)<!-- -->
 
 ```r
-par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
-for (var in modelvars$additive_vars)
-  visreg(mod1, var)  
+# Additive effects: 1D plot
+if (length(modelvars$additive_vars) > 0){
+  par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
+  for (var in modelvars$additive_vars)
+    visreg(mod1, var, scale = "response")  
+}
 ```
 
-![](162a_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-22-3.png)<!-- -->![](162a_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-22-4.png)<!-- -->
+![](162a_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-23-3.png)<!-- -->![](162a_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-23-4.png)<!-- -->
 
 ```
 ## Conditions used in construction of plot
@@ -793,7 +807,7 @@ for (var in modelvars$additive_vars)
 ## coniferous: 21.008
 ## decid_mixed: 11.531
 ## lake_water: 11.993
-## log_median_totc: 0.7604225
+## log_median_toc: 0.7604225
 ## slope_dep_vs_time: -13.92201
 ## tmp: 5.425001
 ## total_shrub_herbaceous: 2.409
@@ -803,7 +817,7 @@ for (var in modelvars$additive_vars)
 ## coniferous: 21.008
 ## decid_mixed: 11.531
 ## lake_water: 11.993
-## log_median_totc: 0.7604225
+## log_median_toc: 0.7604225
 ## slope_dep_vs_time: -13.92201
 ## tmp: 5.425001
 ## total_shrub_herbaceous: 2.409
@@ -813,7 +827,7 @@ for (var in modelvars$additive_vars)
 ## catchment_area: 3.413
 ## decid_mixed: 11.531
 ## lake_water: 11.993
-## log_median_totc: 0.7604225
+## log_median_toc: 0.7604225
 ## slope_dep_vs_time: -13.92201
 ## tmp: 5.425001
 ## total_shrub_herbaceous: 2.409
@@ -823,7 +837,7 @@ for (var in modelvars$additive_vars)
 ## catchment_area: 3.413
 ## coniferous: 21.008
 ## lake_water: 11.993
-## log_median_totc: 0.7604225
+## log_median_toc: 0.7604225
 ## slope_dep_vs_time: -13.92201
 ## tmp: 5.425001
 ## total_shrub_herbaceous: 2.409
@@ -833,7 +847,7 @@ for (var in modelvars$additive_vars)
 ## catchment_area: 3.413
 ## coniferous: 21.008
 ## decid_mixed: 11.531
-## log_median_totc: 0.7604225
+## log_median_toc: 0.7604225
 ## slope_dep_vs_time: -13.92201
 ## tmp: 5.425001
 ## total_shrub_herbaceous: 2.409
@@ -844,7 +858,7 @@ for (var in modelvars$additive_vars)
 ## coniferous: 21.008
 ## decid_mixed: 11.531
 ## lake_water: 11.993
-## log_median_totc: 0.7604225
+## log_median_toc: 0.7604225
 ## slope_dep_vs_time: -13.92201
 ## total_shrub_herbaceous: 2.409
 ## TOTN_dep: 429.2518
@@ -854,7 +868,7 @@ for (var in modelvars$additive_vars)
 ## coniferous: 21.008
 ## decid_mixed: 11.531
 ## lake_water: 11.993
-## log_median_totc: 0.7604225
+## log_median_toc: 0.7604225
 ## slope_dep_vs_time: -13.92201
 ## tmp: 5.425001
 ## TOTN_dep: 429.2518

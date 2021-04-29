@@ -82,6 +82,8 @@ library(effects)    # handles lme models
 library(readxl)
 library(readr)
 
+source("160parm_functions.R")
+
 knitr::opts_chunk$set(results = 'hold') # collect the results from a chunk  
 knitr::opts_chunk$set(warning = FALSE)  
 
@@ -669,34 +671,6 @@ subset(dredged_models, delta < 2)
 
 ```
 
-```{r, echo = FALSE}
-
-#
-# Function to get interactions and effects 
-#
-get_model_variables <- function(model){  
-  all_terms <- names(model$coefficients)
-  # Remove '(Intercept)'
-  all_terms <- all_terms[!all_terms %in% "(Intercept)"]
-  sel_interactions <- grepl(":", all_terms, fixed = TRUE)
-  # Removing interaction terms leaves us with the variables:
-  all_variables <- all_terms[!sel_interactions]
-  # Get interactions in a list
-  interaction_terms <- all_terms[sel_interactions]
-  interaction_list <- interaction_terms %>% strsplit(split = ":")
-  # Get additive variables
-  interaction_vars <- interaction_list %>% unlist()
-  additive_vars <- all_variables[!all_variables %in% interaction_vars]
-  list(
-    interaction_list = interaction_list,
-    additive_vars = additive_vars)
-}
-
-# Test
-# fit <- lm(sr ~ pop15*dpi + pop75*dpi + ddpi, data = LifeCycleSavings)
-# get_model_variables(fit)  
-
-```
 
 ### Plots  
 ```{r, message=FALSE}
@@ -706,20 +680,23 @@ mod1 <- get.models(dredged_models, 1)[[1]]
 
 modelvars <- get_model_variables(mod1)
 
-vars <- modelvars$interaction_list[[1]]
-
 # Interactions: 3D plot 
 # visreg2d(mod1, xvar = vars[1], yvar = vars[2], 
 #          type = 'conditional', scale = "response") 
 
 # Interactions: 2D plot 
-modelvars$interaction_list %>% purrr::walk(
-  ~visreg(mod1, .x[1], by = .x[2])
-)
+if (length(modelvars$interaction_list) > 0){
+  modelvars$interaction_list %>% purrr::walk(
+    ~visreg(mod1, .x[1], by = .x[2], scale = "response")
+  )
+}
 
-par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
-for (var in modelvars$additive_vars)
-  visreg(mod1, var)  
+# Additive effects: 1D plot
+if (length(modelvars$additive_vars) > 0){
+  par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
+  for (var in modelvars$additive_vars)
+    visreg(mod1, var, scale = "response")  
+}
 
 ```
 

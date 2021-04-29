@@ -781,22 +781,23 @@ mod1 <- get.models(dredged_models, 1)[[1]]
 
 modelvars <- get_model_variables(mod1)
 
-# Interactions: 3D plot 
-# visreg2d(mod1, xvar = vars[1], yvar = vars[2], 
-#          type = 'conditional', scale = "response") 
-
 # Interactions: 2D plot 
-modelvars$interaction_list %>% purrr::walk(
-  ~visreg(mod1, .x[1], by = .x[2])
-)
+if (length(modelvars$interaction_list) > 0){
+  modelvars$interaction_list %>% purrr::walk(
+    ~visreg(mod1, .x[1], by = .x[2], scale = "response")
+  )
+}
 ```
 
 ![](162c_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-23-1.png)<!-- -->
 
 ```r
-par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
-for (var in modelvars$additive_vars)
-  visreg(mod1, var)  
+# Additive effects: 1D plot
+if (length(modelvars$additive_vars) > 0){
+  par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
+  for (var in modelvars$additive_vars)
+    visreg(mod1, var, scale = "response")  
+}
 ```
 
 ![](162c_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-23-2.png)<!-- -->

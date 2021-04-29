@@ -13,9 +13,13 @@ params:
   text_dataset: 
     value: 'Data with slope_dep_vs_time, NO3, and TOTN_dep'
   selected_vars: 
-    value: 'no3_decline, slope_dep_vs_time, longitude, latitude, NO3, TOTN_dep'
+    value: 'no3_decline,TOC,slope_dep_vs_time, NO3, TOTN_dep, latitude, longitude, altitude,pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse'
+  extra_pairwise_plots:
+    value: 'TOC,NO3; slope_dep_vs_time,TOTN_dep; altitude,decid_mixed'
+  pairwise_plots_same_scale:
+    value: 'FALSE'
   logistic_formula: 
-    value: 'no3_decline ~ slope_dep_vs_time + NO3 + TOTN_dep'
+    value: 'no3_decline ~ TOC*altitude + TOTN_dep*slope_dep_vs_time + NO3 + decid_mixed + coniferous + tmp + lake_water + wetland'
 
 ---
 
@@ -34,11 +38,11 @@ params:
     - slope_dep_vs_time: Trend in Tot-N deposition 1992-2016    
     - NO3, TOTN_dep: Medians of NO3, TOTN_dep (Tot-N deposition) 1992-2016   
     - catchment_area (if included in data)      
-    - TOC: Medians of TOC 1992-2016 (if included in data)     
+    - TOC: Medians of TOC       
     - pre, tmp: mean precipitation + temp   
     - Land cover 
   
-Technical details: This html file was created was 
+Technical details: This html file was rendered with `160parm_run_markdown.R` which runs the script `160parm_Time_series_results_James.Rmd` with different inputs, resulting in html files 160a, 160b and 160c.    
 
 ## 1. Libraries  
 
@@ -73,6 +77,8 @@ library(readr)
 
 knitr::opts_chunk$set(results = 'hold') # collect the results from a chunk  
 knitr::opts_chunk$set(warning = FALSE)  
+
+options(width = 95)
 ```
 
 
@@ -267,9 +273,10 @@ names(dat)
 ## dat, n = 498 
 ## 
 ## Variable names: 
-##  [1] "station_id"           "slope_no3_vs_time"    "slope_tocton_vs_time" "p_no3_vs_time"       
-##  [5] "p_tocton_vs_time"     "NO3"                  "TOC"                  "TOTN_dep"            
-##  [9] "slope_dep_vs_time"    "p_dep_vs_time"
+##  [1] "station_id"           "slope_no3_vs_time"    "slope_tocton_vs_time"
+##  [4] "p_no3_vs_time"        "p_tocton_vs_time"     "NO3"                 
+##  [7] "TOC"                  "TOTN_dep"             "slope_dep_vs_time"   
+## [10] "p_dep_vs_time"
 ```
 
 ### Add climate and deposition medians 
@@ -311,7 +318,8 @@ cat("dat, n =", nrow(dat), "\n")
 
 
 ### Combine land cover types   
-* Data including UK read using script 159  
+* Data including UK read using script 159   
+* Note: also includes metadata (country, etc.)
 * bare_sparse = bare_rock + sparsely_vegetated + glacier   
 * Select: coniferous, deciduous, lake, mixed_forest, wetland, bare_sparse   
 
@@ -354,7 +362,7 @@ ggplot(dat, aes(slope_dep_vs_time, slope_no3_vs_time)) +
   geom_vline(xintercept = 0, linetype = 2) 
 ```
 
-![](160c_Time_series_results_James_no_catcharea_TOC_files/figure-html/unnamed-chunk-12-1.png)<!-- -->
+![](160c_Time_series_results_James_no_catcharea_TOC_files/figure-html/unnamed-chunk-14-1.png)<!-- -->
 
 ```r
 ggplot(dat, aes(slope_dep_vs_time, slope_no3_vs_time,
@@ -366,7 +374,7 @@ ggplot(dat, aes(slope_dep_vs_time, slope_no3_vs_time,
   labs(title = "A selection of countries")
 ```
 
-![](160c_Time_series_results_James_no_catcharea_TOC_files/figure-html/unnamed-chunk-12-2.png)<!-- -->
+![](160c_Time_series_results_James_no_catcharea_TOC_files/figure-html/unnamed-chunk-14-2.png)<!-- -->
 
 ```r
 dat %>%
@@ -381,10 +389,12 @@ dat %>%
   ylim(-50, 25)
 ```
 
-![](160c_Time_series_results_James_no_catcharea_TOC_files/figure-html/unnamed-chunk-12-3.png)<!-- -->
+![](160c_Time_series_results_James_no_catcharea_TOC_files/figure-html/unnamed-chunk-14-3.png)<!-- -->
 
 
 ## 4. Select data   
+
+### a. Selection of variables  
 * Select variables to use, and thereby also cases  
 
 ```r
@@ -486,7 +496,22 @@ cat("Analysis: n =", nrow(df_analysis), "\n")
 ```
 
 
+### b. Correlations   
 
+```r
+gg <- GGally::ggcorr(
+  df_analysis, 
+  method = c("complete.obs", "kendall"), 
+  label = TRUE,
+  hjust = 0.9, angle = -30) # +                    # slanted labels
+gg + coord_cartesian(x = c(-2, 20), y = c(-2,22))  # fix margins
+```
+
+```
+## Coordinate system already present. Adding new coordinate system, which will replace the existing one.
+```
+
+![](160c_Time_series_results_James_no_catcharea_TOC_files/figure-html/unnamed-chunk-16-1.png)<!-- -->
 
 
 
@@ -518,7 +543,7 @@ valid_set <- df_analysis[!train,] %>%
 plot(ct, main="Conditional Inference Tree")
 ```
 
-![](160c_Time_series_results_James_no_catcharea_TOC_files/figure-html/unnamed-chunk-15-1.png)<!-- -->
+![](160c_Time_series_results_James_no_catcharea_TOC_files/figure-html/unnamed-chunk-18-1.png)<!-- -->
 
 ```r
 cat("\n\n")
@@ -583,7 +608,7 @@ ev.raw = evtree(no3_decline_f ~ ., data = train_set)
 plot(ev.raw)
 ```
 
-![](160c_Time_series_results_James_no_catcharea_TOC_files/figure-html/unnamed-chunk-16-1.png)<!-- -->
+![](160c_Time_series_results_James_no_catcharea_TOC_files/figure-html/unnamed-chunk-19-1.png)<!-- -->
 
 ```r
 cat("Predicted in training data: \n")
@@ -665,14 +690,14 @@ importance <- measure_importance(model1)
 plot_multi_way_importance(importance, size_measure = "no_of_nodes", no_of_labels = 12)  
 ```
 
-![](160c_Time_series_results_James_no_catcharea_TOC_files/figure-html/unnamed-chunk-19-1.png)<!-- -->
+![](160c_Time_series_results_James_no_catcharea_TOC_files/figure-html/unnamed-chunk-22-1.png)<!-- -->
 
 ```r
 plot_multi_way_importance(importance, x_measure = "accuracy_decrease", y_measure = "gini_decrease", 
                           size_measure = "p_value", no_of_labels = 12)
 ```
 
-![](160c_Time_series_results_James_no_catcharea_TOC_files/figure-html/unnamed-chunk-19-2.png)<!-- -->
+![](160c_Time_series_results_James_no_catcharea_TOC_files/figure-html/unnamed-chunk-22-2.png)<!-- -->
 
 
 
@@ -700,57 +725,80 @@ for (i in 1:max_number_of_plots){
     partial(pred.var = variables_for_plot[c(varno1, varno2)], chull = TRUE, progress = "text",
             which.class = "1", prob = TRUE)
 }
-
-#
-# Two extra plots:
-#
-i <- i + 1
-varno1 <- "slope_dep_vs_time"
-varno2 <- "TOTN_dep"
-plotdata[[i]] <- model1 %>%
-  partial(pred.var = c(varno1, varno2), chull = TRUE, progress = "text",
-          which.class = "1", prob = TRUE)
-
-if ("TOC" %in% names(train)){
-  i <- i + 1
-  varno1 <- "TOC"
-  varno2 <- "NO3"
-  plotdata[[i]] <- model1 %>%
-    partial(pred.var = c(varno1, varno2), chull = TRUE, progress = "text",
-            which.class = "1", prob = TRUE)
-}
-
-
-# saveRDS(plotdata, "Data/160a_plotdata.Rmd")
-
-# plotdata <- readRDS("Data/160a_plotdata.Rmd")
 ```
 
 
 
 ```r
-# Plot the plots 
-for (i in 1:length(plotdata)){
-  autoplot(plotdata[[i]], contour = TRUE, legend.title = "Probability\nNO3 decline") %>%
-    print()
+### Extra plots
+
+i <- max_number_of_plots
+
+plotpairs <- params$extra_pairwise_plots %>%
+  gsub(" ", "", ., fixed = TRUE) %>%
+  strsplit(x, split = ";") %>%
+  .[[1]] %>%
+  purrr::map(~strsplit(., split = ",")[[1]])
+
+for (plotvar in plotpairs){
+  # print(plotvar)
+  if (plotvar[1] %in% names(train_set) & plotvar[2] %in% names(train_set)){
+    i <- i + 1
+    plotdata[[i]] <- model1 %>%
+      partial(pred.var = c(plotvar[1], plotvar[2]), chull = TRUE, progress = "text",
+             which.class = "1", prob = TRUE)
+  }
 }
 ```
 
-![](160c_Time_series_results_James_no_catcharea_TOC_files/figure-html/unnamed-chunk-20-1.png)<!-- -->![](160c_Time_series_results_James_no_catcharea_TOC_files/figure-html/unnamed-chunk-20-2.png)<!-- -->![](160c_Time_series_results_James_no_catcharea_TOC_files/figure-html/unnamed-chunk-20-3.png)<!-- -->![](160c_Time_series_results_James_no_catcharea_TOC_files/figure-html/unnamed-chunk-20-4.png)<!-- -->![](160c_Time_series_results_James_no_catcharea_TOC_files/figure-html/unnamed-chunk-20-5.png)<!-- -->![](160c_Time_series_results_James_no_catcharea_TOC_files/figure-html/unnamed-chunk-20-6.png)<!-- -->![](160c_Time_series_results_James_no_catcharea_TOC_files/figure-html/unnamed-chunk-20-7.png)<!-- -->
 
 
-## 6. Logistic regression      
 
 ```r
-#   no3_decline ~ as.formula(params$logistic_formula),
+# params$pairwise_plots_same_scale
 
+if (params$pairwise_plots_same_scale == "TRUE"){
+
+  # Put on same color scale
+  
+  # Find range of predicted values for each graph
+  ranges <- plotdata %>% purrr::map_dfc(~range(.$yhat))
+  
+  # use range of all the ranges
+  for (i in 1:length(plotdata)){
+    gg <- autoplot(plotdata[[i]], contour = TRUE, legend.title = "Probability\nNO3 decline") +
+      scale_fill_viridis_c(limits = range(ranges))
+    print(gg) 
+  }
+  
+} else {
+
+  # Plot the plots 
+  for (i in 1:length(plotdata)){
+    gg <- autoplot(plotdata[[i]], contour = TRUE, legend.title = "Probability\nNO3 decline")
+    print(gg)
+  }
+  
+}
+```
+
+![](160c_Time_series_results_James_no_catcharea_TOC_files/figure-html/unnamed-chunk-23-1.png)<!-- -->![](160c_Time_series_results_James_no_catcharea_TOC_files/figure-html/unnamed-chunk-23-2.png)<!-- -->![](160c_Time_series_results_James_no_catcharea_TOC_files/figure-html/unnamed-chunk-23-3.png)<!-- -->![](160c_Time_series_results_James_no_catcharea_TOC_files/figure-html/unnamed-chunk-23-4.png)<!-- -->![](160c_Time_series_results_James_no_catcharea_TOC_files/figure-html/unnamed-chunk-23-5.png)<!-- -->![](160c_Time_series_results_James_no_catcharea_TOC_files/figure-html/unnamed-chunk-23-6.png)<!-- -->![](160c_Time_series_results_James_no_catcharea_TOC_files/figure-html/unnamed-chunk-23-7.png)<!-- -->![](160c_Time_series_results_James_no_catcharea_TOC_files/figure-html/unnamed-chunk-23-8.png)<!-- -->
+
+
+
+
+
+## 6. Logistic regression       
+Start model: **no3_decline ~  altitude + decid_mixed + slope_dep_vs_time + NO3 + TOTN_dep + coniferous + tmp + lake_water + wetland**
+
+```r
 fm <- glm(
   as.formula(params$logistic_formula),
   data = df_analysis, 
-  family = "binomial",
+  family = "binomial",  
   na.action = "na.fail")
 
-dd1b <- dredge(fm)                       # only once
+dredged_models <- dredge(fm)                       # only once
 ```
 
 ```
@@ -758,21 +806,25 @@ dd1b <- dredge(fm)                       # only once
 ```
 
 ```r
-saveRDS(dd1b, "Data/160_all_dd1b.rds")    # save it as it takes a couple of minutes
-# dd1b <- readRDS("Data/160_all_dd1b.rds")
+# saveRDS(dredged_models, "Data/162_all_dredged_models.rds")    # save it as it takes a couple of minutes
+# dredged_models <- readRDS("Data/162_all_dredged_models.rds")
 
-# subset(dd1b, delta < 1)
-subset(dd1b, delta < 2)
-
-cat("\n\nR2: \n")
-dd1b_mod1 <- get.models(dd1b, 1)[[1]]  
-# summary(dd1b_mod1)  
-
-par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
-visreg(dd1b_mod1, scale = "response")
+# cat("\n\nR2: \n")
+# mod1 <- get.models(dredged_models, 1)[[1]]  
+# summary(mod1)  
 ```
 
-![](160c_Time_series_results_James_no_catcharea_TOC_files/figure-html/unnamed-chunk-21-1.png)<!-- -->
+### Best models  
+
+```r
+# subset(dredged_models, delta < 1)
+
+subset(dredged_models, delta < 2)
+
+# Alternative way of showing result (didn't become any better)
+# df <- subset(dredged_models, delta < 2)
+# select(as.data.frame(df) %>% round(6), -`(Intercept)`, -logLik, -AICc)
+```
 
 ```
 ## Global model call: glm(formula = as.formula(params$logistic_formula), family = "binomial", 
@@ -789,10 +841,46 @@ visreg(dd1b_mod1, scale = "response")
 ## 104 532.4  0.13  0.307
 ## 232 533.4  1.15  0.185
 ## 488 533.5  1.19  0.181
-## Models ranked by AICc(x) 
-## 
-## 
-## R2:
+## Models ranked by AICc(x)
 ```
+
+
+```
+## $interaction_list
+## list()
+## 
+## $additive_vars
+## [1] "pop15" "pop75" "dpi"   "ddpi"
+```
+
+### Plots  
+
+```r
+# Pick model with lowest AICc
+mod1 <- get.models(dredged_models, 1)[[1]]  
+
+modelvars <- get_model_variables(mod1)
+
+# Interactions: 3D plot 
+# visreg2d(mod1, xvar = vars[1], yvar = vars[2], 
+#          type = 'conditional', scale = "response") 
+
+# Interactions: 2D plot 
+if (length(modelvars$interaction_list) > 0){
+  modelvars$interaction_list %>% purrr::walk(
+    ~visreg(mod1, .x[1], by = .x[2], scale = "response")
+  )
+}
+
+# Additive effects: 1D plot
+if (length(modelvars$additive_vars) > 0){
+  par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
+  for (var in modelvars$additive_vars)
+    visreg(mod1, var, scale = "response")  
+}
+```
+
+![](160c_Time_series_results_James_no_catcharea_TOC_files/figure-html/unnamed-chunk-28-1.png)<!-- -->
+
 
 

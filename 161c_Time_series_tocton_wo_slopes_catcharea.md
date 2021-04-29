@@ -78,8 +78,12 @@ library(effects)    # handles lme models
 library(readxl)
 library(readr)
 
+source("160parm_functions.R")
+
 knitr::opts_chunk$set(results = 'hold') # collect the results from a chunk  
 knitr::opts_chunk$set(warning = FALSE)  
+
+options(width = 95)
 ```
 
 
@@ -230,10 +234,12 @@ names(dat)
 ## dat, n = 293 
 ## 
 ## Variable names: 
-##  [1] "station_id"           "slope_no3_vs_time"    "slope_ton_vs_time"    "slope_toc_vs_time"   
-##  [5] "slope_tocton_vs_time" "p_no3_vs_time"        "p_ton_vs_time"        "p_toc_vs_time"       
-##  [9] "p_tocton_vs_time"     "NO3"                  "TON"                  "TOC"                 
-## [13] "TOCTON"               "TOTN_dep"             "slope_dep_vs_time"    "p_dep_vs_time"
+##  [1] "station_id"           "slope_no3_vs_time"    "slope_ton_vs_time"   
+##  [4] "slope_toc_vs_time"    "slope_tocton_vs_time" "p_no3_vs_time"       
+##  [7] "p_ton_vs_time"        "p_toc_vs_time"        "p_tocton_vs_time"    
+## [10] "NO3"                  "TON"                  "TOC"                 
+## [13] "TOCTON"               "TOTN_dep"             "slope_dep_vs_time"   
+## [16] "p_dep_vs_time"
 ```
 
 ### Add climate and deposition medians 
@@ -370,7 +376,9 @@ dat %>%
 ```
 
 
-## 4. Select data   
+## 4. Select data    
+
+### a. Select variables  
 * Select variables to use, and thereby also cases   
 * Also, 'AtlCan' data are excluded  
 
@@ -445,14 +453,16 @@ cat("Analysis: n =", nrow(df_analysis), "\n")
 ## tocton_decrease,TON,slope_dep_vs_time, TOTN_dep, latitude, longitude, altitude,pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse
 ## -------------------------------------------------------------
 ## Number of missing values per variable: 
-##        tocton_decrease                    TON      slope_dep_vs_time               TOTN_dep               latitude 
-##                      0                      0                      0                      0                      0 
-##              longitude               altitude                    pre                    tmp                  urban 
-##                      0                      0                      0                      0                      0 
-##             cultivated             coniferous            decid_mixed total_shrub_herbaceous                wetland 
-##                      0                      0                      0                      0                      0 
-##             lake_water            bare_sparse                country 
-##                      0                      0                      0 
+##        tocton_decrease                    TON      slope_dep_vs_time               TOTN_dep 
+##                      0                      0                      0                      0 
+##               latitude              longitude               altitude                    pre 
+##                      0                      0                      0                      0 
+##                    tmp                  urban             cultivated             coniferous 
+##                      0                      0                      0                      0 
+##            decid_mixed total_shrub_herbaceous                wetland             lake_water 
+##                      0                      0                      0                      0 
+##            bare_sparse                country 
+##                      0                      0 
 ## 
 ## Number of complete observations: 
 ## complete
@@ -479,6 +489,23 @@ cat("Analysis: n =", nrow(df_analysis), "\n")
 
 
 
+### b. Correlations   
+
+```r
+gg <- GGally::ggcorr(
+  df_analysis, 
+  method = c("complete.obs", "kendall"), 
+  label = TRUE,
+  hjust = 0.9, angle = -30) # +
+# class(gg)
+gg + coord_cartesian(x = c(-2, 20), y = c(-2,22))
+```
+
+```
+## Coordinate system already present. Adding new coordinate system, which will replace the existing one.
+```
+
+![](161c_Time_series_tocton_wo_slopes_catcharea_files/figure-html/unnamed-chunk-13-1.png)<!-- -->
 
 
 
@@ -510,7 +537,7 @@ valid_set <- df_analysis[!train,] %>%
 plot(ct, main="Conditional Inference Tree")
 ```
 
-![](161c_Time_series_tocton_wo_slopes_catcharea_files/figure-html/unnamed-chunk-14-1.png)<!-- -->
+![](161c_Time_series_tocton_wo_slopes_catcharea_files/figure-html/unnamed-chunk-15-1.png)<!-- -->
 
 ```r
 cat("\n\n")
@@ -562,7 +589,7 @@ ev.raw = evtree(tocton_decrease_f ~ ., data = train_set)
 plot(ev.raw)
 ```
 
-![](161c_Time_series_tocton_wo_slopes_catcharea_files/figure-html/unnamed-chunk-15-1.png)<!-- -->
+![](161c_Time_series_tocton_wo_slopes_catcharea_files/figure-html/unnamed-chunk-16-1.png)<!-- -->
 
 ```r
 cat("Predicted in training data: \n")
@@ -644,14 +671,14 @@ importance <- measure_importance(model1)
 plot_multi_way_importance(importance, size_measure = "no_of_nodes", no_of_labels = 12)  
 ```
 
-![](161c_Time_series_tocton_wo_slopes_catcharea_files/figure-html/unnamed-chunk-18-1.png)<!-- -->
+![](161c_Time_series_tocton_wo_slopes_catcharea_files/figure-html/unnamed-chunk-19-1.png)<!-- -->
 
 ```r
 plot_multi_way_importance(importance, x_measure = "accuracy_decrease", y_measure = "gini_decrease", 
                           size_measure = "p_value", no_of_labels = 12)
 ```
 
-![](161c_Time_series_tocton_wo_slopes_catcharea_files/figure-html/unnamed-chunk-18-2.png)<!-- -->
+![](161c_Time_series_tocton_wo_slopes_catcharea_files/figure-html/unnamed-chunk-19-2.png)<!-- -->
 
 
 
@@ -681,26 +708,6 @@ for (i in 1:max_number_of_plots){
 }
 ```
 
-
-```r
-### Extra plots
-
-plotpairs <- params$extra_pairwise_plots %>%
-  gsub(" ", "", ., fixed = TRUE) %>%
-  strsplit(x, split = ";") %>%
-  .[[1]] %>%
-  purrr::map(~strsplit(., split = ",")[[1]])
-
-for (plotvar in plotpairs){
-  # print(plotvar)
-  if (plotvar[1] %in% names(train_set) & plotvar[2] %in% names(train_set)){
-    i <- i + 1
-    plotdata[[i]] <- model1 %>%
-      partial(pred.var = c(plotvar[1], plotvar[2]), chull = TRUE, progress = "text",
-             which.class = "1", prob = TRUE)
-  }
-}
-```
 
 
 
@@ -732,7 +739,7 @@ if (params$pairwise_plots_same_scale == "TRUE"){
 }
 ```
 
-![](161c_Time_series_tocton_wo_slopes_catcharea_files/figure-html/unnamed-chunk-19-1.png)<!-- -->![](161c_Time_series_tocton_wo_slopes_catcharea_files/figure-html/unnamed-chunk-19-2.png)<!-- -->![](161c_Time_series_tocton_wo_slopes_catcharea_files/figure-html/unnamed-chunk-19-3.png)<!-- -->![](161c_Time_series_tocton_wo_slopes_catcharea_files/figure-html/unnamed-chunk-19-4.png)<!-- -->![](161c_Time_series_tocton_wo_slopes_catcharea_files/figure-html/unnamed-chunk-19-5.png)<!-- -->![](161c_Time_series_tocton_wo_slopes_catcharea_files/figure-html/unnamed-chunk-19-6.png)<!-- -->![](161c_Time_series_tocton_wo_slopes_catcharea_files/figure-html/unnamed-chunk-19-7.png)<!-- -->![](161c_Time_series_tocton_wo_slopes_catcharea_files/figure-html/unnamed-chunk-19-8.png)<!-- -->
+![](161c_Time_series_tocton_wo_slopes_catcharea_files/figure-html/unnamed-chunk-20-1.png)<!-- -->![](161c_Time_series_tocton_wo_slopes_catcharea_files/figure-html/unnamed-chunk-20-2.png)<!-- -->![](161c_Time_series_tocton_wo_slopes_catcharea_files/figure-html/unnamed-chunk-20-3.png)<!-- -->![](161c_Time_series_tocton_wo_slopes_catcharea_files/figure-html/unnamed-chunk-20-4.png)<!-- -->![](161c_Time_series_tocton_wo_slopes_catcharea_files/figure-html/unnamed-chunk-20-5.png)<!-- -->![](161c_Time_series_tocton_wo_slopes_catcharea_files/figure-html/unnamed-chunk-20-6.png)<!-- -->
 
 
 
@@ -750,42 +757,69 @@ fm <- glm(
   data = df_analysis, 
   family = "binomial",
   na.action = "na.fail")
-dd1b <- dredge(fm)                       # only once
+
+dredged_models <- dredge(fm)              
 ```
 
 ```
 ## Fixed term is "(Intercept)"
 ```
 
+## Best models  
+
 ```r
-saveRDS(dd1b, "Data/160_all_dd1b.rds")    # save it as it takes a couple of minutes
-# dd1b <- readRDS("Data/160_all_dd1b.rds")
+# subset(dredged_models, delta < 1)
 
-# subset(dd1b, delta < 1)
-subset(dd1b, delta < 2)
+subset(dredged_models, delta < 2)
 
-cat("\n\nR2: \n")
-dd1b_mod1 <- get.models(dd1b, 1)[[1]]  
-# summary(dd1b_mod1)  
-
-par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
-visreg(dd1b_mod1, scale = "response")
+# Alternative way of showing result (didn't become any better)
+# df <- subset(dredged_models, delta < 2)
+# select(as.data.frame(df) %>% round(6), -`(Intercept)`, -logLik, -AICc)
 ```
-
-![](161c_Time_series_tocton_wo_slopes_catcharea_files/figure-html/unnamed-chunk-20-1.png)<!-- -->![](161c_Time_series_tocton_wo_slopes_catcharea_files/figure-html/unnamed-chunk-20-2.png)<!-- -->
 
 ```
 ## Global model call: glm(formula = as.formula(params$logistic_formula), family = "binomial", 
 ##     data = df_analysis, na.action = "na.fail")
 ## ---
 ## Model selection table 
-##     (Int)       alt     cnf dcd_mxd slp_dep_vs_tim     tmp      TON TOT_dep     wtl df  logLik AICc delta weight
-## 503 1.069           0.06916 0.05835         0.4913 -0.6988 -0.04468 0.01549 -0.2615  8 -20.574 57.8  0.00  0.694
-## 504 1.767 -0.001411 0.06937 0.06085         0.4976 -0.7506 -0.04673 0.01598 -0.2888  9 -20.310 59.4  1.64  0.306
-## Models ranked by AICc(x) 
-## 
-## 
-## R2:
+##     (Int)       alt     cnf dcd_mxd slp_dep_vs_tim     tmp      TON TOT_dep     wtl df  logLik
+## 503 1.069           0.06916 0.05835         0.4913 -0.6988 -0.04468 0.01549 -0.2615  8 -20.574
+## 504 1.767 -0.001411 0.06937 0.06085         0.4976 -0.7506 -0.04673 0.01598 -0.2888  9 -20.310
+##     AICc delta weight
+## 503 57.8  0.00  0.694
+## 504 59.4  1.64  0.306
+## Models ranked by AICc(x)
 ```
+
+### Plots  
+
+```r
+# Pick model with lowest AICc
+mod1 <- get.models(dredged_models, 1)[[1]]  
+
+modelvars <- get_model_variables(mod1)
+
+# Interactions: 3D plot 
+# visreg2d(mod1, xvar = vars[1], yvar = vars[2], 
+#          type = 'conditional', scale = "response") 
+
+# Interactions: 2D plot 
+if (length(modelvars$interaction_list) > 0){
+  modelvars$interaction_list %>% purrr::walk(
+    ~visreg(mod1, .x[1], by = .x[2], scale = "response")
+  )
+}
+
+# Additive effects: 1D plot
+if (length(modelvars$additive_vars) > 0){
+  par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
+  for (var in modelvars$additive_vars)
+    visreg(mod1, var, scale = "response")  
+}
+```
+
+![](161c_Time_series_tocton_wo_slopes_catcharea_files/figure-html/unnamed-chunk-23-1.png)<!-- -->![](161c_Time_series_tocton_wo_slopes_catcharea_files/figure-html/unnamed-chunk-23-2.png)<!-- -->
+
+
 
 

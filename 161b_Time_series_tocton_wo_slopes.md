@@ -78,6 +78,8 @@ library(effects)    # handles lme models
 library(readxl)
 library(readr)
 
+source("160parm_functions.R")
+
 knitr::opts_chunk$set(results = 'hold') # collect the results from a chunk  
 knitr::opts_chunk$set(warning = FALSE)  
 
@@ -754,29 +756,25 @@ fm <- glm(
   data = df_analysis, 
   family = "binomial",
   na.action = "na.fail")
-dd1b <- dredge(fm)                       # only once
+
+dredged_models <- dredge(fm)              
 ```
 
 ```
 ## Fixed term is "(Intercept)"
 ```
 
+## Best models  
+
 ```r
-saveRDS(dd1b, "Data/160_all_dd1b.rds")    # save it as it takes a couple of minutes
-# dd1b <- readRDS("Data/160_all_dd1b.rds")
+# subset(dredged_models, delta < 1)
 
-# subset(dd1b, delta < 1)
-subset(dd1b, delta < 2)
+subset(dredged_models, delta < 2)
 
-cat("\n\nR2: \n")
-dd1b_mod1 <- get.models(dd1b, 1)[[1]]  
-# summary(dd1b_mod1)  
-
-par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
-visreg(dd1b_mod1, scale = "response")
+# Alternative way of showing result (didn't become any better)
+# df <- subset(dredged_models, delta < 2)
+# select(as.data.frame(df) %>% round(6), -`(Intercept)`, -logLik, -AICc)
 ```
-
-![](161b_Time_series_tocton_wo_slopes_files/figure-html/unnamed-chunk-21-1.png)<!-- -->![](161b_Time_series_tocton_wo_slopes_files/figure-html/unnamed-chunk-21-2.png)<!-- -->
 
 ```
 ## Global model call: glm(formula = as.formula(params$logistic_formula), family = "binomial", 
@@ -791,10 +789,38 @@ visreg(dd1b_mod1, scale = "response")
 ## 1901 -20.574 57.8  0.00  0.548
 ## 1902 -20.310 59.5  1.64  0.241
 ## 2029 -20.445 59.7  1.91  0.211
-## Models ranked by AICc(x) 
-## 
-## 
-## R2:
+## Models ranked by AICc(x)
 ```
+
+### Plots  
+
+```r
+# Pick model with lowest AICc
+mod1 <- get.models(dredged_models, 1)[[1]]  
+
+modelvars <- get_model_variables(mod1)
+
+# Interactions: 3D plot 
+# visreg2d(mod1, xvar = vars[1], yvar = vars[2], 
+#          type = 'conditional', scale = "response") 
+
+# Interactions: 2D plot 
+if (length(modelvars$interaction_list) > 0){
+  modelvars$interaction_list %>% purrr::walk(
+    ~visreg(mod1, .x[1], by = .x[2], scale = "response")
+  )
+}
+
+# Additive effects: 1D plot
+if (length(modelvars$additive_vars) > 0){
+  par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
+  for (var in modelvars$additive_vars)
+    visreg(mod1, var, scale = "response")  
+}
+```
+
+![](161b_Time_series_tocton_wo_slopes_files/figure-html/unnamed-chunk-23-1.png)<!-- -->![](161b_Time_series_tocton_wo_slopes_files/figure-html/unnamed-chunk-23-2.png)<!-- -->
+
+
 
 
