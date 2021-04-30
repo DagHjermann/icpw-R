@@ -3,4 +3,7 @@
 .RData
 .Ruserdata
 *.html
+!150_Interactive_map.html
 Data/110_model*
+Data/120_ts_model_list.rds
+110_Create_season_adjusted_data_cache/*
