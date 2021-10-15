@@ -13,7 +13,8 @@ output:
 
 This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
 
-Here is a link to [the last plot](#Plot-2)
+Here is a link to [the last plot](#Plot-2) of this document.  
+Here is [another link](161b_Time_series_tocton_wo_slopes.md#3-Plot-slopes) to a result in another document.  
 
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
