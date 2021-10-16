@@ -95,10 +95,9 @@ rmarkdown::render(
 
 #o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
 #
-# 160c - All variables incl. TOC, excl. catchment_area ----
+# 160c - All variables excl. TOC, excl. catchment_area ----
 #
 #o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
-
 
 # If many parameters, split up the lines with a 'paste()'  
 # Remember to set that the parts should be joined using a comma (sep = ",") 
