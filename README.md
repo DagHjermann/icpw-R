@@ -6,6 +6,8 @@ Last iteration: files 160-162.
 
 ## Overview of scripts  
 
+**Note: also see [010_Methods_results.md](010_Methods_results.md) which has an overview of analyses and main results.**    
+
 ### Main scripts
 
 For each of the 'series' 160, 161 and 162, there are four types of files, with naming pattern is as follows:  
@@ -20,21 +22,23 @@ For each of the 'series' 160, 161 and 162, there are four types of files, with n
 Example:  
 
 1. `160parm_Time_series_results_James.Rmd` - the actual code for the analyses, but with placeholders for names of input data file and output results. This is used for all analyses in the '160 series'.       
-* `160parm_run_markdown.R` - a script telling file 1 which input data file to use and how to name the output results. For instance, it says
-* `160a_Time_series_results_James_allvars.html` - the outputs   
-* `160a_Time_series_results_James_allvars.md`  
+2. `160parm_run_markdown.R` - 'master' script telling file 1 which input data file to use, which variables to use in models, and how to name the file with the output results 
+3. `160a_Time_series_results_James_allvars.html` - the outputs in html format (for use on pc)    
+4. `160a_Time_series_results_James_allvars.md`   - the outputs in hmarkdown format  
 
 The difference between the 160, 161 and 162 results is the response variable:    
 
-```
-160: analysis of NO3 trend 1992-2016                     - a,b,c,d: differ in selection of variables  
+- 160: analysis of NO3 trend 1992-2016                     -
+    - a,b,c,d: differ in selection of variables  
     - response variable = `no3_decline`, defined as 1 if there was a significant decrease in NO3 over the period 1992-2016 (`slope_no3_vs_time < 0 & p_no3_vs_time <= 0.05`)  
-161: analysis of TOC/TON trend 1992-2016                   - a,b,c: as 160  
+    - a,b,c,d: differ in selection of variables  
+- 161: analysis of TOC/TON trend 1992-2016                   -
     - response variable = `tocton_decrease`, defined as 1 if there was a significant decrease in TOC/TON ratio over the period 1992-2016  
-162: analysis of median 2012-2016, both NO3 and TOC/TON  - a-b: NO3 with different variables , c-d: TOC/TON with different variables  
+    - a,b,c: differ in selection of variables    
+- 162: analysis of median 2012-2016, both NO3 and TOC/TON    
     - a and b: response variable = log_median_no3 = log10(median_no3 + 0.1)   
-    - c and d: response variable = log_median_tocton = log10(median_tocton)   
-```
+    - c and d: response variable = log_median_tocton = log10(median_tocton)     
+
 Note:
 
 > The selection of variables is crucial, as some countries lack some variables. 
@@ -42,11 +46,17 @@ Note:
 Variables used for each analysis:  
 
 ```  
-For series 160 and 161:  
+For series 160:  
 a - All variables including catchment_area and TOC  
 b - All variables except catchment area (but including TOC)  
 c - All variables except catchment area and TOC  
 d - All variables except catchment area and altitude (but including TOC)  
+
+For series 161:  
+
+a. All variables including the slope of TOC and the slope of TON      
+b. All variables excluding the slopes (TOC and TON)        
+c. All variables excluding the slopes, and excludong TOC (in order to include 6 Italian stations)
 
 For series 162:   
 a - NO3 medians data set incl. catchment_area + TOC  
