@@ -10,9 +10,30 @@ DHJ
         importance](#measurements-of-variable-importance)
     -   [Variable effects / predictions of the
         model](#variable-effects--predictions-of-the-model)
--   [Results](#results)
-    -   [NO3 decrease](#no3-decrease)
-    -   [TOC/TON ratio decrease](#tocton-ratio-decrease)
+-   [Results for NO3 decrease](#results-for-no3-decrease)
+    -   [a. Full model](#a-full-model)
+    -   [b. All variables except catchment
+        area](#b-all-variables-except-catchment-area)
+    -   [c. All variables except catchment area and
+        TOC](#c-all-variables-except-catchment-area-and-toc)
+    -   [d. All variables except catchment area and
+        altitude](#d-all-variables-except-catchment-area-and-altitude)
+-   [Results for TOC/TON ratio
+    decrease](#results-for-tocton-ratio-decrease)
+    -   [a. Full model](#a-full-model-1)
+    -   [b. Not including the slopes of TOC and
+        TON](#b-not-including-the-slopes-of-toc-and-ton)
+    -   [c. Also removing TOC](#c-also-removing-toc)
+-   [Results for Current status, NO3](#results-for-current-status-no3)
+    -   [a. Full model](#a-full-model-2)
+    -   [b. All variables except catchment area and
+        TOC](#b-all-variables-except-catchment-area-and-toc)
+-   [Results for Current status, TOC/TON
+    ratio](#results-for-current-status-tocton-ratio)
+    -   [a. All variables including TOC and TON
+        medians](#a-all-variables-including-toc-and-ton-medians)
+    -   [b. All variables except TOC and TON
+        medians](#b-all-variables-except-toc-and-ton-medians)
 
 ## Overview of analyses
 
@@ -200,13 +221,15 @@ station with this combination of values.
     shows that the highest chance/proportion of NO3 change is found for
     stations with a medium deposition and medium change in deposition.
 
+> Note that the color scales of the figures differ (see legend in
+> figures) - dark blue vs. yellow represents a bigger difference for the
+> first figure in each analysis.
+
 ![](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-20-3.png)
 
-## Results
+## Results for NO3 decrease
 
-### NO3 decrease
-
-#### a. Full model
+### a. Full model
 
 **N = 375, all predictor variables included (lacking all US, IE, IT, LT
 stations)** (*Same results as examples above.*)
@@ -248,6 +271,7 @@ slope_vs_time.
 mean_min_depth](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-19-1.png)
 ![scatter plot of gini_decrease vs
 accuracy_decrease](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-19-2.png)
+
 **Variable effects:** The partial effects for the two most important
 variables show increasing probability of NO3 decline with increasing
 altitude and for stations with very little deciduous/mixed forest. The
@@ -265,7 +289,7 @@ effects](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-
 ![partial
 effects](160a_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-20-3.png)
 
-#### b. All variables except catchment area
+### b. All variables except catchment area
 
 **N = 450 - Getting in most US staitons, but still lacking all Italian,
 Latvian, Irish stations, plus some German and Swedish ones)**
@@ -308,6 +332,7 @@ data.
 mean_min_depth](160b_Time_series_results_James_no_catcharea_files/figure-html/unnamed-chunk-19-1.png)
 ![scatter plot of gini_decrease vs
 accuracy_decrease](160b_Time_series_results_James_no_catcharea_files/figure-html/unnamed-chunk-19-2.png)
+
 **Variable effects:** The partial effects graphs are a bit different as
 the variables have reordered themselves according to th ‘gini-decrease’
 index, which was used for selecting variables for these plots. E.g., in
@@ -323,7 +348,7 @@ effects](160b_Time_series_results_James_no_catcharea_files/figure-html/unnamed-c
 ![partial
 effects](160b_Time_series_results_James_no_catcharea_files/figure-html/unnamed-chunk-21-3.png)
 
-#### c. All variables except catchment area and TOC
+### c. All variables except catchment area and TOC
 
 **N = 474 (getting most IT,LV,IE,DE,SE stations, still lacking CH + 16
 US stations)**
@@ -364,6 +389,7 @@ quite important.
 mean_min_depth](160c_Time_series_results_James_no_catcharea_TOC_files/figure-html/unnamed-chunk-20-1.png)
 ![scatter plot of gini_decrease vs
 accuracy_decrease](160c_Time_series_results_James_no_catcharea_TOC_files/figure-html/unnamed-chunk-20-2.png)
+
 **Variable effects:** Interaction between altitude and decid_mixed:
 Below altitude 250 masl, decid_mixed has no effect. Over 250 masl, the
 probability of NO3 decline decreases steadily as the proportion fof
@@ -377,7 +403,7 @@ effects](160c_Time_series_results_James_no_catcharea_TOC_files/figure-html/unnam
 ![partial
 effects](160c_Time_series_results_James_no_catcharea_TOC_files/figure-html/unnamed-chunk-21-3.png)
 
-#### d. All variables except catchment area and altitude
+### d. All variables except catchment area and altitude
 
 **N = 450 (same stations as in b)**
 
@@ -390,6 +416,7 @@ temperature (tmp) becomes more important.
 mean_min_depth](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-chunk-20-1.png)
 ![scatter plot of gini_decrease vs
 accuracy_decrease](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-chunk-20-2.png)
+
 **Variable effects:** Largest probability of NO3 decline for stations
 with very low TOC, or very little deciduous/mixed forest, or
 (especially) both. Also, larger probability of NO3 decline when
@@ -402,9 +429,11 @@ effects](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-ch
 ![partial
 effects](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-chunk-21-3.png)
 
-### TOC/TON ratio decrease
+## Results for TOC/TON ratio decrease
 
-#### a. Full model
+**Note: in all of these results, ‘AtlCan’ data are excluded**
+
+### a. Full model
 
 **Variable importance:** The slopes of TON and TOC over time has a big
 effect, not so surprising.
@@ -415,6 +444,7 @@ effect, not so surprising.
 mean_min_depth](161a_Time_series_tocton_allvars_files/figure-html/unnamed-chunk-19-1.png)
 ![scatter plot of gini_decrease vs
 accuracy_decrease](161a_Time_series_tocton_allvars_files/figure-html/unnamed-chunk-19-2.png)
+
 **Variable effects:** Dominated by the slopes over time - see next
 analyses
 
@@ -425,7 +455,7 @@ effects](161a_Time_series_tocton_allvars_files/figure-html/unnamed-chunk-20-2.pn
 ![partial
 effects](161a_Time_series_tocton_allvars_files/figure-html/unnamed-chunk-20-3.png)
 
-#### b. Not including the slopes of TOC and TON
+### b. Not including the slopes of TOC and TON
 
 **N = 224 - Missing the Italian ones, due to TOC**
 
@@ -467,7 +497,7 @@ effects](161b_Time_series_tocton_wo_slopes_files/figure-html/unnamed-chunk-20-2.
 ![partial
 effects](161b_Time_series_tocton_wo_slopes_files/figure-html/unnamed-chunk-20-3.png)
 
-#### c. Also removing TOC
+### c. Also removing TOC
 
 **N = 230 (all countries included)**
 
@@ -497,6 +527,7 @@ still most important. Total_shrub_herbacous comes in as quite important.
 mean_min_depth](161c_Time_series_tocton_wo_slopes_catcharea_files/figure-html/unnamed-chunk-19-1.png)
 ![scatter plot of gini_decrease vs
 accuracy_decrease](161c_Time_series_tocton_wo_slopes_catcharea_files/figure-html/unnamed-chunk-19-2.png)
+
 **Variable effects:** The probability of TOC/TON decline is highest for
 some intermediate proportion of shrubs/herbacous (40-50%). A bit
 suspicuous?
@@ -507,3 +538,187 @@ effects](161c_Time_series_tocton_wo_slopes_catcharea_files/figure-html/unnamed-c
 effects](161c_Time_series_tocton_wo_slopes_catcharea_files/figure-html/unnamed-chunk-20-2.png)  
 ![partial
 effects](161c_Time_series_tocton_wo_slopes_catcharea_files/figure-html/unnamed-chunk-20-3.png)
+
+## Results for Current status, NO3
+
+### a. Full model
+
+**N = 377 (no USA stations)**
+
+    ## Variables  
+    ## log_median_no3,catchment_area, log_median_toc,slope_dep_vs_time, TOTN_dep, latitude, longitude, altitude,pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse
+
+    ## 
+    ## Number of complete observations by country: 
+    ##                 complete
+    ##                  FALSE TRUE
+    ##   Canada             0  115
+    ##   Czech Republic     0    8
+    ##   Estonia            1    0
+    ##   Finland            0   23
+    ##   Germany            0    3
+    ##   Ireland            9    2
+    ##   Italy              0    4
+    ##   Latvia             0    5
+    ##   Moldova            2    0
+    ##   Netherlands        1    2
+    ##   Norway             0   83
+    ##   Poland             4    6
+    ##   Slovakia           0   12
+    ##   Sweden             0   92
+    ##   Switzerland        9    0
+    ##   United Kingdom     0   22
+    ##   United States     91    0
+    ## 
+    ## 
+    ## Original data: n = 494 
+    ## Analysis: n = 377
+
+**Variable importance:** Current level of depositon (TOTN_dep) and its
+trend (slope_dep_vs_time) are the two most important variables by far,
+and temperature (tmp) is clearly number 3.
+
+![scatter plot of times_a\_root vs
+mean_min_depth](162a_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-18-1.png)
+![scatter plot of gini_decrease vs
+accuracy_decrease](162a_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-18-2.png)
+
+**Variable effects:** Current deposition and its trend are clearly
+correlated (forming a diagonal ‘bar’), but there is clearly an effect of
+both. For high levels of current deposition, there seems to be little or
+none effect of the deposition trend (i.e. deposition history), but for
+stations with current deposition \< 500, deposition history matters:
+there is higher NO3 levels if the deposition trend has been more
+negative (i.e. if past deposition was higher). There is also high NO3
+levels for stations with high temperature (tmp) and low TOC, and smaller
+effects of prcipitation and altitude.
+
+![partial
+effects](162a_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-19-1.png)  
+![partial
+effects](162a_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-19-2.png)  
+![partial
+effects](162a_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-19-3.png)
+
+### b. All variables except catchment area and TOC
+
+**N = 457** (still lacking 16 US stations, plus most (9/11) Irish
+stations)
+
+    ## -------------------------------------------------------------
+    ## Variables: 
+    ## log_median_no3,slope_dep_vs_time, TOTN_dep, latitude, longitude, altitude,pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse
+    ## -------------------------------------------------------------
+    ## 
+    ## Number of complete observations by country: 
+    ##                 complete
+    ##                  FALSE TRUE
+    ##   Canada             0  115
+    ##   Czech Republic     0    8
+    ##   Estonia            1    0
+    ##   Finland            0   23
+    ##   Germany            0    3
+    ##   Ireland            9    2
+    ##   Italy              0    4
+    ##   Latvia             0    5
+    ##   Moldova            2    0
+    ##   Netherlands        0    3
+    ##   Norway             0   83
+    ##   Poland             0   10
+    ##   Slovakia           0   12
+    ##   Sweden             0   92
+    ##   Switzerland        9    0
+    ##   United Kingdom     0   22
+    ##   United States     16   75
+    ## 
+    ## 
+    ## Original data: n = 494 
+    ## Analysis: n = 457
+
+**Variable importance:** Quite similar as above.
+
+![scatter plot of times_a\_root vs
+mean_min_depth](162b_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-18-1.png)
+![scatter plot of gini_decrease vs
+accuracy_decrease](162b_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-18-2.png)
+
+**Variable effects:** The effects of current deposition and deposition
+trend are similar to the previous analyses only with stronger contrasts.
+Effects pf temperature, precipitation and altitude appears similar.
+
+![partial
+effects](162b_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-19-1.png)  
+![partial
+effects](162b_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-19-2.png)  
+![partial
+effects](162b_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-19-3.png)
+
+## Results for Current status, TOC/TON ratio
+
+### a. All variables including TOC and TON medians
+
+**N = 310 (no USA stations)**
+
+    ## Variables: 
+    ## log_median_tocton,catchment_area, log_median_ton, log_median_toc,slope_dep_vs_time, TOTN_dep, latitude, longitude, altitude,pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse
+    ## -------------------------------------------------------------
+    ## 
+    ## Number of complete observations by country: 
+    ##                 complete
+    ##                  TRUE
+    ##   Canada           78
+    ##   Czech Republic    2
+    ##   Finland          23
+    ##   Germany           1
+    ##   Italy             4
+    ##   Latvia            5
+    ##   Norway           83
+    ##   Sweden           92
+    ##   United Kingdom   22
+    ## 
+    ## 
+    ## Original data: n = 310 
+    ## Analysis: n = 310
+
+**Variable importance:** This is very much dominated by TOC levels
+(log_median_toc)
+
+![scatter plot of times_a\_root vs
+mean_min_depth](162c_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-18-1.png)
+![scatter plot of gini_decrease vs
+accuracy_decrease](162c_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-18-2.png)
+
+**Variable effects:** Again, TOC levels seems by far most important.
+
+![partial
+effects](162c_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-19-1.png)  
+![partial
+effects](162c_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-19-2.png)  
+![partial
+effects](162c_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-19-3.png)
+
+### b. All variables except TOC and TON medians
+
+**N = 310 (no USA stations)** - same stations as the previous
+
+**Variable importance:** The to 3 variables are all vegetation
+parameters. total_shrub_herbaceous seems slightly more important than
+bare_sparse and coniferous. Altitude and lake_water comes next, followed
+by level and trend of TotN deposition.
+
+![scatter plot of times_a\_root vs
+mean_min_depth](162d_Currentstatus_TOCTON_no_TOC_TON_files/figure-html/unnamed-chunk-18-1.png)
+![scatter plot of gini_decrease vs
+accuracy_decrease](162d_Currentstatus_TOCTON_no_TOC_TON_files/figure-html/unnamed-chunk-18-2.png)
+
+**Variable effects:** High TOC/TON ratios are associated with little
+shrub/herbaceous vegetation, little bare/sparse vegetation, little
+lake/water and much coniferous forest. There is also a weaker effect of
+TotN deposition at lower (\< 750 m.a.s.l).
+
+![partial
+effects](162d_Currentstatus_TOCTON_no_TOC_TON_files/figure-html/unnamed-chunk-19-1.png)  
+![partial
+effects](162d_Currentstatus_TOCTON_no_TOC_TON_files/figure-html/unnamed-chunk-19-2.png)  
+![partial
+effects](162d_Currentstatus_TOCTON_no_TOC_TON_files/figure-html/unnamed-chunk-19-3.png)
