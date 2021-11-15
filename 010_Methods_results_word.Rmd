@@ -237,7 +237,7 @@ For a single decision tree, prediction is simple, as shown above. For a random f
 
 **N = 450 (same stations as in b)**
 
-**Variable importance:** TOC "takes over for" altitude in variable importance. TOTN_dep and slope_vs_time still quite important, NO3 a little less important (see graph 2), while precipitation (pre) and temperature (tmp) becomes more important.      
+**Variable importance:** TOC "takes over for" altitude in variable importance. TOTN_dep and slope_dep_vs_time still quite important, NO3 a little less important (see graph 2), while precipitation (pre) and temperature (tmp) becomes more important.      
 
 ![scatter plot of times_a_root vs mean_min_depth](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-chunk-20-1.png)
 ![scatter plot of gini_decrease vs accuracy_decrease](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-chunk-20-2.png)
@@ -247,6 +247,15 @@ For a single decision tree, prediction is simple, as shown above. For a random f
 ![partial effects](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-chunk-21-1.png)   
 ![partial effects](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-chunk-21-2.png)   
 ![partial effects](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-chunk-21-3.png)   
+
+**Multiple regression:** The results from a multiple regression (model with best AIC, picked automatically) confirms a strong relationship to the trend in deposition (in interaction with current deposition) and a strong effect of land cover variables. TOC has a weak/uncertain effect.    
+
+
+![](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-chunk-26-1.png)
+
+
+![](160d_Time_series_results_James_no_altitude_files/figure-html/unnamed-chunk-26-2.png)
+
 
 
 ## Results for TOC/TON ratio decrease   
@@ -306,6 +315,12 @@ For a single decision tree, prediction is simple, as shown above. For a random f
 ![partial effects](161b_Time_series_tocton_wo_slopes_files/figure-html/unnamed-chunk-20-1.png)   
 ![partial effects](161b_Time_series_tocton_wo_slopes_files/figure-html/unnamed-chunk-20-2.png)   
 ![partial effects](161b_Time_series_tocton_wo_slopes_files/figure-html/unnamed-chunk-20-3.png)   
+**Multiple regression:** Only the efects of deposition, deposition trend and TON really show up here.     
+
+![](161b_Time_series_tocton_wo_slopes_files/figure-html/unnamed-chunk-23-1.png)
+
+![](161b_Time_series_tocton_wo_slopes_files/figure-html/unnamed-chunk-23-2.png)
+
 
 
 ### c. Also removing TOC   
@@ -371,7 +386,7 @@ For a single decision tree, prediction is simple, as shown above. For a random f
 ##   Moldova            2    0
 ##   Netherlands        1    2
 ##   Norway             0   83
-##   Poland             4    6
+##   Poland             3    6
 ##   Slovakia           0   12
 ##   Sweden             0   92
 ##   Switzerland        9    0
@@ -379,8 +394,8 @@ For a single decision tree, prediction is simple, as shown above. For a random f
 ##   United States     91    0
 ## 
 ## 
-## Original data: n = 494 
-## Analysis: n = 377
+## Original data: n = 493
+## Analysis: n = 376
 ```
 
 
@@ -421,7 +436,7 @@ For a single decision tree, prediction is simple, as shown above. For a random f
 ##   Moldova            2    0
 ##   Netherlands        0    3
 ##   Norway             0   83
-##   Poland             0   10
+##   Poland             0    9
 ##   Slovakia           0   12
 ##   Sweden             0   92
 ##   Switzerland        9    0
@@ -429,8 +444,8 @@ For a single decision tree, prediction is simple, as shown above. For a random f
 ##   United States     16   75
 ## 
 ## 
-## Original data: n = 494 
-## Analysis: n = 457
+## Original data: n = 493
+## Analysis: n = 456
 
 ```
 
@@ -445,6 +460,11 @@ For a single decision tree, prediction is simple, as shown above. For a random f
 ![partial effects](162b_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-19-1.png)   
 ![partial effects](162b_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-19-2.png)   
 ![partial effects](162b_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-19-3.png)   
+**Multiple regression:** The results from a multiple regression (model with best AIC, picked automatically) confirms an interaction effect bewteen current deposition and deposition trend, as well as effects of someland cover variables, altitude and temperature.  
+
+![lin regr](162b_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-23-1.png)
+
+![lin regr](162b_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-23-2.png)
 
 
 ## Results for Current status, TOC/TON ratio      
@@ -509,6 +529,7 @@ For a single decision tree, prediction is simple, as shown above. For a random f
 ![partial effects](162d_Currentstatus_TOCTON_no_TOC_TON_files/figure-html/unnamed-chunk-19-2.png)   
 ![partial effects](162d_Currentstatus_TOCTON_no_TOC_TON_files/figure-html/unnamed-chunk-19-3.png)   
 
-
+**Multiple regression:** The results from a multiple regression (model with best AIC, picked automatically) are shown below. Most notably, total_shrub_herbaceous isn't picked.    
+![multreg](162d_Currentstatus_TOCTON_no_TOC_TON_files/figure-html/unnamed-chunk-23-1.png)   
 
 
