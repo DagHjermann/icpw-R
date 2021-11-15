@@ -14,10 +14,6 @@ library(dplyr)
 
 ```
 
-```{r}
-
-
-```
 
 ## 2. Data   
 
@@ -43,7 +39,11 @@ df_landcover1 <- read_excel(fn)
 cat(nrow(df_landcover1), "lines of data read into df_landcover1 \n")
 # names(df_landcover1); cat("\n")
 
+```
 
+
+### Extra UK data - read file  
+```{r}
 #
 # EXTRA UK DATA  
 #
@@ -56,6 +56,14 @@ df_landcover_uk1 <- read_excel(fn,
   as.data.frame()
 cat(nrow(df_landcover_uk1), "lines of UK data read into df_landcover_uk1 \n")
 
+```
+
+
+### Extra UK data - add to df_landcover1   
+* Creating 'df_landcover2'   
+
+#### Remove UK lines form main data   
+```{r}
 #
 # REMOVE UK LINES FROM MAIN DATA
 #
@@ -73,6 +81,11 @@ df_landcover2 <- df_landcover1[!sel_uk,]
 cat(sum(sel_uk), "lines of UK data removed from df_landcover1 \n")
 cat(nrow(df_landcover2), "lines of data in df_landcover2 \n")
 
+```
+
+
+#### Make data ready to be added     
+```{r}
 #
 # MAKE UK DATA READY FOR BEING ADDED  
 #
@@ -111,15 +124,21 @@ if (sum(check) > 0){
   stop("Some names don't fit")
 } 
 
+
+```
+
+
+#### Make data ready to be added     
+```{r}
+
 #
 # ADD UK DATA TO MAIN DATA (without metadata)
 #
 
-
 # Combine 
 df_landcover3 <- bind_rows(
   df_landcover2[c("station_id", vars_landcover)],
-  df_landcover_uk3[c("station_id", vars_landcover)],
+  df_landcover_uk2[c("station_id", vars_landcover)],
 )
 cat(nrow(df_landcover3), "lines of data in df_landcover3 after adding UK data \n")
 
@@ -147,6 +166,11 @@ df_landcover3 <- df_landcover3[c(names(df_meta), vars_landcover)]
 
 cat(nrow(df_landcover3), "lines of data in df_landcover3 after adding new metadata \n")
 
+```
+
+### Save     
+```{r}
+
 #
 # SAVE
 #
@@ -161,6 +185,7 @@ cat("Coverage per country\n")
 xtabs(~country + is.na(total_forest), df_landcover3)
 
 ```
+
 
 ### Combine land cover types 'df_landcover4'      
 * bare_sparse = bare_rock + sparsely_vegetated + glacier   
