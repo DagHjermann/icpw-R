@@ -23,7 +23,22 @@ localfiles <- TRUE  # if FALSE: reading from K
 ```
 
 
-## 2. Data   
+## 2. Metadata - full station list  
+```{r}
+
+# Put in newer metadata (variable Continent has values, includes variable Group)
+if (localfiles){
+  fn <- "Data_landcover/all_icpw_sites_may_2020.xlsx"
+} else {
+  fn <- "K:/Prosjekter/langtransporterte forurensninger/O-23300 - ICP-WATERS - HWI/Faglige rapporter/2020 report/Land cover/all_icpw_sites_may_2020.xlsx"
+}
+
+df_meta_without_landcover <- read_excel(fn)
+
+```
+
+
+## 3. Land cover  
 
 ### Get land cover and catchment_area    
 * Main land cover file has lines for UK data, but they are mostly empty  
@@ -82,7 +97,7 @@ cat(nrow(df_landcover_uk1), "lines of UK data read into df_landcover_uk1 \n")
 ### Extra UK data - add to df_landcover1   
 * Creating 'df_landcover2'   
 
-#### Remove UK lines form main data   
+#### Remove UK lines from main data   
 ```{r}
 #
 # REMOVE UK LINES FROM MAIN DATA
@@ -162,36 +177,30 @@ df_landcover3 <- bind_rows(
 )
 cat(nrow(df_landcover3), "lines of data in df_landcover3 after adding UK data \n")
 
-#
-# ADD NEW METADATA
-#
+```
+## 4. Add land cover to metadata  
+```{r}
 
-# Put in newer metadata (variable Continent has values, includes variable Group)
-if (localfiles){
-  fn <- "Data_landcover/all_icpw_sites_may_2020.xlsx"
-} else {
-  fn <- "K:/Prosjekter/langtransporterte forurensninger/O-23300 - ICP-WATERS - HWI/Faglige rapporter/2020 report/Land cover/all_icpw_sites_may_2020.xlsx"
-}
+n1 <- nrow(df_meta_without_landcover)
 
-df_meta <- read_excel(fn)
+df_meta1 <- df_meta_without_landcover %>% 
+  left_join(df_landcover3, by = "station_id")
 
-n1 <- nrow(df_landcover3)
-df_landcover3 <- df_landcover3 %>% 
-  left_join(df_meta, by = "station_id")
-n2 <- nrow(df_landcover3)
+n2 <- nrow(df_meta1)
 
 # Check that join is ok
 if (n2 != n1)
   stop("Number of rows changed; check whether there are only unique values of 'station_id'")
 
 # Order columns
-df_landcover3 <- df_landcover3[c(names(df_meta), vars_landcover)]
+df_meta1 <- df_meta1[c(names(df_meta1), vars_landcover)]
 
 # names(df_landcover1); cat("\n")
 
-cat(nrow(df_landcover3), "lines of data in df_landcover3 after adding new metadata \n")
+cat(nrow(df_meta1), "lines of data in df_meta1 after adding new metadata \n")
 
 ```
+
 
 ### Save     
 ```{r}
@@ -200,19 +209,19 @@ cat(nrow(df_landcover3), "lines of data in df_landcover3 after adding new metada
 # SAVE
 #
 
-saveRDS(df_landcover3, "Data/159_df_landcover3.rds")
-writexl::write_xlsx(df_landcover3, "Data/159_df_landcover_including_UK.xlsx")
+saveRDS(df_meta1, "Data/159_df_meta1.rds")
+writexl::write_xlsx(df_meta1, "Data/159_df_meta1_including_UK.xlsx")
 
 # df_landcover3 <- readRDS("Data/159_df_landcover3.rds")
 
 cat("\n------------------------------------------\n")
 cat("Coverage per country\n")
-xtabs(~country + is.na(total_forest), df_landcover3)
+xtabs(~country + is.na(total_forest), df_meta1)
 
 ```
 
 
-### Combine land cover types 'df_landcover4'      
+## 5. Combine land cover types 'df_meta2'      
 * bare_sparse = bare_rock + sparsely_vegetated + glacier   
 * Select: coniferous, deciduous, lake, mixed_forest, wetland, bare_sparse   
 * Also: removes all metadata (keeps only station_id, catchment_area, and land cover columns)  
@@ -226,24 +235,24 @@ sel_columns <- c("station_id", "catchment_area", "urban", "cultivated", "total_f
                    "grasslands", "heathlands", "transitional_woodland_shrub", "bare_rock", 
                    "sparsely_vegetated", "glacier", "wetland", "lake", "water_ex_lake", "other")
   
-df_landcover4 <- df_landcover3[sel_columns] %>%
+df_meta2 <- df_meta1[sel_columns] %>%
   mutate(bare_sparse = bare_rock + sparsely_vegetated + glacier,
          decid_mixed = deciduous + mixed_forest,
          lake_water = lake + water_ex_lake) %>%
   select(-c(bare_rock, sparsely_vegetated, glacier, deciduous, mixed_forest, lake, water_ex_lake))
 
-cat("df_landcover4, n =", nrow(df_landcover4), "\n")
+cat("df_meta2, n =", nrow(df_meta2), "\n")
 
 
 ```
 
 
 
-## Save  
+## 6. Save  
 ```{r}
 
-saveRDS(df_landcover4, "Data/159_df_landcover4.rds")
-writexl::write_xlsx(df_landcover4, "Data/159_df_landcover_merged_categories.xlsx")
+saveRDS(df_meta2, "Data/159_df_meta2.rds")
+writexl::write_xlsx(df_meta2, "Data/159_df_metadata_merged_landcover.xlsx")
 
 ```
 
@@ -252,7 +261,7 @@ writexl::write_xlsx(df_landcover4, "Data/159_df_landcover_merged_categories.xlsx
 ```{r}
 
 run_this <- FALSE
-run_this <- TRUE
+# run_this <- TRUE
 
 ### Check other land cover files
 if (run_this){
