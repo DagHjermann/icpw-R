@@ -391,13 +391,17 @@ sel_columns <- c("station_id", "catchment_area", "urban", "cultivated", "total_f
                    "grasslands", "heathlands", "transitional_woodland_shrub", "bare_rock", 
                    "sparsely_vegetated", "glacier", "wetland", "lake", "water_ex_lake", "other")
   
+# Add new combined data
 df_meta2 <- df_meta1[sel_columns] %>%
   mutate(bare_sparse = bare_rock + sparsely_vegetated + glacier,
          decid_mixed = deciduous + mixed_forest,
-         lake_water = lake + water_ex_lake) %>%
+         lake_water = lake + water_ex_lake)
+
+# Remove 'old' columns
+df_meta3 <- df_meta2 %>%
   select(-c(bare_rock, sparsely_vegetated, glacier, deciduous, mixed_forest, lake, water_ex_lake))
 
-cat("df_meta2, n =", nrow(df_meta2), "\n")
+cat("df_meta3, n =", nrow(df_meta2), "\n")
 
 
 ```
@@ -407,8 +411,13 @@ cat("df_meta2, n =", nrow(df_meta2), "\n")
 ## 6. Save  
 ```{r}
 
+# Metadata including all original columns
 saveRDS(df_meta2, "Data/159_df_meta2.rds")
-writexl::write_xlsx(df_meta2, "Data/159_df_metadata_merged_landcover.xlsx")
+writexl::write_xlsx(df_meta2, "Data/159_df_metadata_merged_landcover_allcols.xlsx")
+
+# Metadata excluding columns that have been combined 
+saveRDS(df_meta2, "Data/159_df_meta3.rds")
+writexl::write_xlsx(df_meta3, "Data/159_df_metadata_merged_landcover.xlsx")
 
 ```
 
