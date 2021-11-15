@@ -416,10 +416,11 @@ saveRDS(df_meta2, "Data/159_df_meta2.rds")
 writexl::write_xlsx(df_meta2, "Data/159_df_metadata_merged_landcover_allcols.xlsx")
 
 # Metadata excluding columns that have been combined 
-saveRDS(df_meta2, "Data/159_df_meta3.rds")
+saveRDS(df_meta3, "Data/159_df_meta3.rds")
 writexl::write_xlsx(df_meta3, "Data/159_df_metadata_merged_landcover.xlsx")
 
 ```
+
 
 
 ## Appendix: compare with other metadata    
