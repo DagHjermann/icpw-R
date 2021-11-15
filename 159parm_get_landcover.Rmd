@@ -78,7 +78,7 @@ cat(nrow(df_landcover1), "lines of data read into df_landcover1 \n")
 #
 # EXTRA UK DATA  
 #
-# UK data 'df_landcover_uk1'
+# UK data 'df_landcover1_new'
 
 if (localfiles){
   fn <- "Data_landcover/icpw_land_cover_United Kingdom_29-01-2021.xlsx"
@@ -86,34 +86,35 @@ if (localfiles){
   fn <- "K:/Prosjekter/langtransporterte forurensninger/O-23300 - ICP-WATERS - HWI/Faglige rapporter/2020 report/Land cover/Excel documents - received/icpw_land_cover_United Kingdom_29-01-2021.xlsx"
 }
 
-df_landcover_uk1 <- read_excel(fn, 
+df_landcover1_new1 <- read_excel(fn, 
                                sheet = "uk", 
                                range = "A1:U23",    # NOTE: specific range! 
                                col_types = c("numeric", rep("text", 2), rep("numeric", 18))) %>%
   as.data.frame()
-cat(nrow(df_landcover_uk1), "lines of UK data read into df_landcover_uk1 \n")
+cat(nrow(df_landcover1_new1), "lines of UK data read into df_landcover1_new1 \n")
 
 ```
 
 
-#### Remove UK lines from main data   
+#### Remove lines from main data   
 ```{r}
 #
 # REMOVE UK LINES FROM MAIN DATA
 #
 
-# Existing UK data in 'df_landcover1'  
-stations <- df_landcover_uk1$station_id
-sel_uk <- df_landcover1$station_id %in% stations
+# Existing data in 'df_landcover1'  
+stations <- df_landcover1_new1$station_id
+sel_to_remove <- df_landcover1$station_id %in% stations
+
 # Check existing data - just have altitide, a few (erronous) catchment area, and no land cover: 
-# unique(df_landcover1$station_id[sel_uk])
-# df_landcover1[sel_uk,] %>% View()
-# df_landcover1[sel_uk,] %>% select(-(station_code:longitude), -(altitude:region)) %>% View()
+# unique(df_landcover1$station_id[sel_to_remove])
+# df_landcover1[sel_to_remove,] %>% View()
+# df_landcover1[sel_to_remove,] %>% select(-(station_code:longitude), -(altitude:region)) %>% View()
 
 # Remove existing UK data:
-df_landcover2 <- df_landcover1[!sel_uk,]
-cat(sum(sel_uk), "lines of UK data removed from df_landcover1 \n")
-cat(nrow(df_landcover2), "lines of data in df_landcover2 \n")
+df_landcover1b <- df_landcover1[!sel_to_remove,]
+cat(sum(sel_to_remove), "lines of data removed from df_landcover1 \n")
+cat(nrow(df_landcover1b), "lines of data in df_landcover1b \n")
 
 ```
 
@@ -125,11 +126,11 @@ cat(nrow(df_landcover2), "lines of data in df_landcover2 \n")
 #
 
 # All empty cells are replaced with zeros
-df_landcover_uk1[is.na(df_landcover_uk1)] <- 0
+df_landcover1_new1[is.na(df_landcover1_new1)] <- 0
 
 # Get new column names for UK data 
-# str(df_landcover_uk1)
-new_names <- names(df_landcover_uk1) %>% 
+# str(df_landcover1_new1)
+new_names <- names(df_landcover1_new1) %>% 
   tolower() %>% 
   gsub(" (%)", "", ., fixed = TRUE) %>%
   gsub(" ", "_", ., fixed = TRUE)
@@ -138,11 +139,11 @@ new_names <- names(df_landcover_uk1) %>%
 # new_names
 
 # Change all names (most are correct)
-df_landcover_uk2 <- df_landcover_uk1
-names(df_landcover_uk2) <- new_names
+df_landcover1_new2 <- df_landcover1_new1
+names(df_landcover1_new2) <- new_names
 
 # Change the rest of the names
-df_landcover_uk2 <- df_landcover_uk2 %>%
+df_landcover1_new2 <- df_landcover1_new2 %>%
   select(-station_code, -station_name) %>%
   rename(
     catchment_area = `catchment_area_(km2)`,
@@ -152,9 +153,9 @@ df_landcover_uk2 <- df_landcover_uk2 %>%
   )
 
 # Check column names
-check <- !(names(df_landcover_uk2) %in% c("station_id", vars_landcover))
+check <- !(names(df_landcover1_new2) %in% c("station_id", vars_landcover))
 if (sum(check) > 0){
-  names(df_landcover_uk2)[check] %>% print()
+  names(df_landcover1_new2)[check] %>% print()
   stop("Some names don't fit")
 } 
 
@@ -162,7 +163,7 @@ if (sum(check) > 0){
 ```
 
 
-#### Make data ready to be added     
+#### Add data      
 ```{r}
 
 #
@@ -170,11 +171,121 @@ if (sum(check) > 0){
 #
 
 # Combine 
-df_landcover3 <- bind_rows(
-  df_landcover2[c("station_id", vars_landcover)],
-  df_landcover_uk2[c("station_id", vars_landcover)],
+df_landcover2 <- bind_rows(
+  df_landcover1b[c("station_id", vars_landcover)],
+  df_landcover1_new2[c("station_id", vars_landcover)],
 )
-cat(nrow(df_landcover3), "lines of data in df_landcover3 after adding UK data \n")
+cat(nrow(df_landcover2), "lines of data in df_landcover2 after adding UK data \n")
+
+```
+
+### Extra Canada data
+
+#### Read file  
+```{r}
+
+if (localfiles){
+  fn <- "Data_landcover/20211026 Canada combined.xlsx"
+} else {
+  fn <- "K:/Prosjekter/langtransporterte forurensninger/O-23300 - ICP-WATERS - HWI/Faglige rapporter/2020 report/Land cover/Excel documents - received/Canada/20211026 Canada combined.xlsx"
+}
+
+df_landcover2_new1 <- read_excel(fn, 
+                               sheet = "canada")
+
+# Set this to numeric:
+df_landcover2_new1$`Total shrub and/or herbaceous vegetation (%)` <- df_landcover2_new1$`Total shrub and/or herbaceous vegetation (%)` %>% as.numeric()
+
+# Number of rows (should be the same)
+message(nrow(df_landcover2_new1), " lines of data read into df_landcover2_new1")
+
+message("Number of rows in df_landcover2: ", 
+        df_landcover2 %>% 
+               filter(station_id %in% df_landcover2_new1$station_id) %>%
+          nrow()
+        )
+
+```
+
+
+#### Remove lines from main data   
+```{r}
+
+# Existing data in 'df_landcover2'  
+stations <- df_landcover2_new1$station_id
+sel_to_remove <- df_landcover2$station_id %in% stations
+
+# Check existing data - just have altitide, a few (erronous) catchment area, and no land cover: 
+# unique(df_landcover2$station_id[sel_to_remove])
+# df_landcover2[sel_to_remove,] %>% View()
+# df_landcover2[sel_to_remove,] %>% select(-(station_code:longitude), -(altitude:region)) %>% View()
+
+# Remove existing data:
+df_landcover2b <- df_landcover2[!sel_to_remove,]
+cat(sum(sel_to_remove), "lines of data removed from df_landcover2 \n")
+cat(nrow(df_landcover2b), "lines of data in df_landcover2b \n")
+
+```
+
+
+#### Make data ready to be added     
+```{r}
+
+# All empty cells are replaced with zeros
+df_landcover2_new1[is.na(df_landcover2_new1)] <- 0
+
+# Get new column names for the new data 
+# str(df_landcover2_new1)
+new_names <- names(df_landcover2_new1) %>% 
+  tolower() %>% 
+  gsub(" (%)", "", ., fixed = TRUE) %>%
+  gsub(" ", "_", ., fixed = TRUE)
+# Check (compare):
+# names(df_landcover)
+# new_names
+
+# Change all names (most are correct)
+df_landcover2_new2 <- df_landcover2_new1
+names(df_landcover2_new2) <- new_names
+
+# Change the rest of the names
+df_landcover2_new2 <- df_landcover2_new2 %>%
+  select(-station_code, -station_name) %>%
+  rename(
+    catchment_area = `catchment_area_(km2)`,
+    total_shrub_herbaceous = `total_shrub_and/or_herbaceous_vegetation`,
+    transitional_woodland_shrub = `transitional_woodland/scrub`,
+    water_ex_lake = `water_(excl._lake)`
+  )
+
+# Special for Canada data:
+df_landcover2_new2 <- df_landcover2_new2 %>%
+  select(-total)
+
+# Check column names
+check <- !(names(df_landcover2_new2) %in% c("station_id", vars_landcover))
+if (sum(check) > 0){
+  names(df_landcover2_new2)[check] %>% print()
+  stop("Some names don't fit")
+} 
+
+
+```
+
+
+#### Add data      
+```{r}
+
+#
+# ADD DATA TO MAIN DATA (without metadata)
+#
+
+# Combine 
+df_landcover2 <- bind_rows(
+  df_landcover2b[c("station_id", vars_landcover)],
+  df_landcover2_new2[c("station_id", vars_landcover)],
+)
+cat(nrow(df_landcover2), "lines of data in df_landcover2 after adding Canada data \n")
 
 ```
 
@@ -186,7 +297,7 @@ cat(nrow(df_landcover3), "lines of data in df_landcover3 after adding UK data \n
 n1 <- nrow(df_meta_without_landcover)
 
 df_meta1 <- df_meta_without_landcover %>% 
-  left_join(df_landcover3, by = "station_id")
+  left_join(df_landcover2, by = "station_id")
 
 n2 <- nrow(df_meta1)
 
@@ -219,8 +330,8 @@ df_landcover_ie <- read_excel(fn)
 message("Number of rows: ", 
         nrow(df_landcover_ie))
 
-message("Number of rows in df_landcover3: ", 
-        df_landcover3 %>% 
+message("Number of rows in df_meta1: ", 
+        df_meta1 %>% 
                filter(station_id %in% df_landcover_ie$station_id) %>%
           nrow()
         )
@@ -255,9 +366,9 @@ xtabs(~is.na(altitude), df_meta2)
 #
 
 saveRDS(df_meta1, "Data/159_df_meta1.rds")
-writexl::write_xlsx(df_meta1, "Data/159_df_meta1_including_UK.xlsx")
+writexl::write_xlsx(df_meta1, "Data/159_df_meta1.xlsx")
 
-# df_landcover3 <- readRDS("Data/159_df_landcover3.rds")
+# df_landcover2 <- readRDS("Data/159_df_landcover2.rds")
 
 cat("\n------------------------------------------\n")
 cat("Coverage per country\n")
