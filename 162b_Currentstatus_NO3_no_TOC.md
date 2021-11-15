@@ -362,7 +362,8 @@ gg
 ## 4. Select data   
 
 ### a. Selection of variables    
-* Select variables to use, and thereby also cases
+* Select variables to use, and thereby also cases  
+* Also remove PL05, which has dubious values   
 
 ```r
 get_data_for_analysis <- function(data, variable_string){
@@ -383,6 +384,16 @@ cat("Variables: \n")
 cat(params$selected_vars)
 cat("\n-------------------------------------------------------------\n")
 
+sel <- dat$station_code %in% "PL05"
+dat <- dat[!sel,]
+message(sum(sel), " station removed - station PL05 (has dubious NO3 data)")  
+```
+
+```
+## 1 station removed - station PL05 (has dubious NO3 data)
+```
+
+```r
 # debugonce(get_data_for_analysis)
 # df_analysis <- get_data_for_analysis(dat, vars)  
 df_analysis <- get_data_for_analysis(dat, params$selected_vars)  
@@ -434,7 +445,7 @@ cat("Analysis: n =", nrow(df_analysis), "\n")
 ## Number of complete observations: 
 ## complete
 ## FALSE  TRUE 
-##    37   457 
+##    37   456 
 ## 
 ## 
 ## Number of complete observations by country: 
@@ -451,7 +462,7 @@ cat("Analysis: n =", nrow(df_analysis), "\n")
 ##   Moldova            2    0
 ##   Netherlands        0    3
 ##   Norway             0   83
-##   Poland             0   10
+##   Poland             0    9
 ##   Slovakia           0   12
 ##   Sweden             0   92
 ##   Switzerland        9    0
@@ -459,8 +470,8 @@ cat("Analysis: n =", nrow(df_analysis), "\n")
 ##   United States     16   75
 ## 
 ## 
-## Original data: n = 494 
-## Analysis: n = 457
+## Original data: n = 493 
+## Analysis: n = 456
 ```
 
 
@@ -545,19 +556,15 @@ plot(ct, main="Conditional Inference Tree")
 ## |   |   |   |   |   |   [19] coniferous > 11.193: 1.216 (n = 26, err = 0.5)
 ## |   |   |   |   |   [20] slope_dep_vs_time > -3.44335: 0.991 (n = 9, err = 0.8)
 ## |   [21] TOTN_dep > 626.4585
-## |   |   [22] altitude <= 252
-## |   |   |   [23] coniferous <= 70.029
-## |   |   |   |   [24] cultivated <= 3.29
-## |   |   |   |   |   [25] total_shrub_herbaceous <= 8.677: 1.742 (n = 27, err = 2.3)
-## |   |   |   |   |   [26] total_shrub_herbaceous > 8.677: 2.268 (n = 9, err = 1.3)
-## |   |   |   |   [27] cultivated > 3.29: 2.285 (n = 8, err = 2.5)
-## |   |   |   [28] coniferous > 70.029: 1.260 (n = 18, err = 8.5)
-## |   |   [29] altitude > 252
-## |   |   |   [30] TOTN_dep <= 698.16864: 1.848 (n = 34, err = 19.2)
-## |   |   |   [31] TOTN_dep > 698.16864: 2.217 (n = 59, err = 8.0)
+## |   |   [22] altitude <= 829
+## |   |   |   [23] coniferous <= 2.212: 2.171 (n = 39, err = 7.0)
+## |   |   |   [24] coniferous > 2.212: 1.795 (n = 92, err = 30.0)
+## |   |   [25] altitude > 829
+## |   |   |   [26] total_shrub_herbaceous <= 9.73: 2.477 (n = 15, err = 1.0)
+## |   |   |   [27] total_shrub_herbaceous > 9.73: 2.009 (n = 8, err = 2.8)
 ## 
-## Number of inner nodes:    15
-## Number of terminal nodes: 16
+## Number of inner nodes:    13
+## Number of terminal nodes: 14
 ```
 
 ### b. Evtree (Evolutionary Learning)   
@@ -592,8 +599,8 @@ model1
 ##                      Number of trees: 500
 ## No. of variables tried at each split: 5
 ## 
-##           Mean of squared residuals: 0.2237839
-##                     % Var explained: 55.04
+##           Mean of squared residuals: 0.2011154
+##                     % Var explained: 58.49
 ```
 
 
@@ -742,12 +749,16 @@ subset(dredged_models, delta < 2)
 ##     na.action = "na.fail")
 ## ---
 ## Model selection table 
-##      (Int)       alt  bar_spr       cnf   dcd_mxd   lak_wtr slp_dep_vs_tim     tmp ttl_shr_hrb
-## 2014 1.087 0.0002494          -0.006057 -0.004419 -0.010160       -0.01779 0.03679   -0.005208
-## 2016 1.028 0.0002103 0.001743 -0.005406 -0.003729 -0.009788       -0.01760 0.03655   -0.004645
-##        TOT_dep slp_dep_vs_tim:TOT_dep df   logLik  AICc delta weight
-## 2014 0.0006846              8.730e-06 11 -385.011 792.6  0.00  0.693
-## 2016 0.0007231              8.986e-06 12 -384.772 794.2  1.63  0.307
+##       (Int)       alt  bar_spr       cnf   dcd_mxd   lak_wtr slp_dep_vs_tim     tmp
+## 2014 1.0570 0.0002404          -0.005616 -0.004392 -0.010190       -0.01590 0.03589
+## 2016 0.9679 0.0001816 0.002622 -0.004631 -0.003353 -0.009637       -0.01559 0.03551
+## 1752 0.6623 0.0001513 0.005747 -0.001697           -0.008047       -0.01444 0.04125
+## 1751 0.7122           0.007585 -0.001933           -0.008301       -0.01572 0.02996
+##      ttl_shr_hrb   TOT_dep slp_dep_vs_tim:TOT_dep df   logLik  AICc delta weight
+## 2014   -0.004832 0.0008094              9.081e-06 11 -372.567 767.7  0.00  0.410
+## 2016   -0.003978 0.0008692              9.472e-06 12 -372.001 768.7  0.98  0.251
+## 1752             0.0009571              9.907e-06 10 -374.427 769.3  1.62  0.182
+## 1751             0.0010780              1.134e-05  9 -375.626 769.7  1.93  0.156
 ## Models ranked by AICc(x)
 ```
 
@@ -783,53 +794,53 @@ if (length(modelvars$additive_vars) > 0){
 
 ```
 ## Conditions used in construction of plot
-## coniferous: 19.312
-## decid_mixed: 16.891
-## lake_water: 11.96
-## slope_dep_vs_time: -15.65393
-## tmp: 5.458334
-## total_shrub_herbaceous: 1.692
-## TOTN_dep: 475.5
+## coniferous: 19.2765
+## decid_mixed: 16.8925
+## lake_water: 11.973
+## slope_dep_vs_time: -15.53585
+## tmp: 5.441667
+## total_shrub_herbaceous: 1.725
+## TOTN_dep: 475.385
 ## Conditions used in construction of plot
-## altitude: 253
-## decid_mixed: 16.891
-## lake_water: 11.96
-## slope_dep_vs_time: -15.65393
-## tmp: 5.458334
-## total_shrub_herbaceous: 1.692
-## TOTN_dep: 475.5
+## altitude: 253.5
+## decid_mixed: 16.8925
+## lake_water: 11.973
+## slope_dep_vs_time: -15.53585
+## tmp: 5.441667
+## total_shrub_herbaceous: 1.725
+## TOTN_dep: 475.385
 ## Conditions used in construction of plot
-## altitude: 253
-## coniferous: 19.312
-## lake_water: 11.96
-## slope_dep_vs_time: -15.65393
-## tmp: 5.458334
-## total_shrub_herbaceous: 1.692
-## TOTN_dep: 475.5
+## altitude: 253.5
+## coniferous: 19.2765
+## lake_water: 11.973
+## slope_dep_vs_time: -15.53585
+## tmp: 5.441667
+## total_shrub_herbaceous: 1.725
+## TOTN_dep: 475.385
 ## Conditions used in construction of plot
-## altitude: 253
-## coniferous: 19.312
-## decid_mixed: 16.891
-## slope_dep_vs_time: -15.65393
-## tmp: 5.458334
-## total_shrub_herbaceous: 1.692
-## TOTN_dep: 475.5
+## altitude: 253.5
+## coniferous: 19.2765
+## decid_mixed: 16.8925
+## slope_dep_vs_time: -15.53585
+## tmp: 5.441667
+## total_shrub_herbaceous: 1.725
+## TOTN_dep: 475.385
 ## Conditions used in construction of plot
-## altitude: 253
-## coniferous: 19.312
-## decid_mixed: 16.891
-## lake_water: 11.96
-## slope_dep_vs_time: -15.65393
-## total_shrub_herbaceous: 1.692
-## TOTN_dep: 475.5
+## altitude: 253.5
+## coniferous: 19.2765
+## decid_mixed: 16.8925
+## lake_water: 11.973
+## slope_dep_vs_time: -15.53585
+## total_shrub_herbaceous: 1.725
+## TOTN_dep: 475.385
 ## Conditions used in construction of plot
-## altitude: 253
-## coniferous: 19.312
-## decid_mixed: 16.891
-## lake_water: 11.96
-## slope_dep_vs_time: -15.65393
-## tmp: 5.458334
-## TOTN_dep: 475.5
+## altitude: 253.5
+## coniferous: 19.2765
+## decid_mixed: 16.8925
+## lake_water: 11.973
+## slope_dep_vs_time: -15.53585
+## tmp: 5.441667
+## TOTN_dep: 475.385
 ```
 
 

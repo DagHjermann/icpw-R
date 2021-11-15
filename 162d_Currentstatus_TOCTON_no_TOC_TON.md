@@ -362,7 +362,8 @@ gg
 ## 4. Select data   
 
 ### a. Selection of variables    
-* Select variables to use, and thereby also cases
+* Select variables to use, and thereby also cases  
+* Also remove PL05, which has dubious values   
 
 ```r
 get_data_for_analysis <- function(data, variable_string){
@@ -383,6 +384,16 @@ cat("Variables: \n")
 cat(params$selected_vars)
 cat("\n-------------------------------------------------------------\n")
 
+sel <- dat$station_code %in% "PL05"
+dat <- dat[!sel,]
+message(sum(sel), " station removed - station PL05 (has dubious NO3 data)")  
+```
+
+```
+## 0 station removed - station PL05 (has dubious NO3 data)
+```
+
+```r
 # debugonce(get_data_for_analysis)
 # df_analysis <- get_data_for_analysis(dat, vars)  
 df_analysis <- get_data_for_analysis(dat, params$selected_vars)  
@@ -577,8 +588,8 @@ model1
 ##                      Number of trees: 500
 ## No. of variables tried at each split: 5
 ## 
-##           Mean of squared residuals: 0.01705865
-##                     % Var explained: 59.51
+##           Mean of squared residuals: 0.01726273
+##                     % Var explained: 59.03
 ```
 
 

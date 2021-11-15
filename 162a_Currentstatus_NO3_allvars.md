@@ -362,7 +362,8 @@ gg
 ## 4. Select data   
 
 ### a. Selection of variables    
-* Select variables to use, and thereby also cases
+* Select variables to use, and thereby also cases  
+* Also remove PL05, which has dubious values   
 
 ```r
 get_data_for_analysis <- function(data, variable_string){
@@ -383,6 +384,16 @@ cat("Variables: \n")
 cat(params$selected_vars)
 cat("\n-------------------------------------------------------------\n")
 
+sel <- dat$station_code %in% "PL05"
+dat <- dat[!sel,]
+message(sum(sel), " station removed - station PL05 (has dubious NO3 data)")  
+```
+
+```
+## 1 station removed - station PL05 (has dubious NO3 data)
+```
+
+```r
 # debugonce(get_data_for_analysis)
 # df_analysis <- get_data_for_analysis(dat, vars)  
 df_analysis <- get_data_for_analysis(dat, params$selected_vars)  
@@ -423,7 +434,7 @@ cat("Analysis: n =", nrow(df_analysis), "\n")
 ## -------------------------------------------------------------
 ## Number of missing values per variable: 
 ##         log_median_no3         catchment_area         log_median_toc      slope_dep_vs_time 
-##                      0                     78                      7                      0 
+##                      0                     78                      6                      0 
 ##               TOTN_dep               latitude              longitude               altitude 
 ##                      0                      0                      0                     11 
 ##                    pre                    tmp                  urban             cultivated 
@@ -436,7 +447,7 @@ cat("Analysis: n =", nrow(df_analysis), "\n")
 ## Number of complete observations: 
 ## complete
 ## FALSE  TRUE 
-##   117   377 
+##   116   377 
 ## 
 ## 
 ## Number of complete observations by country: 
@@ -453,7 +464,7 @@ cat("Analysis: n =", nrow(df_analysis), "\n")
 ##   Moldova            2    0
 ##   Netherlands        1    2
 ##   Norway             0   83
-##   Poland             4    6
+##   Poland             3    6
 ##   Slovakia           0   12
 ##   Sweden             0   92
 ##   Switzerland        9    0
@@ -461,7 +472,7 @@ cat("Analysis: n =", nrow(df_analysis), "\n")
 ##   United States     91    0
 ## 
 ## 
-## Original data: n = 494 
+## Original data: n = 493 
 ## Analysis: n = 377
 ```
 
