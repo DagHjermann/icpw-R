@@ -15,6 +15,14 @@ library(dplyr)
 ```
 
 
+### Data source  
+```{r}
+
+localfiles <- TRUE  # if FALSE: reading from K  
+
+```
+
+
 ## 2. Data   
 
 ### Get land cover and catchment_area    
@@ -24,7 +32,7 @@ library(dplyr)
 
 #
 # Define names of land cover variables
-#
+# 
 vars_landcover <- c("catchment_area",
                     "urban", "cultivated", "total_forest", "deciduous", "coniferous", 
                     "mixed_forest", "total_shrub_herbaceous", "grasslands", "heathlands", 
@@ -34,7 +42,13 @@ vars_landcover <- c("catchment_area",
 #
 # MAIN LAND COVER FILE  
 #
-fn <- "K:/Prosjekter/langtransporterte forurensninger/O-23300 - ICP-WATERS - HWI/Faglige rapporter/2020 report/Land cover/ICPW_All_Stations_2020_2020_05_04.xlsx"
+
+if (localfiles){
+  fn <- "Data_landcover/ICPW_All_Stations_2020_land cover_2020_05_04.xlsx"
+} else {
+  fn <- "K:/Prosjekter/langtransporterte forurensninger/O-23300 - ICP-WATERS - HWI/Faglige rapporter/2020 report/Land cover/ICPW_All_Stations_2020_land cover_05_04.xlsx"
+}
+
 df_landcover1 <- read_excel(fn)
 cat(nrow(df_landcover1), "lines of data read into df_landcover1 \n")
 # names(df_landcover1); cat("\n")
@@ -48,7 +62,13 @@ cat(nrow(df_landcover1), "lines of data read into df_landcover1 \n")
 # EXTRA UK DATA  
 #
 # UK data 'df_landcover_uk1'
-fn <- "K:/Prosjekter/langtransporterte forurensninger/O-23300 - ICP-WATERS - HWI/Faglige rapporter/2020 report/Land cover/Excel documents - received/icpw_land_cover_United Kingdom_29-01-2021.xlsx"
+
+if (localfiles){
+  fn <- "Data_landcover/icpw_land_cover_United Kingdom_29-01-2021.xlsx"
+} else {
+  fn <- "K:/Prosjekter/langtransporterte forurensninger/O-23300 - ICP-WATERS - HWI/Faglige rapporter/2020 report/Land cover/Excel documents - received/icpw_land_cover_United Kingdom_29-01-2021.xlsx"
+}
+
 df_landcover_uk1 <- read_excel(fn, 
                                sheet = "uk", 
                                range = "A1:U23",    # NOTE: specific range! 
@@ -147,7 +167,12 @@ cat(nrow(df_landcover3), "lines of data in df_landcover3 after adding UK data \n
 #
 
 # Put in newer metadata (variable Continent has values, includes variable Group)
-fn <- "K:/Prosjekter/langtransporterte forurensninger/O-23300 - ICP-WATERS - HWI/Faglige rapporter/2020 report/Land cover/all_icpw_sites_may_2020.xlsx"
+if (localfiles){
+  fn <- "Data_landcover/all_icpw_sites_may_2020.xlsx"
+} else {
+  fn <- "K:/Prosjekter/langtransporterte forurensninger/O-23300 - ICP-WATERS - HWI/Faglige rapporter/2020 report/Land cover/all_icpw_sites_may_2020.xlsx"
+}
+
 df_meta <- read_excel(fn)
 
 n1 <- nrow(df_landcover3)
