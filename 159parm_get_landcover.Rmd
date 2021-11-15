@@ -71,7 +71,9 @@ cat(nrow(df_landcover1), "lines of data read into df_landcover1 \n")
 ```
 
 
-### Extra UK data - read file  
+### Extra UK data
+
+#### Read file  
 ```{r}
 #
 # EXTRA UK DATA  
@@ -93,9 +95,6 @@ cat(nrow(df_landcover_uk1), "lines of UK data read into df_landcover_uk1 \n")
 
 ```
 
-
-### Extra UK data - add to df_landcover1   
-* Creating 'df_landcover2'   
 
 #### Remove UK lines from main data   
 ```{r}
@@ -178,6 +177,9 @@ df_landcover3 <- bind_rows(
 cat(nrow(df_landcover3), "lines of data in df_landcover3 after adding UK data \n")
 
 ```
+
+
+
 ## 4. Add land cover to metadata  
 ```{r}
 
@@ -193,11 +195,54 @@ if (n2 != n1)
   stop("Number of rows changed; check whether there are only unique values of 'station_id'")
 
 # Order columns
-df_meta1 <- df_meta1[c(names(df_meta1), vars_landcover)]
+df_meta1 <- df_meta1[c(names(df_meta_without_landcover), vars_landcover)]
 
 # names(df_landcover1); cat("\n")
 
 cat(nrow(df_meta1), "lines of data in df_meta1 after adding new metadata \n")
+
+```
+### Add altitude for Ireland  
+
+#### Read file  
+```{r}
+
+
+if (localfiles){
+  fn <- "Data_landcover/Ireland_icpsites_may2020.xlsx"
+} else {
+  fn <- "K:/Prosjekter/langtransporterte forurensninger/O-23300 - ICP-WATERS - HWI/Faglige rapporter/2020 report/Land cover/Ireland_icpsites_may2020.xlsx"
+}
+
+df_landcover_ie <- read_excel(fn)
+
+message("Number of rows: ", 
+        nrow(df_landcover_ie))
+
+message("Number of rows in df_landcover3: ", 
+        df_landcover3 %>% 
+               filter(station_id %in% df_landcover_ie$station_id) %>%
+          nrow()
+        )
+```
+
+#### Add new altitude
+```{r}
+
+df_meta2 <- df_meta1 %>%
+  left_join(
+    df_landcover_ie %>% 
+      select(station_id, altitude) %>%
+      rename(altitude_ie = altitude)
+  ) %>%
+  mutate(
+    altitude = case_when(
+      is.na(altitude_ie) ~ altitude,
+      !is.na(altitude_ie) ~ altitude_ie)
+    )
+
+xtabs(~is.na(altitude), df_meta1)
+xtabs(~is.na(altitude), df_meta2)
 
 ```
 
