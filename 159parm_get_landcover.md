@@ -318,7 +318,7 @@ cat(nrow(df_landcover2), "lines of data in df_landcover2 after adding Canada dat
 
 
 
-## 4. Add land cover to metadata  
+## 4a. Add land cover to metadata  
 
 ```r
 n1 <- nrow(df_meta_without_landcover)
@@ -446,6 +446,378 @@ xtabs(~country + is.na(total_forest), df_meta1)
 ##   United States     75   20
 ```
 
+## 4b. Check/fix land cover sums   
+
+- The first part (forest) goes from df_meta2 -> df_meta2b -> df_meta2c
+
+- The second part (shrub / grass) goes from df_meta2c -> df_meta2d -> df_meta2e
+
+
+### Total forest vs. coniferous + deciduous + mixed forest 
+
+#### Tables     
+- 29 records have neither   
+- 9 records have total forest, but not each type   
+
+```r
+xtabs(~is.na(total_forest) + is.na(coniferous), df_meta2)  
+xtabs(~is.na(total_forest) + is.na(deciduous), df_meta2)  
+xtabs(~is.na(total_forest) + is.na(mixed_forest), df_meta2)  
+```
+
+```
+##                    is.na(coniferous)
+## is.na(total_forest) FALSE TRUE
+##               FALSE   518    9
+##               TRUE      0   29
+##                    is.na(deciduous)
+## is.na(total_forest) FALSE TRUE
+##               FALSE   518    9
+##               TRUE      0   29
+##                    is.na(mixed_forest)
+## is.na(total_forest) FALSE TRUE
+##               FALSE   518    9
+##               TRUE      0   29
+```
+#### But many have total_forest = 0
+
+```r
+cat("For records with total_forest not NA: \n")
+xtabs(~ (total_forest == 0) + is.na(coniferous), df_meta2 %>% filter(!is.na(total_forest)))  
+
+cat("\n\nFor records with coniferous not NA: \n")
+xtabs(~ (coniferous == 0) + (total_forest == 0) + is.na(total_forest), df_meta2 %>% filter(!is.na(coniferous)))  
+```
+
+```
+## For records with total_forest not NA: 
+##                  is.na(coniferous)
+## total_forest == 0 FALSE TRUE
+##             FALSE   332    4
+##             TRUE    186    5
+## 
+## 
+## For records with coniferous not NA: 
+## , , is.na(total_forest) = FALSE
+## 
+##                total_forest == 0
+## coniferous == 0 FALSE TRUE
+##           FALSE   296  115
+##           TRUE     36   71
+```
+#### Table for checking  
+
+```r
+df_check1 <- df_meta2 %>%
+  filter(!is.na(total_forest) | !is.na(coniferous)) %>%
+  select(total_forest, coniferous, deciduous, mixed_forest) %>%
+  mutate(across(.fns = round, digits = 2)) %>%
+  mutate(
+    check_sum = coniferous + deciduous + mixed_forest,
+    check_diff = round(total_forest - check_sum, 1)) %>%
+  arrange(check_diff)
+
+
+# View(df_check1)
+
+cat("Records with total_forest OR coniferous: \n")
+nrow(df_check1)
+```
+
+```
+## Records with total_forest OR coniferous: 
+## [1] 527
+```
+
+#### Check records with total_forest OR coniferous   
+- 328 are OK (both total_forest and coniferous, and sum is OK)  
+- 65 more are also OK (zero for both total_forest and coniferous)  
+- 4 have check_sum = zero but total > 0 (not OK, sub-types be set to NA)     
+- 4 have check_sum = NA but total > 0 (this is OK)         
+- 121 have data for check_sum but total = 0  
+- 4 have check_sum = NA and total = 0 (can we trust that this is actually no forest?)    
+
+```r
+df_check2 <- df_check1 %>%
+  mutate(
+    total_forest_na = is.na(total_forest),
+    total_forest_zero = total_forest == 0,
+    check_sum_na = is.na(check_sum),
+    check_sum_zero = check_sum == 0,
+    sum_OK = abs(check_diff) < 0.01) 
+
+View(df_check2)
+
+df_check2 %>%
+  count(total_forest_na, total_forest_zero, check_sum_na, check_sum_zero, sum_OK)
+```
+
+```
+## # A tibble: 6 x 6
+##   total_forest_na total_forest_zero check_sum_na check_sum_zero sum_OK     n
+##   <lgl>           <lgl>             <lgl>        <lgl>          <lgl>  <int>
+## 1 FALSE           FALSE             FALSE        FALSE          TRUE     328
+## 2 FALSE           FALSE             FALSE        TRUE           FALSE      4
+## 3 FALSE           FALSE             TRUE         NA             NA         4
+## 4 FALSE           TRUE              FALSE        FALSE          FALSE    121
+## 5 FALSE           TRUE              FALSE        TRUE           TRUE      65
+## 6 FALSE           TRUE              TRUE         NA             NA         5
+```
+
+#### Fix total forest    
+- New result  
+    - 449 are still OK (total and check_sum are both > 0, total = check_sum)    
+    - 65 are hopefully OK (total and check_sum are both = 0)     
+    - 8 have total > 0, coniferous + deciduous + mixed_forest are set to NA  
+    - 5 have total = 0, coniferous + deciduous + mixed_forest are set to NA  
+
+```r
+df_meta2b <- df_meta2 %>%
+  mutate(check_sum = coniferous + deciduous + mixed_forest) %>%
+  mutate(
+    total_forest_new = case_when(
+      !is.na(check_sum) & check_sum > 0 ~ coniferous + deciduous + mixed_forest,
+      TRUE ~ total_forest)
+    )
+
+# Those with total > 0 but check_sum = 0, we set coniferous, deciduous. mixed to NA
+sel <- !is.na(df_meta2b$check_sum) & df_meta2b$check_sum == 0 & df_meta2b$total_forest_new > 0  
+sum(sel)
+# View(df_meta2b[sel,])
+df_meta2b$coniferous[sel] <- NA
+df_meta2b$deciduous[sel] <- NA
+df_meta2b$mixed_forest[sel] <- NA
+
+df_check3 <- df_meta2b %>%
+  filter(!is.na(total_forest_new) | !is.na(coniferous)) %>%
+  select(total_forest, total_forest_new, coniferous, deciduous, mixed_forest) %>%
+  mutate(across(.fns = round, digits = 2)) %>%
+  mutate(
+    check_sum = coniferous + deciduous + mixed_forest,
+    check_diff = round(total_forest_new - check_sum, 1)) %>%
+  arrange(check_diff)
+
+df_check4 <- df_check3 %>%
+  mutate(
+    total_forest_na = is.na(total_forest_new),
+    total_forest_zero = total_forest_new == 0,
+    check_sum_na = is.na(check_sum),
+    check_sum_zero = check_sum == 0,
+    sum_OK = abs(check_diff) < 0.01) 
+
+# View(df_check4)
+
+df_check4 %>%
+  count(total_forest_na, total_forest_zero, check_sum_na, check_sum_zero, sum_OK)
+```
+
+```
+## [1] 4
+## # A tibble: 4 x 6
+##   total_forest_na total_forest_zero check_sum_na check_sum_zero sum_OK     n
+##   <lgl>           <lgl>             <lgl>        <lgl>          <lgl>  <int>
+## 1 FALSE           FALSE             FALSE        FALSE          TRUE     449
+## 2 FALSE           FALSE             TRUE         NA             NA         8
+## 3 FALSE           TRUE              FALSE        TRUE           TRUE      65
+## 4 FALSE           TRUE              TRUE         NA             NA         5
+```
+
+#### Corrected data set  
+
+```r
+df_meta2c <- df_meta2b %>%
+  select(-total_forest) %>%
+  rename(total_forest = total_forest_new)
+```
+
+
+
+
+### Total shrub/herbacous vs. grasslands + heathlands +  transitional_woodland_shrub
+
+#### Tables     
+- 29 records have neither   
+- 28 records have total_shrub_herbaceous, but not each type   
+
+```r
+xtabs(~is.na(total_shrub_herbaceous) + is.na(grasslands), df_meta2c)  
+xtabs(~is.na(total_shrub_herbaceous) + is.na(heathlands), df_meta2c)  
+xtabs(~is.na(total_shrub_herbaceous) + is.na(transitional_woodland_shrub), df_meta2c)  
+```
+
+```
+##                              is.na(grasslands)
+## is.na(total_shrub_herbaceous) FALSE TRUE
+##                         FALSE   499   28
+##                         TRUE      0   29
+##                              is.na(heathlands)
+## is.na(total_shrub_herbaceous) FALSE TRUE
+##                         FALSE   499   28
+##                         TRUE      0   29
+##                              is.na(transitional_woodland_shrub)
+## is.na(total_shrub_herbaceous) FALSE TRUE
+##                         FALSE   499   28
+##                         TRUE      0   29
+```
+
+
+#### But many have total_shrub_herbaceous = 0
+
+
+```r
+cat("For records with total_shrub_herbaceous not NA: \n")
+xtabs(~ (total_shrub_herbaceous == 0) + is.na(grasslands), df_meta2c %>% filter(!is.na(total_shrub_herbaceous)))  
+
+cat("\n\nFor records with grasslands not NA: \n")
+xtabs(~ (grasslands == 0) + (total_shrub_herbaceous == 0) + is.na(total_shrub_herbaceous), df_meta2c %>% filter(!is.na(grasslands)))  
+```
+
+```
+## For records with total_shrub_herbaceous not NA: 
+##                            is.na(grasslands)
+## total_shrub_herbaceous == 0 FALSE TRUE
+##                       FALSE   265   26
+##                       TRUE    234    2
+## 
+## 
+## For records with grasslands not NA: 
+## , , is.na(total_shrub_herbaceous) = FALSE
+## 
+##                total_shrub_herbaceous == 0
+## grasslands == 0 FALSE TRUE
+##           FALSE    69   56
+##           TRUE    196  178
+```
+
+
+#### Table for checking  
+
+
+```r
+df_check1 <- df_meta2c %>%
+  filter(!is.na(total_shrub_herbaceous) | !is.na(grasslands)) %>%
+  select(total_shrub_herbaceous, grasslands, heathlands, transitional_woodland_shrub) %>%
+  mutate(across(.fns = round, digits = 2)) %>%
+  mutate(
+    check_sum = grasslands + heathlands + transitional_woodland_shrub,
+    check_diff = round(total_shrub_herbaceous - check_sum, 1)) %>%
+  arrange(check_diff)
+
+
+# View(df_check1)
+
+cat("Records with total_shrub_herbaceous OR grasslands: \n")
+nrow(df_check1)
+```
+
+```
+## Records with total_shrub_herbaceous OR grasslands: 
+## [1] 527
+```
+
+#### Check records with total_shrub_herbaceous OR grasslands   
+- 207 are OK (both total_shrub_herbaceous > 0 and check_sum > 0, and sum is OK)  
+- 144 more are also OK (both total_shrub_herbaceous = 0 and check_sum = 0  
+- 56 have check_sum = zero but total > 0  (not OK, sub-types be set to NA)     
+- 26 have check_sum = NA but total > 0 (this is OK)         
+- 92 have check_sum > 0 but total = 0  
+- 2 have check_sum = NA and total = 0 (can we trust that this is actually no total_shrub_herbaceous?)    
+
+```r
+df_check2 <- df_check1 %>%
+  mutate(
+    total_shrub_herbaceous_na = is.na(total_shrub_herbaceous),
+    total_shrub_herbaceous_zero = total_shrub_herbaceous == 0,
+    check_sum_na = is.na(check_sum),
+    check_sum_zero = check_sum == 0,
+    sum_OK = abs(check_diff) < 0.01) 
+
+View(df_check2)
+
+df_check2 %>%
+  count(total_shrub_herbaceous_na, total_shrub_herbaceous_zero, check_sum_na, check_sum_zero, sum_OK)
+```
+
+```
+## # A tibble: 6 x 6
+##   total_shrub_herba~ total_shrub_herba~ check_sum_na check_sum_zero sum_OK     n
+##   <lgl>              <lgl>              <lgl>        <lgl>          <lgl>  <int>
+## 1 FALSE              FALSE              FALSE        FALSE          TRUE     207
+## 2 FALSE              FALSE              FALSE        TRUE           FALSE     56
+## 3 FALSE              FALSE              TRUE         NA             NA        26
+## 4 FALSE              TRUE               FALSE        FALSE          FALSE     92
+## 5 FALSE              TRUE               FALSE        TRUE           TRUE     144
+## 6 FALSE              TRUE               TRUE         NA             NA         2
+```
+
+#### Fix total_shrub_herbaceous    
+- New result  
+    - 299 are still OK (total and check_sum are both > 0, total = check_sum)    
+    - 144 are hopefully OK (total and check_sum are both = 0)     
+    - 82 have total > 0, grasslands + heathlands + transitional_woodland_shrub are set to NA  
+    - 2 have total = 0, grasslands + heathlands + transitional_woodland_shrub are set to NA  
+
+```r
+df_meta2d <- df_meta2c %>%
+  mutate(check_sum = grasslands + heathlands + transitional_woodland_shrub) %>%
+  mutate(
+    total_shrub_herbaceous_new = case_when(
+      !is.na(check_sum) & check_sum > 0 ~ grasslands + heathlands + transitional_woodland_shrub,
+      TRUE ~ total_shrub_herbaceous)
+    )
+
+# Those with total > 0 but check_sum = 0, we set grasslands, heathlands. mixed to NA
+sel <- !is.na(df_meta2d$check_sum) & df_meta2d$check_sum == 0 & df_meta2d$total_shrub_herbaceous_new > 0  
+sum(sel)
+# View(df_meta2d[sel,])
+df_meta2d$grasslands[sel] <- NA
+df_meta2d$heathlands[sel] <- NA
+df_meta2d$transitional_woodland_shrub[sel] <- NA
+
+df_check3 <- df_meta2d %>%
+  filter(!is.na(total_shrub_herbaceous_new) | !is.na(grasslands)) %>%
+  select(total_shrub_herbaceous, total_shrub_herbaceous_new, grasslands, heathlands, transitional_woodland_shrub) %>%
+  mutate(across(.fns = round, digits = 2)) %>%
+  mutate(
+    check_sum = grasslands + heathlands + transitional_woodland_shrub,
+    check_diff = round(total_shrub_herbaceous_new - check_sum, 1)) %>%
+  arrange(check_diff)
+
+df_check4 <- df_check3 %>%
+  mutate(
+    total_shrub_herbaceous_na = is.na(total_shrub_herbaceous_new),
+    total_shrub_herbaceous_zero = total_shrub_herbaceous_new == 0,
+    check_sum_na = is.na(check_sum),
+    check_sum_zero = check_sum == 0,
+    sum_OK = abs(check_diff) < 0.01) 
+
+# View(df_check4)
+
+df_check4 %>%
+  count(total_shrub_herbaceous_na, total_shrub_herbaceous_zero, check_sum_na, check_sum_zero, sum_OK)
+```
+
+```
+## [1] 56
+## # A tibble: 4 x 6
+##   total_shrub_herba~ total_shrub_herba~ check_sum_na check_sum_zero sum_OK     n
+##   <lgl>              <lgl>              <lgl>        <lgl>          <lgl>  <int>
+## 1 FALSE              FALSE              FALSE        FALSE          TRUE     299
+## 2 FALSE              FALSE              TRUE         NA             NA        82
+## 3 FALSE              TRUE               FALSE        TRUE           TRUE     144
+## 4 FALSE              TRUE               TRUE         NA             NA         2
+```
+
+#### Corrected data set  
+
+```r
+df_meta2e <- df_meta2d %>%
+  select(-total_shrub_herbaceous) %>%
+  rename(total_shrub_herbaceous = total_shrub_herbaceous_new)
+```
+
+
+
 
 ## 5. Combine land cover types 'df_meta2'      
 * bare_sparse = bare_rock + sparsely_vegetated + glacier   
@@ -466,7 +838,7 @@ sel_columns <- c("station_id",
                  "sparsely_vegetated", "glacier", "wetland", "lake", "water_ex_lake", "other")
 
 # Add new combined data
-df_meta3 <- df_meta2[sel_columns] %>%
+df_meta3 <- df_meta2e[sel_columns] %>%
   mutate(bare_sparse = bare_rock + sparsely_vegetated + glacier,
          decid_mixed = deciduous + mixed_forest,
          lake_water = lake + water_ex_lake)
@@ -502,9 +874,10 @@ writexl::write_xlsx(df_meta4, "Data/159_df_metadata_merged_landcover.xlsx")
 ### Variables lacking   
 * 76 stations lack only catchment_area   
 * 11 stations lack catchment_area + land cover   
-* 1 station lack catchment_area + land cover + altitude   
-* 1 station lack catchment_area + altitude     
-* 28 stations have land cover but lack only grasslands, heathlands and transitional_woodland_shrub  
+* 17 stations have catchment_area, lack land cover   
+* 1 station lack catchment_area + land cover + altitude (lacking 15 variables in total)   
+* 1 station lack catchment_area + altitude (lacking 2 variables in total)    
+* 28 stations have land cover but lack grasslands, heathlands and transitional_woodland_shrub  
 * 9 stations have land cover but lack only coniferous + decid_mixed   
 
 
@@ -528,7 +901,7 @@ for (i in as.numeric(names(tab2))){
 ```
 ## Number of stations which lack x variablestab1
 ##   0   1   2   3  13  14  15 
-## 413  76  10  28  17  11   1 
+## 353  76  14  84  17  11   1 
 ## 
 ## 
 ## Variables lacking for stations lacking 0 variables: 
@@ -540,13 +913,13 @@ for (i in as.numeric(names(tab2))){
 ## 
 ## Variables lacking for stations lacking 2 variables: 
 ##       altitude catchment_area     coniferous    decid_mixed 
-##              1              1              9              9 
+##              1              1             13             13 
 ## 
 ## Variables lacking for stations lacking 3 variables: 
 ##                  grasslands                  heathlands 
-##                          28                          28 
+##                          84                          84 
 ## transitional_woodland_shrub 
-##                          28 
+##                          84 
 ## 
 ## Variables lacking for stations lacking 13 variables: 
 ##                       urban                  cultivated 
@@ -601,6 +974,9 @@ for (i in as.numeric(names(tab2))){
 
 
 ### Variables lacking, by country    
+- USA lacks catchment_area (79 stations) and partially land cover (16 stations)   
+- Sweden partially (28 stations) lack 'grasslands' (i.e. land use types are lumped)    
+- Switzerland (9 stations) lack 'coniferous' (i.e. land use types are lumped)    
 
 ```r
 cat("Availablility of altitude: \n")
@@ -701,18 +1077,18 @@ df_meta4 %>%
 ##             TRUE       0              0       0       0       0       0     0
 ##                  country
 ## is.na(grasslands) Latvia Netherlands Norway Poland Slovakia Sweden Switzerland
-##             FALSE      8           3     83     12       12     64           9
-##             TRUE       0           0      0      0        0     28           0
+##             FALSE      8           3     83     12       12      9           9
+##             TRUE       0           0      0      0        0     83           0
 ##                  country
 ## is.na(grasslands) United Kingdom United States
-##             FALSE             22            75
-##             TRUE               0             0
+##             FALSE             21            75
+##             TRUE               1             0
 ## -----------------------------------------------------------------------------------------
 ## Availablility of 'coniferous', for stations having land cover: 
 ##                  country
 ## is.na(coniferous) Canada Czech Republic Estonia Finland Germany Ireland Italy
-##             FALSE    115              8       1      26      35      14    12
-##             TRUE       0              0       0       0       0       0     0
+##             FALSE    111              8       1      26      35      14    12
+##             TRUE       4              0       0       0       0       0     0
 ##                  country
 ## is.na(coniferous) Latvia Netherlands Norway Poland Slovakia Sweden Switzerland
 ##             FALSE      8           3     83     12       12     92           0
