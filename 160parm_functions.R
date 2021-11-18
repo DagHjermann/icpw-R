@@ -65,3 +65,27 @@ left_join2 <- function(data1, data2, by = by, ..., print_vars = FALSE){
   
 }
 
+
+
+# Function for plotting partial effects  
+# Used in 161parm (see 160parm also)  
+
+plot_pair_number <- function(i, zrange = NULL, legend_title = ""){
+  
+  variable_x <- rlang::sym(names(plotdata[[i]])[1])
+  variable_y <- rlang::sym(names(plotdata[[i]])[2])
+  
+  gg <- ggplot(plotdata[[i]], aes(!!variable_x, !!variable_y)) +
+    geom_tile(aes(fill = yhat)) +
+    geom_contour(aes(z = yhat), color = "white") +
+    geom_point(data = valid_set, shape = 21, size = 2, colour = "white", bg = "red") +
+    theme_bw()
+  
+  if (is.null(zrange)){
+    gg + scale_fill_viridis_c(legend_title")
+  } else {
+    gg + scale_fill_viridis_c(legend_title, limits = zrange)
+  }
+
+}
+
