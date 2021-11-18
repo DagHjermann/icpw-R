@@ -9,19 +9,20 @@ output:
     keep_md: true
 params:
   document_title: 
-    value: '161x Analyse TOC/TON decrease - test run'
+    value: '160x Analyse NO3 decline - test run'
   text_dataset: 
     value: 'Data with slope_dep_vs_time, NO3, and TOTN_dep'
   selected_vars: 
-    value: 'tocton_decrease,catchment_area, TOC, TON,slope_toc_vs_time, slope_ton_vs_time, slope_dep_vs_time, TOTN_dep, latitude, longitude, altitude,pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse'
+    value: 'no3_decline,TOC,slope_dep_vs_time, NO3, TOTN_dep, latitude, longitude, altitude,pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse'
   extra_pairwise_plots:
     value: 'TOC,NO3; slope_dep_vs_time,TOTN_dep; altitude,decid_mixed'
   pairwise_plots_same_scale:
     value: 'FALSE'
   logistic_formula: 
-    value: 'tocton_decrease ~ slope_dep_vs_time + slope_ton_vs_time + TOTN_dep + total_shrub_herbaceous + decid_mixed'
+    value: 'no3_decline ~ TOC*altitude + TOTN_dep*slope_dep_vs_time + NO3 + decid_mixed + coniferous + tmp + lake_water + wetland'
 
 ---
+
 ```{r, echo = FALSE}  
 
 #
@@ -32,27 +33,23 @@ params:
 ```
 
 
-**Analysis of TOC/TON decrease (categorical, "decrease or not"), based on James' trend results**  
+**Analysis of NO3 decrease (categorical, "decrease or not"), based on James' trend results**  
   
 **`r params$text_dataset`**   
 
-As 160, but analysing the trend in TOC/TON ratio
-
-* Response variable: 'Significant decrease in TOC/TON ratio' (locations with signif. *decrease* are *not* excluded)  
+* Response variable: 'Significant /NO3 decline' (locations with signif. *increase* are *not* excluded)  
 * Data from https://github.com/JamesSample/icpw2/tree/master/thematic_report_2020/results      
 * Sen slope of NO3, TOTN, TOC/TON etc. 1992-2016
-* Response variable in all analyses are *whether TOC/TON decreases or not*     
+* Response variable in all analyses are *whether NO3 decreases or not*     
 * Predictors:
-    - slope_toc_vs_time, slope_ton_vs_time  
-    - TOC: Medians of TOC 1992-2016     
-    - TON: Medians of TOC 1992-2016   
+    - slope_dep_vs_time: Trend in Tot-N deposition 1992-2016    
     - NO3, TOTN_dep: Medians of NO3, TOTN_dep (Tot-N deposition) 1992-2016   
     - catchment_area (if included in data)      
+    - TOC: Medians of TOC       
     - pre, tmp: mean precipitation + temp   
     - Land cover 
   
-Technical details: This html file was created with `161parm_Time_series_tocton.Rmd` run with `161parm_run_markdown.R`    
-Code: https://github.com/DagHjermann/icpw-R   
+Technical details: This html file was rendered with `160parm_run_markdown.R` which runs the script `160parm_Time_series_results_James.Rmd` with different inputs, resulting in html files 160a, 160b and 160c.    
 
 ## 1. Libraries  
 ```{r, results='hide', message=FALSE, warning=FALSE}
@@ -103,74 +100,118 @@ options(width = 95)
 #
 # Regression results
 #
-folder <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/trends_1992-2016_toc_totn_no3_relax_italy"
-file <- "trends_1992-2016_toc_totn_no3_relax_italy_results.csv"
+folder <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/trends_1992-2016_no3"
+file <- "trends_1992-2016_no3_results.csv"
 fn <- paste0(folder, "/", file)
 
-reg_ratio <- read.csv(fn, encoding = "UTF-8")
-cat("Regression slopes and medians from:", sQuote(file), ",n =", nrow(reg_ratio), "\n\n")
+reg_no3 <- read.csv(fn, encoding = "UTF-8")
+cat("Regression results:", sQuote(file), ",n =", nrow(reg_no3), "\n\n")
 
 # Station metadata
-# THESE WILL BE ADDED WITH LAND COVER  
-# file <- "trends_1992-2016_toc_totn_no3_relax_italy_stations.csv"
+
+# THESE WILL BE ADDED TOGETHER WITH LAND COVER  
+
+# file <- "trends_1992-2016_no3_stations.csv"
 # fn <- paste0(folder, "/", file)
+# 
 # df_metadata <- read.csv(fn, encoding = "UTF-8")
 # cat("Regression result metadata:", sQuote(file), ",n =", nrow(df_metadata), "\n\n")
-
+# 
 # cat("Countries with trends: \n")
 # xtabs(~country, df_metadata)  
 
+#
+# Medians NO3
+#
+
+if (FALSE){
+
+  # OLD: 2012-2016 medians NO3  
+
+  cat("--------------------------------------------------------------------------\n")
+  folder <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/medians_2012-2016"
+  file <- "medians_2012-2016_no3.csv"
+  fn <- paste0(folder, "/", file)
+  # data:
+  medians_no3 <- read.csv(fn, encoding = "UTF-8")
+  cat("Medians NO3:", sQuote(file), ",n =", nrow(medians_no3), "\n\n")
+  file <- "medians_2012-2016_no3_stations.csv"
+  fn <- paste0(folder, "/", file)
+  # metadata:
+  medians_no3_st <- read.csv(fn, encoding = "UTF-8")
+  cat("Median metadata (not used):", sQuote(file), "n =", nrow(medians_no3_st), "\n\n")
+  # stats:
+  cat("Countries with medians: \n")
+  xtabs(~country, medians_no3_st)  
+  
+  #
+  #  OLD: 2012-2016 Medians TOC
+  #
+  cat("--------------------------------------------------------------------------\n")
+  
+  file <- "medians_2012-2016_toc_totn_no3_nh4.csv"
+  fn <- paste0(folder, "/", file)
+  
+  medians_toc <- read.csv(fn, encoding = "UTF-8")
+  cat("Medians TOC:", sQuote(file), ",n =", nrow(medians_toc), "\n\n")
+  
+  cat("Countries with medians: \n")
+  xtabs(~country, medians_no3_st)  
+  
+}
+
+
 ```
-
-
 ### Start 'dat'  
-
 With slope regression data  
 * Make one line per station  
 ```{r}
 
-# table(reg_ratio$variable)
+# table(reg_no3$variable)
 
 # Slope 
-df1 <- reg_ratio %>%
-  filter(variable %in% c("NO3-N_µg/l N", "TOC/TON", "TOC_mg C/l", "TON_µg/l N")) %>%
+df1 <- reg_no3 %>%
+  filter(variable %in% c("NO3-N_µg/l N", "TOC/TON")) %>%
   select(station_id, variable, sen_slp) %>%
   tidyr::pivot_wider(names_from = "variable", values_from = "sen_slp") %>%
   rename(slope_no3_vs_time = `NO3-N_µg/l N`, 
-         slope_tocton_vs_time = `TOC/TON`,
-         slope_toc_vs_time = `TOC_mg C/l`,
-         slope_ton_vs_time = `TON_µg/l N`)
-
+         slope_tocton_vs_time = `TOC/TON`)
+  
 # Slope p-value
-df2 <- reg_ratio %>%
-  filter(variable %in% c("NO3-N_µg/l N", "TOC/TON", "TOC_mg C/l", "TON_µg/l N")) %>%
+df2 <- reg_no3 %>%
+  filter(variable %in% c("NO3-N_µg/l N", "TOC/TON")) %>%
   select(station_id, variable, mk_p_val) %>%
   tidyr::pivot_wider(names_from = "variable", values_from = "mk_p_val") %>%
   rename(p_no3_vs_time = `NO3-N_µg/l N`, 
-         p_tocton_vs_time = `TOC/TON`,
-         p_toc_vs_time = `TOC_mg C/l`,
-         p_ton_vs_time = `TON_µg/l N`)
+         p_tocton_vs_time = `TOC/TON`)
 
 # Medians
-df3 <- reg_ratio %>%
-  filter(variable %in% c("NO3-N_µg/l N", "TOC/TON", "TOC_mg C/l", "TON_µg/l N")) %>%
+df3 <- reg_no3 %>%
+  filter(variable %in% c("NO3-N_µg/l N", "TOC_mg C/l")) %>%
   select(station_id, variable, median) %>%
   tidyr::pivot_wider(names_from = "variable", values_from = "median") %>%
-  rename(NO3 = `NO3-N_µg/l N`,
-         TOCTON = `TOC/TON`,
-         TOC = `TOC_mg C/l`,
-         TON = `TON_µg/l N`)
+  rename(NO3 = `NO3-N_µg/l N`, 
+         TOC = `TOC_mg C/l`)
 
 cat("\n")
 cat("df1, n =", nrow(df1), "\n")
 cat("df2, n =", nrow(df2), "\n")
 cat("df3, n =", nrow(df3), "\n")
 
-dat_1 <- df1 %>%
+dat <- df1 %>%
   full_join(df2, by = "station_id") %>%
   full_join(df3, by = "station_id")
 
 cat("dat, n =", nrow(dat), "\n")
+
+```
+
+```{r}
+# dat
+# 
+# str <- "slope_no3_vs_time ~ p_no3_vs_time"
+# plot(as.formula(str), data = dat)
+# lm(as.formula(str), data = dat)
 
 ```
 
@@ -186,75 +227,71 @@ cat("n =", nrow(df_deposition), "\n")
 
 ```
 
-
 ### Add deposition slope and medians to data  
 ```{r}
 
-# debugonce(left_join2)
-dat_2 <- dat_1 %>% 
-  left_join2(df_deposition %>% 
+cat("dat, n =", nrow(dat), "\n")
+
+dat <- dat %>% 
+  left_join(df_deposition %>% 
               select(station_id, median, sen_slp, mk_p_val) %>%
               rename(TOTN_dep = median,
                      slope_dep_vs_time = sen_slp,
                      p_dep_vs_time = mk_p_val),
-             by = "station_id",
-             print_vars = TRUE)
+                 by = "station_id")
+
+cat("dat, n =", nrow(dat), "\n")
+
+# names(dat)
 
 ```
-
 ### Add medians and station metadata   
-
 ```{r}
 
-# dat_2 <- dat_2 %>%
+# dat <- dat %>%
 #   left_join(df_metadata, by = "station_id")
 
-# cat("dat_2, n =", nrow(dat_2), "\n")
+cat("dat, n =", nrow(dat), "\n")
 
 # Simplify names by removing units
-# names(dat_2)
-# names(dat_2) <- sub(".N_µg.l.N", "", names(dat_2))
-# names(dat_2) <- sub("_mg.C.l", "", names(dat_2))
-# names(dat_2) <- sub("_µg.l.P", "", names(dat_2))
+# names(dat)
+# names(dat) <- sub(".N_µg.l.N", "", names(dat))
+# names(dat) <- sub("_mg.C.l", "", names(dat))
+# names(dat) <- sub("_µg.l.P", "", names(dat))
 
-# cat("\nVariable names: \n")
-# names(dat_2)
+cat("\nVariable names: \n")
+names(dat)
 
 
 ```
 
-### Add climate and deposition medians and slopes  
+### Add climate and deposition medians 
 ```{r}
 
 fn <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/climate/cru_climate_trends_icpw_stns.csv"
-
-df_climate_mean <- read_csv(fn) %>% 
+df_climate_mean <- read_csv(fn) %>%
   select(station_id, variable, median) %>%
   pivot_wider(names_from = "variable", values_from = "median")
-cat("\n")
+
 # names(df_climate_mean)
 
-df_climate_slope <- read_csv(fn) %>%
-  select(station_id, variable, sen_slp) %>%
-  pivot_wider(names_from = "variable", values_from = "sen_slp", names_prefix = "Slope_")
-
 # Add
-dat_3 <- dat_2 %>%
-  left_join2(df_climate_mean, by = "station_id", print_vars = TRUE) %>%
-  left_join2(df_climate_slope, by = "station_id", print_vars = TRUE)
+dat <- dat %>%
+  left_join(df_climate_mean, by = "station_id")
+
+cat("dat, n =", nrow(dat), "\n")
 
 ```
+
 
 ### Combine land cover types   
 * Data including UK read using script 159   
 * Note: also includes metadata (country, etc.)
 * bare_sparse = bare_rock + sparsely_vegetated + glacier   
 * Select: coniferous, deciduous, lake, mixed_forest, wetland, bare_sparse   
-
 ```{r}
 
-# df_landcover3_OLD <- readRDS("Data/159_df_landcover3.rds")
-df_landcover3 <- readRDS("Data/159_df_meta3.rds")
+df_landcover3 <- readRDS("Data/159_df_landcover3.rds")
 
 df_landcover3 <- df_landcover3 %>%
   mutate(bare_sparse = bare_rock + sparsely_vegetated + glacier,
@@ -262,25 +299,19 @@ df_landcover3 <- df_landcover3 %>%
          lake_water = lake + water_ex_lake) %>%
   select(-c(bare_rock, sparsely_vegetated, glacier, deciduous, mixed_forest, lake, water_ex_lake))
 
+
 ```
 
 
 ### Add land cover columns to main data    
 ```{r}
 
-dat_4 <- left_join2(dat_3, 
-                   df_landcover3, 
-                   by = "station_id", 
-                   print_vars = TRUE
+dat <- left_join(dat, 
+                 df_landcover3, 
+                 by = "station_id"
 )
 
-
-```
-
-### Data set used  
-```{r}
-
-dat <- dat_4
+cat("dat, n =", nrow(dat), "\n")
 
 ```
 
@@ -288,33 +319,22 @@ dat <- dat_4
 
 ## 3. Plot slopes    
 
-```{r, fig.width=9, fig.height=5}
+```{r, fig.width=9, fig.height=7}
 
-dat <- dat %>%
-  mutate(AtlCan = ifelse(region == "AtlCan", "AtlCan", "Not AtlCan"))
-
-ggplot(dat, aes(slope_toc_vs_time, slope_tocton_vs_time)) + 
-  geom_point(data = dat %>% filter(slope_tocton_vs_time < 0.05), size = rel(2)) +
+ggplot(dat, aes(slope_dep_vs_time, slope_no3_vs_time)) + 
+  geom_point(data = dat %>% filter(p_no3_vs_time < 0.05), size = rel(2)) +
   geom_point(aes(color = country)) +
   geom_hline(yintercept = 0, linetype = 2) + 
-  geom_vline(xintercept = 0, linetype = 2) +
-  facet_wrap(vars(AtlCan))
-
-ggplot(dat, aes(slope_ton_vs_time, slope_tocton_vs_time)) + 
-  geom_point(data = dat %>% filter(slope_tocton_vs_time < 0.05), size = rel(2)) +
-  geom_point(aes(color = country)) +
-  geom_hline(yintercept = 0, linetype = 2) + 
-  geom_vline(xintercept = 0, linetype = 2)  +
-  facet_wrap(vars(AtlCan))
+  geom_vline(xintercept = 0, linetype = 2) 
   
-ggplot(dat, aes(slope_dep_vs_time, slope_tocton_vs_time)) + 
-  geom_point(data = dat %>% filter(slope_tocton_vs_time < 0.05), size = rel(2)) +
-  geom_point(aes(color = country)) +
+ggplot(dat, aes(slope_dep_vs_time, slope_no3_vs_time,
+                color = (p_no3_vs_time < 0.05))) + 
+  geom_point() +
+  facet_wrap(vars(country)) +
   geom_hline(yintercept = 0, linetype = 2) + 
-  geom_vline(xintercept = 0, linetype = 2) +
-  facet_wrap(vars(AtlCan)) 
-  
-if (FALSE){
+  geom_vline(xintercept = 0, linetype = 2) + 
+  labs(title = "A selection of countries")
+
 dat %>%
   filter(!country %in% c("Latvia","Ireland","Italy","Netherlands")) %>%
   ggplot(aes(slope_dep_vs_time, slope_no3_vs_time,
@@ -325,47 +345,36 @@ dat %>%
   geom_vline(xintercept = 0, linetype = 2) + 
   labs(title = "A selection of countries") + 
   ylim(-50, 25)
-}
+
 
 ```
 
 
-## 4. Select data    
+## 4. Select data   
 
-### a. Select variables  
-* Select variables to use, and thereby also cases   
-* Also, 'AtlCan' data are excluded  
+### a. Selection of variables  
+* Select variables to use, and thereby also cases  
 ```{r}
 
-get_df_tocton_decrease <- function(data, variable_string){
+get_df_no3_decline <- function(data, variable_string){
   variable_string <- gsub(" ", "", variable_string)
   variables <- strsplit(variable_string, split = ",")[[1]]
   # Data for analyses
   df <- data %>%
     mutate(
-      tocton_decrease = case_when(
-        slope_tocton_vs_time < 0 & p_tocton_vs_time <= 0.05 ~ 1,
+      no3_decline = case_when(
+        slope_no3_vs_time < 0 & p_no3_vs_time <= 0.05 ~ 1,
         TRUE ~ 0)
     )
-  df[c(variables, "country")]   # because 'country' will be used for statistics further down
+  df[variables]
 }
-
-
-table(dat$region)
 
 cat("-------------------------------------------------------------\n")
 cat("Variables: \n")
 cat(params$selected_vars)
 cat("\n-------------------------------------------------------------\n")
 
-dat_filtered <- dat %>%
-  filter(region != "AtlCan")
-
-df_analysis <- get_df_tocton_decrease(dat_filtered, params$selected_vars)  
-
-# table(df_analysis$tocton_decrease)
-
-
+df_analysis <- get_df_no3_decline(dat, params$selected_vars)  
 
 # names(dat) %>% paste(collapse = ", ")
 
@@ -375,9 +384,9 @@ cat("\n")
 
 # What is missing? (long output)
 if (FALSE){
-  dat %>% 
-    split(.$country) %>%
-    purrr::map(~apply(is.na(.), 2, mean))
+dat %>% 
+  split(.$country) %>%
+  purrr::map(~apply(is.na(.), 2, mean))
 }
 
 cat("Number of complete observations: \n")
@@ -386,20 +395,17 @@ table(complete)
 
 cat("\n\n")
 cat("Number of complete observations by country: \n")
-table(df_analysis$country, complete)
+table(dat$country, complete)
 
 # Keep only complete cases
-df_analysis <- df_analysis[complete.cases(df_analysis),] %>%
-  select(-country)
+df_analysis <- df_analysis[complete.cases(df_analysis),]
 
 cat("\n\n")
 cat("Original data: n =", nrow(dat), "\n")
-cat("Data after filtering: n =", nrow(dat_filtered), "\n")
 cat("Analysis: n =", nrow(df_analysis), "\n")
 
 
 ```
-
 
 
 ### b. Correlations   
@@ -409,11 +415,11 @@ gg <- GGally::ggcorr(
   df_analysis, 
   method = c("complete.obs", "kendall"), 
   label = TRUE,
-  hjust = 0.9, angle = -30) # +
-# class(gg)
-gg + coord_cartesian(x = c(-2, 20), y = c(-2,22))
+  hjust = 0.9, angle = -30) # +                    # slanted labels
+gg + coord_cartesian(x = c(-2, 20), y = c(-2,22))  # fix margins
 
-```
+
+```  
 
 
 
@@ -429,10 +435,10 @@ x <- runif(nrow(df_analysis))
 train <- ifelse(x < 0.9, TRUE, FALSE)
 
 train_set <- df_analysis[train,]  %>% 
-  mutate(tocton_decrease_f = factor(tocton_decrease)) %>% select(-tocton_decrease, -longitude, - latitude) %>%
+  mutate(no3_decline_f = factor(no3_decline)) %>% select(-no3_decline, -longitude, - latitude) %>%
   as.data.frame()
 valid_set <- df_analysis[!train,] %>% 
-  mutate(tocton_decrease_f = factor(tocton_decrease)) %>% select(-tocton_decrease, -longitude, - latitude) %>%
+  mutate(no3_decline_f = factor(no3_decline)) %>% select(-no3_decline, -longitude, - latitude) %>%
   as.data.frame()
 
 ```
@@ -441,20 +447,20 @@ valid_set <- df_analysis[!train,] %>%
 ### a. Tree classification using 'party'   
 ```{r, fig.width=8, fig.height=8}
 
-(ct = ctree(tocton_decrease_f ~ ., data = train_set))
+(ct = ctree(no3_decline_f ~ ., data = train_set))
 
 plot(ct, main="Conditional Inference Tree")
 
 cat("\n\n")
 cat("Table of prediction errors \n")
-table(predict(ct), train_set$tocton_decrease_f)
+table(predict(ct), train_set$no3_decline_f)
 cat("\n\n")
 
 cat("Classification of training set \n")
 tr.pred = predict(ct, newdata = valid_set, type="prob")
 colnames(tr.pred) <- c("P0", "P1")
 # tr.pred <- tr.pred %>% map_dfr(~data.frame(P0 = .[1], P1 = .[2]))
-table(tr.pred[,"P1"] > 0.5, valid_set$tocton_decrease_f)
+table(tr.pred[,"P1"] > 0.5, valid_set$no3_decline_f)
 
 
 ```
@@ -462,14 +468,14 @@ table(tr.pred[,"P1"] > 0.5, valid_set$tocton_decrease_f)
 ### b. Evtree (Evolutionary Learning)   
 ```{r, fig.width=8, fig.height=8}
 
-ev.raw = evtree(tocton_decrease_f ~ ., data = train_set)
+ev.raw = evtree(no3_decline_f ~ ., data = train_set)
 
 plot(ev.raw)
 cat("Predicted in training data: \n")
-table(predict(ev.raw), train_set$tocton_decrease_f)
+table(predict(ev.raw), train_set$no3_decline_f)
 
 cat("\n\nPrediction errors in training data: \n")
-1-mean(predict(ev.raw) == train_set$tocton_decrease_f)
+1-mean(predict(ev.raw) == train_set$no3_decline_f)
 ```
 
 
@@ -478,7 +484,7 @@ cat("\n\nPrediction errors in training data: \n")
 * Model called 'model1'
 ```{r}
 
-model1 <- randomForest(tocton_decrease_f ~ ., 
+model1 <- randomForest(no3_decline_f ~ ., 
                        data = train_set, 
                        mtry = 5,
                        importance = TRUE)
@@ -494,7 +500,7 @@ model1
 # Predicting on train set
 pred_valid <- predict(model1, valid_set, type = "class")
 # Checking classification accuracy
-table(pred_valid, valid_set$tocton_decrease_f)  
+table(pred_valid, valid_set$no3_decline_f)  
 
 ```
 
@@ -520,7 +526,7 @@ plot_multi_way_importance(importance, x_measure = "accuracy_decrease", y_measure
 
 #### c3. Random forest, show partial effects  
 
-```{r 5c3_calculate_partial_effects, warning=FALSE, message=FALSE, results='hide'}
+```{r 5c3_calculate_partial_effects1, warning=FALSE, message=FALSE, results='hide'}
 
 # Which variables to include:
 variables_for_plot <- importance %>%
@@ -542,6 +548,32 @@ for (i in 1:max_number_of_plots){
     partial(pred.var = variables_for_plot[c(varno1, varno2)], chull = TRUE, progress = "text",
             which.class = "1", prob = TRUE)
 }
+
+```
+
+
+```{r 5c3_calculate_partial_effects2, warning=FALSE, message=FALSE, results='hide'}
+
+### Extra plots
+
+i <- max_number_of_plots
+
+plotpairs <- params$extra_pairwise_plots %>%
+  gsub(" ", "", ., fixed = TRUE) %>%
+  strsplit(x, split = ";") %>%
+  .[[1]] %>%
+  purrr::map(~strsplit(., split = ",")[[1]])
+
+for (plotvar in plotpairs){
+  # print(plotvar)
+  if (plotvar[1] %in% names(train_set) & plotvar[2] %in% names(train_set)){
+    i <- i + 1
+    plotdata[[i]] <- model1 %>%
+      partial(pred.var = c(plotvar[1], plotvar[2]), chull = TRUE, progress = "text",
+             which.class = "1", prob = TRUE)
+  }
+}
+
 
 ```
 
@@ -576,30 +608,58 @@ if (params$pairwise_plots_same_scale == "TRUE"){
 }
 
 
+
 ```
 
 
+```{r, echo = FALSE, results  = "hold"}
 
-## 6. Logistic regression      
+# #   no3_decline ~ as.formula(params$logistic_formula),
+# 
+# fm <- glm(
+#   as.formula(params$logistic_formula),
+#   data = df_analysis, 
+#   family = "binomial",
+#   na.action = "na.fail")
+# 
+# dd1b <- dredge(fm)                       # only once
+# saveRDS(dd1b, "Data/160_all_dd1b.rds")    # save it as it takes a couple of minutes
+# # dd1b <- readRDS("Data/160_all_dd1b.rds")
+# 
+# # subset(dd1b, delta < 1)
+# subset(dd1b, delta < 2)
+# 
+# cat("\n\nR2: \n")
+# dd1b_mod1 <- get.models(dd1b, 1)[[1]]  
+# # summary(dd1b_mod1)  
+# 
+# par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
+# visreg(dd1b_mod1, scale = "response")
+
+```
+
+
+## 6. Logistic regression       
+Start model: **`r params$logistic_formula`**
 ```{r, results  = "hold"}
 
-#   tocton_decrease ~ as.formula(params$logistic_formula),
-# 
-# form <- "tocton_decrease ~ slope_dep_vs_time + slope_ton_vs_time + TOTN_dep + total_shrub_herbaceous + decid_mixed"
-#  + slope_toc_vs_time ??
-
 fm <- glm(
-  # as.formula(form),
   as.formula(params$logistic_formula),
   data = df_analysis, 
-  family = "binomial",
+  family = "binomial",  
   na.action = "na.fail")
 
-dredged_models <- dredge(fm)              
+dredged_models <- dredge(fm)                       # only once
+# saveRDS(dredged_models, "Data/162_all_dredged_models.rds")    # save it as it takes a couple of minutes
+# dredged_models <- readRDS("Data/162_all_dredged_models.rds")
 
-```
+# cat("\n\nR2: \n")
+# mod1 <- get.models(dredged_models, 1)[[1]]  
+# summary(mod1)  
 
-## Best models  
+```  
+
+### Best models  
 ```{r}
 # subset(dredged_models, delta < 1)
 
@@ -610,6 +670,7 @@ subset(dredged_models, delta < 2)
 # select(as.data.frame(df) %>% round(6), -`(Intercept)`, -logLik, -AICc)
 
 ```
+
 
 ### Plots  
 ```{r, message=FALSE}
@@ -638,7 +699,5 @@ if (length(modelvars$additive_vars) > 0){
 }
 
 ```
-
-
 
 
