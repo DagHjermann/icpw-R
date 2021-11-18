@@ -121,7 +121,10 @@ cat("Regression slopes and medians from:", sQuote(file), ",n =", nrow(reg_ratio)
 # xtabs(~country, df_metadata)  
 
 ```
+
+
 ### Start 'dat'  
+
 With slope regression data  
 * Make one line per station  
 ```{r}
@@ -163,14 +166,13 @@ cat("df1, n =", nrow(df1), "\n")
 cat("df2, n =", nrow(df2), "\n")
 cat("df3, n =", nrow(df3), "\n")
 
-dat <- df1 %>%
+dat_1 <- df1 %>%
   full_join(df2, by = "station_id") %>%
   full_join(df3, by = "station_id")
 
 cat("dat, n =", nrow(dat), "\n")
 
 ```
-
 
 ### Deposition trends and median 1992-2006     
 ```{r}
@@ -184,73 +186,75 @@ cat("n =", nrow(df_deposition), "\n")
 
 ```
 
+
 ### Add deposition slope and medians to data  
 ```{r}
 
-cat("dat, n =", nrow(dat), "\n")
-
-dat <- dat %>% 
-  left_join(df_deposition %>% 
+# debugonce(left_join2)
+dat_2 <- dat_1 %>% 
+  left_join2(df_deposition %>% 
               select(station_id, median, sen_slp, mk_p_val) %>%
               rename(TOTN_dep = median,
                      slope_dep_vs_time = sen_slp,
                      p_dep_vs_time = mk_p_val),
-                 by = "station_id")
-
-cat("dat, n =", nrow(dat), "\n")
-
-# names(dat)
+             by = "station_id",
+             print_vars = TRUE)
 
 ```
+
 ### Add medians and station metadata   
+
 ```{r}
 
-# METADATA are added with land cover  
-# dat <- dat %>%
+# dat_2 <- dat_2 %>%
 #   left_join(df_metadata, by = "station_id")
 
-cat("dat, n =", nrow(dat), "\n")
+# cat("dat_2, n =", nrow(dat_2), "\n")
 
 # Simplify names by removing units
-# names(dat)
-# names(dat) <- sub(".N_µg.l.N", "", names(dat))
-# names(dat) <- sub("_mg.C.l", "", names(dat))
-# names(dat) <- sub("_µg.l.P", "", names(dat))
+# names(dat_2)
+# names(dat_2) <- sub(".N_µg.l.N", "", names(dat_2))
+# names(dat_2) <- sub("_mg.C.l", "", names(dat_2))
+# names(dat_2) <- sub("_µg.l.P", "", names(dat_2))
 
-cat("\nVariable names: \n")
-names(dat)
+# cat("\nVariable names: \n")
+# names(dat_2)
 
 
 ```
 
-### Add climate and deposition medians 
+### Add climate and deposition medians and slopes  
 ```{r}
 
 fn <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/climate/cru_climate_trends_icpw_stns.csv"
-df_climate_mean <- read_csv(fn) %>%
+
+df_climate_mean <- read_csv(fn) %>% 
   select(station_id, variable, median) %>%
   pivot_wider(names_from = "variable", values_from = "median")
-
+cat("\n")
 # names(df_climate_mean)
 
-# Add
-dat <- dat %>%
-  left_join(df_climate_mean, by = "station_id")
+df_climate_slope <- read_csv(fn) %>%
+  select(station_id, variable, sen_slp) %>%
+  pivot_wider(names_from = "variable", values_from = "sen_slp", names_prefix = "Slope_")
 
-cat("dat, n =", nrow(dat), "\n")
+# Add
+dat_3 <- dat_2 %>%
+  left_join2(df_climate_mean, by = "station_id", print_vars = TRUE) %>%
+  left_join2(df_climate_slope, by = "station_id", print_vars = TRUE)
 
 ```
 
-
-
 ### Combine land cover types   
-* Note: these data also include metadata (country, continent etc.)
-* Data including UK read using script 159  
+* Data including UK read using script 159   
+* Note: also includes metadata (country, etc.)
 * bare_sparse = bare_rock + sparsely_vegetated + glacier   
 * Select: coniferous, deciduous, lake, mixed_forest, wetland, bare_sparse   
+
 ```{r}
 
-df_landcover3 <- readRDS("Data/159_df_landcover3.rds")
+# df_landcover3_OLD <- readRDS("Data/159_df_landcover3.rds")
+df_landcover3 <- readRDS("Data/159_df_meta3.rds")
 
 df_landcover3 <- df_landcover3 %>%
   mutate(bare_sparse = bare_rock + sparsely_vegetated + glacier,
@@ -258,20 +262,25 @@ df_landcover3 <- df_landcover3 %>%
          lake_water = lake + water_ex_lake) %>%
   select(-c(bare_rock, sparsely_vegetated, glacier, deciduous, mixed_forest, lake, water_ex_lake))
 
-cat("df_landcover3, n =", nrow(df_landcover3), "\n")
-
 ```
 
 
 ### Add land cover columns to main data    
 ```{r}
 
-dat <- left_join(dat, 
-                 df_landcover3, 
-                 by = "station_id"
+dat_4 <- left_join2(dat_3, 
+                   df_landcover3, 
+                   by = "station_id", 
+                   print_vars = TRUE
 )
 
-cat("dat, n =", nrow(dat), "\n")
+
+```
+
+### Data set used  
+```{r}
+
+dat <- dat_4
 
 ```
 
@@ -280,6 +289,7 @@ cat("dat, n =", nrow(dat), "\n")
 ## 3. Plot slopes    
 
 ```{r, fig.width=9, fig.height=5}
+
 dat <- dat %>%
   mutate(AtlCan = ifelse(region == "AtlCan", "AtlCan", "Not AtlCan"))
 
