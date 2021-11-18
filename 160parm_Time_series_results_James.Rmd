@@ -291,7 +291,8 @@ cat("dat, n =", nrow(dat), "\n")
 * Select: coniferous, deciduous, lake, mixed_forest, wetland, bare_sparse   
 ```{r}
 
-df_landcover3 <- readRDS("Data/159_df_landcover3.rds")
+# df_landcover3_OLD <- readRDS("Data/159_df_landcover3.rds")
+df_landcover3 <- readRDS("Data/159_df_meta3.rds")
 
 df_landcover3 <- df_landcover3 %>%
   mutate(bare_sparse = bare_rock + sparsely_vegetated + glacier,
