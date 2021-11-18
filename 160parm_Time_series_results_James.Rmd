@@ -92,6 +92,7 @@ options(width = 95)
 ```
 
 
+
 ## 2. Data
 
 ### James' trends and medians     
@@ -162,7 +163,9 @@ if (FALSE){
 
 
 ```
+
 ### Start 'dat'  
+
 With slope regression data  
 * Make one line per station  
 ```{r}
@@ -198,20 +201,20 @@ cat("df1, n =", nrow(df1), "\n")
 cat("df2, n =", nrow(df2), "\n")
 cat("df3, n =", nrow(df3), "\n")
 
-dat <- df1 %>%
+dat_1 <- df1 %>%
   full_join(df2, by = "station_id") %>%
   full_join(df3, by = "station_id")
 
-cat("dat, n =", nrow(dat), "\n")
+cat("dat_1, n =", nrow(dat_1), "\n")
 
 ```
 
 ```{r}
-# dat
+# dat_1
 # 
 # str <- "slope_no3_vs_time ~ p_no3_vs_time"
-# plot(as.formula(str), data = dat)
-# lm(as.formula(str), data = dat)
+# plot(as.formula(str), data = dat_1)
+# lm(as.formula(str), data = dat_1)
 
 ```
 
@@ -227,71 +230,75 @@ cat("n =", nrow(df_deposition), "\n")
 
 ```
 
+
 ### Add deposition slope and medians to data  
 ```{r}
 
-cat("dat, n =", nrow(dat), "\n")
-
-dat <- dat %>% 
-  left_join(df_deposition %>% 
+# debugonce(left_join2)
+dat_2 <- dat_1 %>% 
+  left_join2(df_deposition %>% 
               select(station_id, median, sen_slp, mk_p_val) %>%
               rename(TOTN_dep = median,
                      slope_dep_vs_time = sen_slp,
                      p_dep_vs_time = mk_p_val),
-                 by = "station_id")
-
-cat("dat, n =", nrow(dat), "\n")
-
-# names(dat)
+             by = "station_id",
+             print_vars = TRUE)
 
 ```
+
 ### Add medians and station metadata   
+
 ```{r}
 
-# dat <- dat %>%
+# dat_2 <- dat_2 %>%
 #   left_join(df_metadata, by = "station_id")
 
-cat("dat, n =", nrow(dat), "\n")
+# cat("dat_2, n =", nrow(dat_2), "\n")
 
 # Simplify names by removing units
-# names(dat)
-# names(dat) <- sub(".N_µg.l.N", "", names(dat))
-# names(dat) <- sub("_mg.C.l", "", names(dat))
-# names(dat) <- sub("_µg.l.P", "", names(dat))
+# names(dat_2)
+# names(dat_2) <- sub(".N_µg.l.N", "", names(dat_2))
+# names(dat_2) <- sub("_mg.C.l", "", names(dat_2))
+# names(dat_2) <- sub("_µg.l.P", "", names(dat_2))
 
-cat("\nVariable names: \n")
-names(dat)
+# cat("\nVariable names: \n")
+# names(dat_2)
 
 
 ```
 
-### Add climate and deposition medians 
+### Add climate and deposition medians and slopes  
 ```{r}
 
 fn <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/climate/cru_climate_trends_icpw_stns.csv"
-df_climate_mean <- read_csv(fn) %>%
+
+df_climate_mean <- read_csv(fn) %>% 
   select(station_id, variable, median) %>%
   pivot_wider(names_from = "variable", values_from = "median")
-
+cat("\n")
 # names(df_climate_mean)
 
-# Add
-dat <- dat %>%
-  left_join(df_climate_mean, by = "station_id")
+df_climate_slope <- read_csv(fn) %>%
+  select(station_id, variable, sen_slp) %>%
+  pivot_wider(names_from = "variable", values_from = "sen_slp", names_prefix = "Slope_")
 
-cat("dat, n =", nrow(dat), "\n")
+# Add
+dat_3 <- dat_2 %>%
+  left_join2(df_climate_mean, by = "station_id", print_vars = TRUE) %>%
+  left_join2(df_climate_slope, by = "station_id", print_vars = TRUE)
 
 ```
-
 
 ### Combine land cover types   
 * Data including UK read using script 159   
 * Note: also includes metadata (country, etc.)
 * bare_sparse = bare_rock + sparsely_vegetated + glacier   
 * Select: coniferous, deciduous, lake, mixed_forest, wetland, bare_sparse   
+
 ```{r}
 
-df_landcover3 <- readRDS("Data/159_df_landcover3.rds")
+# df_landcover3_OLD <- readRDS("Data/159_df_landcover3.rds")
+df_landcover3 <- readRDS("Data/159_df_meta3.rds")
 
 df_landcover3 <- df_landcover3 %>%
   mutate(bare_sparse = bare_rock + sparsely_vegetated + glacier,
@@ -299,22 +306,27 @@ df_landcover3 <- df_landcover3 %>%
          lake_water = lake + water_ex_lake) %>%
   select(-c(bare_rock, sparsely_vegetated, glacier, deciduous, mixed_forest, lake, water_ex_lake))
 
-
 ```
 
 
 ### Add land cover columns to main data    
 ```{r}
 
-dat <- left_join(dat, 
-                 df_landcover3, 
-                 by = "station_id"
+dat_4 <- left_join2(dat_3, 
+                   df_landcover3, 
+                   by = "station_id", 
+                   print_vars = TRUE
 )
 
-cat("dat, n =", nrow(dat), "\n")
 
 ```
 
+### Data set used  
+```{r}
+
+dat <- dat_4
+
+```
 
 
 ## 3. Plot slopes    
@@ -502,6 +514,11 @@ pred_valid <- predict(model1, valid_set, type = "class")
 # Checking classification accuracy
 table(pred_valid, valid_set$no3_decline_f)  
 
+error_fraction <- mean(
+  (pred_valid == 0 & valid_set$no3_decline_f == 1) | 
+    (pred_valid == 1 & valid_set$no3_decline_f == 0))
+cat("Error rate for training data:", round(error_fraction*100, 1), "%\n")
+
 ```
 
 #### c2. Importance of variables
@@ -578,36 +595,56 @@ for (plotvar in plotpairs){
 ```
 
 
-
-```{r, warning=FALSE}
-
-# params$pairwise_plots_same_scale
-
-if (params$pairwise_plots_same_scale == "TRUE"){
-
-  # Put on same color scale
+```{r}
+plot_pair_number <- function(i, zrange = NULL){
   
-  # Find range of predicted values for each graph
-  ranges <- plotdata %>% purrr::map_dfc(~range(.$yhat))
+  variable_x <- rlang::sym(names(plotdata[[i]])[1])
+  variable_y <- rlang::sym(names(plotdata[[i]])[2])
   
-  # use range of all the ranges
-  for (i in 1:length(plotdata)){
-    gg <- autoplot(plotdata[[i]], contour = TRUE, legend.title = "Probability\nNO3 decline") +
-      scale_fill_viridis_c(limits = range(ranges))
-    print(gg) 
+  gg <- ggplot(plotdata[[i]], aes(!!variable_x, !!variable_y)) +
+    geom_tile(aes(fill = yhat)) +
+    geom_contour(aes(z = yhat), color = "white") +
+    geom_point(data = valid_set, shape = 21, size = 2, colour = "white", bg = "red") +
+    theme_bw()
+  
+  if (is.null(zrange)){
+    gg + scale_fill_viridis_c("Probability\nNO3 decline")
+  } else {
+    gg + scale_fill_viridis_c("Probability\nNO3 decline", limits = zrange)
   }
-  
-} else {
 
-  # Plot the plots 
-  for (i in 1:length(plotdata)){
-    gg <- autoplot(plotdata[[i]], contour = TRUE, legend.title = "Probability\nNO3 decline")
+}
+
+```
+
+
+```{r}
+
+plot_pair_number(1)
+
+```
+```{r}
+
+# Find range of predicted values for each graph
+ranges <- plotdata %>% purrr::map_dfc(~range(.$yhat))
+
+# use range of all the ranges
+for (i in 1:length(plotdata)){
+  
+  if (params$pairwise_plots_same_scale == "TRUE"){
+  
+    gg <- plot_pair_number(i, zrange = range(ranges))
     print(gg)
+    
+  } else {
+    
+    gg <- plot_pair_number(i)
+    print(gg)
+
   }
   
 }
-
-
+  
 
 ```
 
@@ -673,10 +710,14 @@ subset(dredged_models, delta < 2)
 
 
 ### Plots  
-```{r, message=FALSE}
+```{r, message=FALSE, results  = "hold"}
 
 # Pick model with lowest AICc
 mod1 <- get.models(dredged_models, 1)[[1]]  
+
+summ <- summary(mod1)
+dev_expl <- summ$deviance/summ$null.deviance
+cat("Percentage of deviance explained:", round(100*dev_expl, 1), "% \n")
 
 modelvars <- get_model_variables(mod1)
 
