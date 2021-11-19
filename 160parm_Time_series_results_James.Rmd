@@ -618,12 +618,7 @@ plot_pair_number <- function(i, zrange = NULL){
 ```
 
 
-```{r}
-
-plot_pair_number(1)
-
-```
-```{r}
+```{r 5c3_plot_partial_effects2}
 
 # Find range of predicted values for each graph
 ranges <- plotdata %>% purrr::map_dfc(~range(.$yhat))
