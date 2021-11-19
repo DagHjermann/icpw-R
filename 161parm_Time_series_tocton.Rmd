@@ -170,7 +170,7 @@ dat_1 <- df1 %>%
   full_join(df2, by = "station_id") %>%
   full_join(df3, by = "station_id")
 
-cat("dat, n =", nrow(dat), "\n")
+cat("dat_1, n =", nrow(dat_1), "\n")
 
 ```
 
@@ -518,7 +518,9 @@ plot_multi_way_importance(importance, x_measure = "accuracy_decrease", y_measure
 
 
 
-#### c3. Random forest, show partial effects  
+
+
+#### c3. Random forest, show partial effects   
 
 ```{r 5c3_calculate_partial_effects, warning=FALSE, message=FALSE, results='hide'}
 
@@ -546,35 +548,28 @@ for (i in 1:max_number_of_plots){
 ```
 
 
+```{r 5c3_plot_partial_effects2}
 
-```{r, warning=FALSE}
+# Find range of predicted values for each graph
+ranges <- plotdata %>% purrr::map_dfc(~range(.$yhat))
 
-# params$pairwise_plots_same_scale
-
-if (params$pairwise_plots_same_scale == "TRUE"){
-
-  # Put on same color scale
+# use range of all the ranges
+for (i in 1:length(plotdata)){
   
-  # Find range of predicted values for each graph
-  ranges <- plotdata %>% purrr::map_dfc(~range(.$yhat))
+  if (params$pairwise_plots_same_scale == "TRUE"){
   
-  # use range of all the ranges
-  for (i in 1:length(plotdata)){
-    gg <- autoplot(plotdata[[i]], contour = TRUE, legend.title = "Probability\nNO3 decline") +
-      scale_fill_viridis_c(limits = range(ranges))
-    print(gg) 
-  }
-  
-} else {
-
-  # Plot the plots 
-  for (i in 1:length(plotdata)){
-    gg <- autoplot(plotdata[[i]], contour = TRUE, legend.title = "Probability\nNO3 decline")
+    gg <- plot_pair_number(i, zrange = range(ranges))
     print(gg)
+    
+  } else {
+    
+    gg <- plot_pair_number(i)
+    print(gg)
+
   }
   
 }
-
+  
 
 ```
 
