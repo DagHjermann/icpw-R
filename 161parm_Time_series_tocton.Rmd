@@ -85,6 +85,7 @@ library(effects)    # handles lme models
 library(readxl)
 library(readr)
 
+source("002_Functions.R")
 source("160parm_functions.R")
 
 knitr::opts_chunk$set(results = 'hold') # collect the results from a chunk  
@@ -431,6 +432,7 @@ train <- ifelse(x < 0.9, TRUE, FALSE)
 train_set <- df_analysis[train,]  %>% 
   mutate(tocton_decrease_f = factor(tocton_decrease)) %>% select(-tocton_decrease, -longitude, - latitude) %>%
   as.data.frame()
+
 valid_set <- df_analysis[!train,] %>% 
   mutate(tocton_decrease_f = factor(tocton_decrease)) %>% select(-tocton_decrease, -longitude, - latitude) %>%
   as.data.frame()
@@ -488,7 +490,7 @@ model1
 ```
 
 
-#### c1. Predict on training data
+#### c1a. Predict on training data
 ```{r}
 
 # Predicting on train set
@@ -497,6 +499,25 @@ pred_valid <- predict(model1, valid_set, type = "class")
 table(pred_valid, valid_set$tocton_decrease_f)  
 
 ```
+
+
+#### c1b. Model for all data    
+```{r}
+
+full_set <- df_analysis  %>% 
+  mutate(tocton_decrease_f = factor(tocton_decrease)) %>%
+  select(-tocton_decrease, -longitude, - latitude) %>%
+  as.data.frame()
+
+
+# Predicting on full set
+pred_valid <- predict(model1, valid_set, type = "class")
+
+# Checking classification accuracy
+table(pred_valid, valid_set$tocton_decrease_f)  
+
+```
+
 
 #### c2. Importance of variables
 ```{r 5c2_calculate_importance}
@@ -517,10 +538,7 @@ plot_multi_way_importance(importance, x_measure = "accuracy_decrease", y_measure
 ```
 
 
-
-
-
-#### c3. Random forest, show partial effects   
+#### c3. Random forest, show partial effects  
 
 ```{r 5c3_calculate_partial_effects, warning=FALSE, message=FALSE, results='hide'}
 
@@ -546,7 +564,6 @@ for (i in 1:max_number_of_plots){
 }
 
 ```
-
 
 ```{r 5c3_plot_partial_effects2}
 
