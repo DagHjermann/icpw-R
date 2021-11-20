@@ -13,7 +13,7 @@ params:
   text_dataset: 
     value: 'Data with slope_dep_vs_time, NO3, and TOTN_dep'
   selected_vars: 
-    value: 'no3_decline,TOC,slope_dep_vs_time, NO3, TOTN_dep, latitude, longitude, altitude,pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse'
+    value: 'no3_decline,catchment_area, TOC,slope_dep_vs_time, NO3, TOTN_dep, latitude, longitude, altitude,pre, tmp, Slope_pre, Slope_tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse'
   extra_pairwise_plots:
     value: 'TOC,NO3; slope_dep_vs_time,TOTN_dep; altitude,decid_mixed'
   pairwise_plots_same_scale:
@@ -82,6 +82,7 @@ library(effects)    # handles lme models
 library(readxl)
 library(readr)
 
+source("002_Functions.R")
 source("160parm_functions.R")
 
 knitr::opts_chunk$set(results = 'hold') # collect the results from a chunk  
@@ -493,21 +494,40 @@ cat("\n\nPrediction errors in training data: \n")
 
 ### c. Random forest  
 * *For results/interpretation, see separate document '160_randomforest_James_data.html'*  
-* Model called 'model1'
-```{r}
+
+
+#### c1a. Predict on training data
+```{r}  
 
 model1 <- randomForest(no3_decline_f ~ ., 
                        data = train_set, 
                        mtry = 5,
                        importance = TRUE)
 
-model1
+# Predicting on train set
+pred_valid <- predict(model1, valid_set, type = "class")
+# Checking classification accuracy
+table(pred_valid, valid_set$no3_decline_f)  
+
+error_fraction <- mean(
+  (pred_valid == 0 & valid_set$no3_decline_f == 1) | 
+    (pred_valid == 1 & valid_set$no3_decline_f == 0))
+cat("Error rate for training data:", round(error_fraction*100, 1), "%\n")
 
 ```
 
+#### c1b. Model for all data    
+```{r}  
 
-#### c1. Predict on training data
-```{r}
+full_set <- df_analysis  %>% 
+  mutate(no3_decline_f = factor(no3_decline)) %>% 
+  select(-no3_decline, -longitude, - latitude) %>%
+  as.data.frame()
+
+model1 <- randomForest(no3_decline_f ~ ., 
+                       data = full_set, 
+                       mtry = 5,
+                       importance = TRUE)
 
 # Predicting on train set
 pred_valid <- predict(model1, valid_set, type = "class")
@@ -534,7 +554,9 @@ importance <- measure_importance(model1)
 ```{r}
 
 plot_multi_way_importance(importance, size_measure = "no_of_nodes", no_of_labels = 12)  
-plot_multi_way_importance(importance, x_measure = "accuracy_decrease", y_measure = "gini_decrease", 
+plot_multi_way_importance(importance, 
+                          x_measure = "accuracy_decrease", 
+                          y_measure = "gini_decrease", 
                           size_measure = "p_value", no_of_labels = 12)
 
 ```
@@ -583,7 +605,7 @@ plotpairs <- params$extra_pairwise_plots %>%
 
 for (plotvar in plotpairs){
   # print(plotvar)
-  if (plotvar[1] %in% names(train_set) & plotvar[2] %in% names(train_set)){
+  if (plotvar[1] %in% names(full_set) & plotvar[2] %in% names(full_set)){
     i <- i + 1
     plotdata[[i]] <- model1 %>%
       partial(pred.var = c(plotvar[1], plotvar[2]), chull = TRUE, progress = "text",
@@ -593,30 +615,6 @@ for (plotvar in plotpairs){
 
 
 ```
-
-
-```{r}
-plot_pair_number <- function(i, zrange = NULL){
-  
-  variable_x <- rlang::sym(names(plotdata[[i]])[1])
-  variable_y <- rlang::sym(names(plotdata[[i]])[2])
-  
-  gg <- ggplot(plotdata[[i]], aes(!!variable_x, !!variable_y)) +
-    geom_tile(aes(fill = yhat)) +
-    geom_contour(aes(z = yhat), color = "white") +
-    geom_point(data = valid_set, shape = 21, size = 2, colour = "white", bg = "red") +
-    theme_bw()
-  
-  if (is.null(zrange)){
-    gg + scale_fill_viridis_c("Probability\nNO3 decline")
-  } else {
-    gg + scale_fill_viridis_c("Probability\nNO3 decline", limits = zrange)
-  }
-
-}
-
-```
-
 
 ```{r 5c3_plot_partial_effects2}
 
