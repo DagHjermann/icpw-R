@@ -88,6 +88,9 @@ library(effects)    # handles lme models
 library(readxl)
 library(readr)
 
+source("002_Functions.R")
+source("160parm_functions.R")
+
 knitr::opts_chunk$set(results = 'hold') # collect the results from a chunk  
 knitr::opts_chunk$set(warning = FALSE)  
 
@@ -167,6 +170,7 @@ cat("Trends used as predictor variable:", sQuote(file), ",n =", nrow(df_trends),
 
 
 ```
+
 ### Start 'dat'  
 Using medians    
 * Make one line per station   
@@ -202,95 +206,101 @@ cat("\n")
 cat("df1, n =", nrow(df1), "\n")
 cat("df2, n =", nrow(df2), "\n")
 
-dat <- df1 %>%
+dat_1 <- df1 %>%
   left_join(df2, by = "station_id")
 
-cat("dat, n =", nrow(dat), "\n")
+cat("dat_1, n =", nrow(dat_1), "\n")
 
 ```
 
-### Deposition trends 1992-2006 and median 2012-2016      
-```{r, results = 'hold'}
+
+### Deposition trends and median 1992-2006     
+```{r}
 
 fn <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/deposition/totn_dep_trends_icpw_stns.csv"  
 
-# For trends
 df_deposition <- read.csv(fn) %>% 
-  filter(variable == "totn_mgNpm2" & !is.na(sen_slp)) %>%
-  select(station_id, sen_slp, mk_p_val) %>%
-              rename(slope_dep_vs_time = sen_slp,
-                     p_dep_vs_time = mk_p_val) 
+  filter(variable == "totn_mgNpm2")  
 
 cat("n =", nrow(df_deposition), "\n")
-
-# Deposition medians 2012-2016
-fn <- "K:/Prosjekter/langtransporterte forurensninger/O-23300 - ICP-WATERS - HWI/Faglige rapporter/2020 report/Deposition data/Processed/dep_TOTN.csv"
-df_deposition_medians <- read_csv(fn) %>%
-  filter(year %in% 2012:2016) %>%
-  group_by(station_id) %>%
-  summarize(TOTN_dep = median(TOTN_dep))
-
-df_deposition <- df_deposition %>%
-  left_join(df_deposition_medians)
-  
-cat("n =", nrow(df_deposition), "\n")
-
-xtabs(~is.na(TOTN_dep), df_deposition)
 
 ```
+
 
 ### Add deposition slope and medians to data  
 ```{r}
 
-dat <- dat %>% 
-  left_join(df_deposition,
-                 by = "station_id")
-
-cat("dat, n =", nrow(dat), "\n")
-
-# names(dat)
+# debugonce(left_join2)
+dat_2 <- dat_1 %>% 
+  left_join2(df_deposition %>% 
+              select(station_id, median, sen_slp, mk_p_val) %>%
+              rename(TOTN_dep = median,
+                     slope_dep_vs_time = sen_slp,
+                     p_dep_vs_time = mk_p_val),
+             by = "station_id",
+             print_vars = TRUE)
 
 ```
 
+### Add medians and station metadata   
+
+```{r}
+
+# dat_2 <- dat_2 %>%
+#   left_join(df_metadata, by = "station_id")
+
+# cat("dat_2, n =", nrow(dat_2), "\n")
+
+# Simplify names by removing units
+# names(dat_2)
+# names(dat_2) <- sub(".N_µg.l.N", "", names(dat_2))
+# names(dat_2) <- sub("_mg.C.l", "", names(dat_2))
+# names(dat_2) <- sub("_µg.l.P", "", names(dat_2))
+
+# cat("\nVariable names: \n")
+# names(dat_2)
 
 
-### Add climate medians   
+```
+
+### Add climate and deposition medians and slopes  
 ```{r}
 
 fn <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/climate/cru_climate_trends_icpw_stns.csv"
-df_climate_mean <- read_csv(fn) %>%
+
+df_climate_mean <- read_csv(fn) %>% 
   select(station_id, variable, median) %>%
   pivot_wider(names_from = "variable", values_from = "median")
-
+cat("\n")
 # names(df_climate_mean)
 
-# Add
-dat <- dat %>%
-  left_join(df_climate_mean, by = "station_id")
+df_climate_slope <- read_csv(fn) %>%
+  select(station_id, variable, sen_slp) %>%
+  pivot_wider(names_from = "variable", values_from = "sen_slp", names_prefix = "Slope_")
 
-cat("dat, n =", nrow(dat), "\n")
+# Add
+dat_3 <- dat_2 %>%
+  left_join2(df_climate_mean, by = "station_id", print_vars = TRUE) %>%
+  left_join2(df_climate_slope, by = "station_id", print_vars = TRUE)
 
 ```
 
-
-
-
 ### Combine land cover types   
-* Data including UK read using script 159  
+* Data including UK read using script 159   
+* Note: also includes metadata (country, etc.)
 * bare_sparse = bare_rock + sparsely_vegetated + glacier   
 * Select: coniferous, deciduous, lake, mixed_forest, wetland, bare_sparse   
+
 ```{r}
 
-df_landcover3 <- readRDS("Data/159_df_landcover3.rds")
+# df_landcover3_OLD <- readRDS("Data/159_df_landcover3.rds")
+df_landcover3 <- readRDS("Data/159_df_meta3.rds")
 
 df_landcover3 <- df_landcover3 %>%
   mutate(bare_sparse = bare_rock + sparsely_vegetated + glacier,
          decid_mixed = deciduous + mixed_forest,
          lake_water = lake + water_ex_lake) %>%
-  select(-c(bare_rock, sparsely_vegetated, glacier, 
-            deciduous, mixed_forest, 
-            lake, water_ex_lake))
-
+  select(-c(bare_rock, sparsely_vegetated, glacier, deciduous, mixed_forest, lake, water_ex_lake))
 
 ```
 
@@ -298,12 +308,19 @@ df_landcover3 <- df_landcover3 %>%
 ### Add land cover columns to main data    
 ```{r}
 
-dat <- left_join(dat, 
-                 df_landcover3, 
-                 by = "station_id"
+dat_4 <- left_join2(dat_3, 
+                   df_landcover3, 
+                   by = "station_id", 
+                   print_vars = TRUE
 )
 
-cat("dat, n =", nrow(dat), "\n")
+
+```
+
+### Data set used  
+```{r}
+
+dat <- dat_4
 
 ```
 
@@ -411,17 +428,24 @@ gg + theme(plot.margin = unit(c(.8, 2, .8, 2.5), "cm"))
 
 set.seed(123)
 
-x <- runif(nrow(df_analysis))
-train <- ifelse(x < 0.9, TRUE, FALSE)
+#
+# NOT RELEVANT
+#
+# x <- runif(nrow(df_analysis))
+# train <- ifelse(x < 0.9, TRUE, FALSE)
+# 
+# train_set <- df_analysis[train,]  %>% 
+#   select(-longitude, - latitude) %>%
+#   as.data.frame()
+# valid_set <- df_analysis[!train,] %>% 
+#   select(-longitude, - latitude) %>%
+#   as.data.frame()
 
-train_set <- df_analysis[train,]  %>% 
+full_set <- df_analysis  %>% 
   select(-longitude, - latitude) %>%
   as.data.frame()
-valid_set <- df_analysis[!train,] %>% 
-  select(-longitude, - latitude) %>%
-  as.data.frame()
 
-# plot(train_set)
+# plot(full_set)
 
 ```
 
@@ -433,7 +457,7 @@ valid_set <- df_analysis[!train,] %>%
 # (ct = ctree(X ~ ., data = train_set))
 
 (ct = ctree(as.formula(params$tree_formula), 
-            data = train_set))
+            data = full_set))
 
 plot(ct, main="Conditional Inference Tree")
 
@@ -443,7 +467,7 @@ plot(ct, main="Conditional Inference Tree")
 ```{r, fig.width=10, fig.height=8}
 
 ev.raw = evtree(as.formula(params$tree_formula), 
-                data = train_set)
+                data = full_set)
 
 plot(ev.raw)
 
@@ -455,7 +479,7 @@ plot(ev.raw)
 ```{r}
 
 model1 <- randomForest(as.formula(params$tree_formula), 
-                       data = train_set, 
+                       data = full_set, 
                        mtry = 5,
                        importance = TRUE)
 
@@ -540,7 +564,7 @@ plotpairs <- params$extra_pairwise_plots %>%
 
 for (plotvar in plotpairs){
   # print(plotvar)
-  if (plotvar[1] %in% names(train_set) & plotvar[2] %in% names(train_set)){
+  if (plotvar[1] %in% names(full_set) & plotvar[2] %in% names(full_set)){
     i <- i + 1
     plotdata[[i]] <- model1 %>%
       partial(pred.var = c(plotvar[1], plotvar[2]), chull = TRUE, progress = "text",
@@ -552,16 +576,30 @@ for (plotvar in plotpairs){
 ```
 
 
-```{r, warning=FALSE}
+```{r 5c3_plot_partial_effects2}
 
-# Plot the plots 
-for (i in 1:max_number_of_plots){
-  autoplot(plotdata[[i]], contour = TRUE, legend.title = "log(NO3)") %>%
-    print()
+# Find range of predicted values for each graph
+ranges <- plotdata %>% purrr::map_dfc(~range(.$yhat))
+
+# use range of all the ranges
+for (i in 1:length(plotdata)){
+  
+  if (params$pairwise_plots_same_scale == "TRUE"){
+  
+    gg <- plot_pair_number(i, zrange = range(ranges))
+    print(gg)
+    
+  } else {
+    
+    gg <- plot_pair_number(i)
+    print(gg)
+
+  }
+  
 }
+  
 
 ```
-
 
 
 
