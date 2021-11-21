@@ -317,10 +317,21 @@ dat_4 <- left_join2(dat_3,
 
 ```
 
+### Drop locations with >10% cultivated    
+```{r}
+
+dat_5 <- dat_4 %>%
+  filter(cultivated <= 10)
+
+cat(nrow(dat_4) - nrow(dat_5), "stations with > 10% cultivated deleted \n")
+
+```
+
+
 ### Data set used  
 ```{r}
 
-dat <- dat_4
+dat <- dat_5
 
 ```
 
