@@ -13,7 +13,7 @@ params:
   text_dataset: 
     value: 'Data with slope_dep_vs_time, NO3, and TOTN_dep'
   selected_vars: 
-    value: 'no3_decline,TOC,slope_dep_vs_time, NO3, TOTN_dep, latitude, longitude, altitude,pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse'
+    value: 'no3_decline,catchment_area, TOC,slope_dep_vs_time, NO3, TOTN_dep, latitude, longitude, altitude,pre, tmp, Slope_pre, Slope_tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse'
   extra_pairwise_plots:
     value: 'TOC,NO3; slope_dep_vs_time,TOTN_dep; altitude,decid_mixed'
   pairwise_plots_same_scale:
@@ -75,6 +75,7 @@ library(effects)    # handles lme models
 library(readxl)
 library(readr)
 
+source("002_Functions.R")
 source("160parm_functions.R")
 
 knitr::opts_chunk$set(results = 'hold') # collect the results from a chunk  
@@ -83,47 +84,6 @@ knitr::opts_chunk$set(warning = FALSE)
 options(width = 95)
 ```
 
-### Extra functions  
-
-left_join2 - as 'left_join', but     
-- Does not accept common variables that are not key variables (specified in "by")  
-- Gives warning if there are nn-unique combinations of key variables i data set 2, so number of rows increase (duplicating rows in data set no. 1)   
-- Optionally, Lists existing variables, key variables and added variables (if print_vars = TRUE)    
-
-
-```r
-left_join2 <- function(data1, data2, by = by, ..., print_vars = FALSE){
-  
-  common_vars <- intersect(names(data1), names(data2))
-  common_vars_not_in_by <- common_vars[!common_vars %in% by]
-  
-  if (length(common_vars_not_in_by) > 0){
-    stop("Columns ", paste(sQuote(common_vars_not_in_by), collapse = ", "), " exists in both data sets")
-  }
-  result <- left_join(data1, data2, by = by, ...)
-
-  if (nrow(result) > nrow(data1)){
-    warning("Data set 2 does not have unique rows. Number of rows increased from ", 
-            nrow(data1), " to ", nrow(result))
-  }
-  
-  vars_added <-   names(data2)[!names(data2) %in% names(data1)]
-  
-  if (print_vars){
-    cat("Variables before join: \n")
-    paste(sQuote(names(data1), q = FALSE), collapse = ", ") %>% cat()
-    cat("\n\nVariables used to join: \n")
-    paste(sQuote(by, q = FALSE), collapse = ", ") %>% cat()
-    cat("\n\nVariables added: \n")
-    paste(sQuote(vars_added, q = FALSE), collapse = ", ") %>% cat()
-    cat("\n")
-    
-  }
-  
-  result
-  
-  }
-```
 
 
 ## 2. Data
@@ -440,10 +400,24 @@ dat_4 <- left_join2(dat_3,
 ## 'station_code', 'station_name', 'latitude', 'longitude', 'altitude', 'continent', 'country', 'region', 'group', 'catchment_area', 'urban', 'cultivated', 'total_forest', 'coniferous', 'total_shrub_herbaceous', 'grasslands', 'heathlands', 'transitional_woodland_shrub', 'wetland', 'other', 'bare_sparse', 'decid_mixed', 'lake_water'
 ```
 
+### Drop locations with >10% cultivated    
+
+```r
+dat_5 <- dat_4 %>%
+  filter(cultivated <= 10)
+
+cat(nrow(dat_4) - nrow(dat_5), "stations with > 10% cultivated deleted \n")
+```
+
+```
+## 27 stations with > 10% cultivated deleted
+```
+
+
 ### Data set used  
 
 ```r
-dat <- dat_4
+dat <- dat_5
 ```
 
 
@@ -550,45 +524,44 @@ cat("Analysis: n =", nrow(df_analysis), "\n")
 ## -------------------------------------------------------------
 ## Number of missing values per variable: 
 ##            no3_decline         catchment_area                    TOC      slope_dep_vs_time 
-##                      0                     77                     33                      0 
+##                      0                     73                     29                      0 
 ##                    NO3               TOTN_dep               latitude              longitude 
 ##                      0                      0                      0                      0 
 ##               altitude                    pre                    tmp              Slope_pre 
-##                      1                      0                      0                      0 
+##                      0                      0                      0                      0 
 ##              Slope_tmp                  urban             cultivated           total_forest 
-##                      0                     16                     16                     16 
+##                      0                      0                      0                      0 
 ## total_shrub_herbaceous                wetland             lake_water            bare_sparse 
-##                     16                     16                     16                     16 
+##                      0                      0                      0                      0 
 ## 
 ## Number of complete observations: 
 ## complete
 ## FALSE  TRUE 
-##   123   375 
+##   102   369 
 ## 
 ## 
 ## Number of complete observations by country: 
 ##                 complete
 ##                  FALSE TRUE
-##   Canada             0  114
+##   Canada             0  112
 ##   Czech Republic     1    7
-##   Estonia            1    0
 ##   Finland            0   26
-##   Germany            5   18
+##   Germany            5   16
 ##   Ireland            3    0
 ##   Italy              6    0
-##   Latvia             3    0
+##   Latvia             1    0
 ##   Netherlands        1    2
-##   Norway             0   83
+##   Norway             0   82
 ##   Poland             0    6
 ##   Slovakia           0   12
-##   Sweden             6   86
+##   Sweden             6   85
 ##   Switzerland        6    0
 ##   United Kingdom     0   21
-##   United States     91    0
+##   United States     73    0
 ## 
 ## 
-## Original data: n = 498 
-## Analysis: n = 375
+## Original data: n = 471 
+## Analysis: n = 369
 ```
 
 
@@ -664,33 +637,31 @@ table(tr.pred[,"P1"] > 0.5, valid_set$no3_decline_f)
 ## 
 ## Fitted party:
 ## [1] root
-## |   [2] altitude <= 227
-## |   |   [3] NO3 <= 63.5
-## |   |   |   [4] tmp <= 1.05: 1 (n = 8, err = 37.5%)
-## |   |   |   [5] tmp > 1.05: 0 (n = 126, err = 7.9%)
-## |   |   [6] NO3 > 63.5: 1 (n = 33, err = 48.5%)
-## |   [7] altitude > 227
-## |   |   [8] bare_sparse <= 23.181
-## |   |   |   [9] slope_dep_vs_time <= -12.33988: 1 (n = 84, err = 35.7%)
-## |   |   |   [10] slope_dep_vs_time > -12.33988: 0 (n = 62, err = 30.6%)
-## |   |   [11] bare_sparse > 23.181: 1 (n = 28, err = 3.6%)
+## |   [2] total_forest <= 48.614: 1 (n = 87, err = 29.9%)
+## |   [3] total_forest > 48.614
+## |   |   [4] slope_dep_vs_time <= -14.82276
+## |   |   |   [5] pre <= 903.39996: 0 (n = 96, err = 31.2%)
+## |   |   |   [6] pre > 903.39996: 1 (n = 32, err = 25.0%)
+## |   |   [7] slope_dep_vs_time > -14.82276
+## |   |   |   [8] tmp <= 2.375: 0 (n = 20, err = 45.0%)
+## |   |   |   [9] tmp > 2.375: 0 (n = 100, err = 6.0%)
 ## 
-## Number of inner nodes:    5
-## Number of terminal nodes: 6
+## Number of inner nodes:    4
+## Number of terminal nodes: 5
 ## 
 ## 
 ## Table of prediction errors 
 ##    
 ##       0   1
-##   0 159  29
-##   1  50 103
+##   0 171  45
+##   1  34  85
 ## 
 ## 
 ## Classification of training set 
 ##        
 ##          0  1
-##   FALSE 11  5
-##   TRUE   7 11
+##   FALSE 16  7
+##   TRUE   3  8
 ```
 
 ### b. Evtree (Evolutionary Learning)   
@@ -715,18 +686,20 @@ cat("\n\nPrediction errors in training data: \n")
 ## Predicted in training data: 
 ##    
 ##       0   1
-##   0 184  25
-##   1  25 107
+##   0 172  26
+##   1  33 104
 ## 
 ## 
 ## Prediction errors in training data: 
-## [1] 0.1466276
+## [1] 0.1761194
 ```
 
 
 ### c. Random forest  
 * *For results/interpretation, see separate document '160_randomforest_James_data.html'*  
-* Model called 'model1'
+
+
+#### c1a. Predict on training data
 
 ```r
 model1 <- randomForest(no3_decline_f ~ ., 
@@ -734,28 +707,6 @@ model1 <- randomForest(no3_decline_f ~ .,
                        mtry = 5,
                        importance = TRUE)
 
-model1
-```
-
-```
-## 
-## Call:
-##  randomForest(formula = no3_decline_f ~ ., data = train_set, mtry = 5,      importance = TRUE) 
-##                Type of random forest: classification
-##                      Number of trees: 500
-## No. of variables tried at each split: 5
-## 
-##         OOB estimate of  error rate: 22.87%
-## Confusion matrix:
-##     0  1 class.error
-## 0 173 36   0.1722488
-## 1  42 90   0.3181818
-```
-
-
-#### c1. Predict on training data
-
-```r
 # Predicting on train set
 pred_valid <- predict(model1, valid_set, type = "class")
 # Checking classification accuracy
@@ -770,9 +721,41 @@ cat("Error rate for training data:", round(error_fraction*100, 1), "%\n")
 ```
 ##           
 ## pred_valid  0  1
-##          0 15  7
-##          1  3  9
-## Error rate for training data: 29.4 %
+##          0 15  3
+##          1  4 12
+## Error rate for training data: 20.6 %
+```
+
+#### c1b. Model for all data    
+
+```r
+full_set <- df_analysis  %>% 
+  mutate(no3_decline_f = factor(no3_decline)) %>% 
+  select(-no3_decline, -longitude, - latitude) %>%
+  as.data.frame()
+
+model1 <- randomForest(no3_decline_f ~ ., 
+                       data = full_set, 
+                       mtry = 5,
+                       importance = TRUE)
+
+# Predicting on train set
+pred_valid <- predict(model1, valid_set, type = "class")
+# Checking classification accuracy
+table(pred_valid, valid_set$no3_decline_f)  
+
+error_fraction <- mean(
+  (pred_valid == 0 & valid_set$no3_decline_f == 1) | 
+    (pred_valid == 1 & valid_set$no3_decline_f == 0))
+cat("Error rate for training data:", round(error_fraction*100, 1), "%\n")
+```
+
+```
+##           
+## pred_valid  0  1
+##          0 19  0
+##          1  0 15
+## Error rate for training data: 0 %
 ```
 
 #### c2. Importance of variables
@@ -792,7 +775,9 @@ plot_multi_way_importance(importance, size_measure = "no_of_nodes", no_of_labels
 ![](160a2_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-22-1.png)<!-- -->
 
 ```r
-plot_multi_way_importance(importance, x_measure = "accuracy_decrease", y_measure = "gini_decrease", 
+plot_multi_way_importance(importance, 
+                          x_measure = "accuracy_decrease", 
+                          y_measure = "gini_decrease", 
                           size_measure = "p_value", no_of_labels = 12)
 ```
 
@@ -841,7 +826,7 @@ plotpairs <- params$extra_pairwise_plots %>%
 
 for (plotvar in plotpairs){
   # print(plotvar)
-  if (plotvar[1] %in% names(train_set) & plotvar[2] %in% names(train_set)){
+  if (plotvar[1] %in% names(full_set) & plotvar[2] %in% names(full_set)){
     i <- i + 1
     plotdata[[i]] <- model1 %>%
       partial(pred.var = c(plotvar[1], plotvar[2]), chull = TRUE, progress = "text",
@@ -850,36 +835,6 @@ for (plotvar in plotpairs){
 }
 ```
 
-
-
-```r
-plot_pair_number <- function(i, zrange = NULL){
-  
-  variable_x <- rlang::sym(names(plotdata[[i]])[1])
-  variable_y <- rlang::sym(names(plotdata[[i]])[2])
-  
-  gg <- ggplot(plotdata[[i]], aes(!!variable_x, !!variable_y)) +
-    geom_tile(aes(fill = yhat)) +
-    geom_contour(aes(z = yhat), color = "white") +
-    geom_point(data = valid_set, shape = 21, size = 2, colour = "white", bg = "red") +
-    theme_bw()
-  
-  if (is.null(zrange)){
-    gg + scale_fill_viridis_c("Probability\nNO3 decline")
-  } else {
-    gg + scale_fill_viridis_c("Probability\nNO3 decline", limits = zrange)
-  }
-
-}
-```
-
-
-
-```r
-plot_pair_number(1)
-```
-
-![](160a2_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-24-1.png)<!-- -->
 
 ```r
 # Find range of predicted values for each graph
@@ -915,7 +870,7 @@ for (i in 1:length(plotdata)){
 }
 ```
 
-![](160a2_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-25-1.png)<!-- -->![](160a2_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-25-2.png)<!-- -->![](160a2_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-25-3.png)<!-- -->![](160a2_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-25-4.png)<!-- -->![](160a2_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-25-5.png)<!-- -->![](160a2_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-25-6.png)<!-- -->![](160a2_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-25-7.png)<!-- -->![](160a2_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-25-8.png)<!-- -->
+![](160a2_Time_series_results_James_allvars_files/figure-html/5c3_plot_partial_effects2-1.png)<!-- -->![](160a2_Time_series_results_James_allvars_files/figure-html/5c3_plot_partial_effects2-2.png)<!-- -->![](160a2_Time_series_results_James_allvars_files/figure-html/5c3_plot_partial_effects2-3.png)<!-- -->![](160a2_Time_series_results_James_allvars_files/figure-html/5c3_plot_partial_effects2-4.png)<!-- -->![](160a2_Time_series_results_James_allvars_files/figure-html/5c3_plot_partial_effects2-5.png)<!-- -->![](160a2_Time_series_results_James_allvars_files/figure-html/5c3_plot_partial_effects2-6.png)<!-- -->![](160a2_Time_series_results_James_allvars_files/figure-html/5c3_plot_partial_effects2-7.png)<!-- -->![](160a2_Time_series_results_James_allvars_files/figure-html/5c3_plot_partial_effects2-8.png)<!-- -->
 
 
 
@@ -964,24 +919,20 @@ subset(dredged_models, delta < 2)
 ##     data = df_analysis, na.action = "na.fail")
 ## ---
 ## Model selection table 
-##         (Int)      alt   ctc_are  lak_wtr slp_dep_vs_tim     tmp     TOC   ttl_frs   TOT_dep
-## 888   0.44630 0.001238 -0.002794 -0.03324       -0.08667 -0.1124 -0.1838           -0.001656
-## 856   0.10600 0.001430 -0.002320 -0.03084       -0.09025         -0.1913           -0.002224
-## 854  -0.02056 0.001478           -0.02840       -0.08923         -0.1917           -0.002147
-## 886   0.29080 0.001296           -0.03045       -0.08559 -0.1062 -0.1847           -0.001598
-## 1016  0.57010 0.001203 -0.002845 -0.03604       -0.09602 -0.1222 -0.1733 -0.003759 -0.001817
-## 1014  0.41530 0.001262           -0.03323       -0.09487 -0.1166 -0.1743 -0.003741 -0.001755
-## 982   0.03823 0.001469           -0.03004       -0.09624         -0.1849 -0.002611 -0.002298
-## 984   0.16500 0.001421 -0.002334 -0.03249       -0.09730         -0.1843 -0.002629 -0.002375
+##       (Int)       alt   ctc_are  lak_wtr slp_dep_vs_tim     tmp      TOC  ttl_frs   TOT_dep
+## 1016 1.3980 0.0011120 -0.003923 -0.03976       -0.08747 -0.1532 -0.09622 -0.01992 -0.001457
+## 1014 1.1960 0.0011840           -0.03621       -0.08641 -0.1436 -0.09760 -0.01976 -0.001403
+## 760  1.3920 0.0009171 -0.003873 -0.03772       -0.05771 -0.2365 -0.08006 -0.02063          
+## 984  0.8477 0.0013940 -0.002822 -0.03507       -0.09250         -0.10940 -0.01885 -0.002222
+## 982  0.7079 0.0014460           -0.03243       -0.09151         -0.10990 -0.01880 -0.002144
+## 758  1.1980 0.0009877           -0.03418       -0.05811 -0.2251 -0.08191 -0.02049          
 ##          wtl df   logLik  AICc delta weight
-## 888  0.07188  9 -195.567 409.6  0.00  0.181
-## 856  0.07531  8 -196.675 409.7  0.12  0.170
-## 854  0.07632  7 -197.724 409.8  0.13  0.170
-## 886  0.07296  8 -196.715 409.8  0.20  0.164
-## 1016 0.07103 10 -195.203 411.0  1.38  0.090
-## 1014 0.07221  9 -196.353 411.2  1.57  0.082
-## 982  0.07597  8 -197.545 411.5  1.86  0.071
-## 984  0.07488  9 -196.496 411.5  1.86  0.071
+## 1016 0.05516 10 -184.763 390.1  0.00  0.283
+## 1014 0.05643  9 -186.074 390.6  0.51  0.220
+## 760  0.05832  9 -186.591 391.7  1.54  0.131
+## 984  0.06082  9 -186.605 391.7  1.57  0.129
+## 982  0.06194  8 -187.722 391.8  1.70  0.121
+## 758  0.05937  8 -187.757 391.9  1.77  0.117
 ## Models ranked by AICc(x)
 ```
 
@@ -1017,10 +968,10 @@ if (length(modelvars$additive_vars) > 0){
 }
 ```
 
-![](160a2_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-29-1.png)<!-- -->![](160a2_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-29-2.png)<!-- -->
+![](160a2_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-26-1.png)<!-- -->![](160a2_Time_series_results_James_allvars_files/figure-html/unnamed-chunk-26-2.png)<!-- -->
 
 ```
-## Percentage of deviance explained: 77.7 %
+## Percentage of deviance explained: 74.7 %
 ```
 
 
