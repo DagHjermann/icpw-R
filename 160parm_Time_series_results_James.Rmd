@@ -610,7 +610,7 @@ i <- max_number_of_plots
 
 plotpairs <- params$extra_pairwise_plots %>%
   gsub(" ", "", ., fixed = TRUE) %>%
-  strsplit(x, split = ";") %>%
+  strsplit(split = ";") %>%
   .[[1]] %>%
   purrr::map(~strsplit(., split = ",")[[1]])
 
