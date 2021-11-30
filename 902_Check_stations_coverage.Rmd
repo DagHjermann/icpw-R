@@ -1,0 +1,215 @@
+---
+title: "901_Check_medians_coverage"
+output: html_document
+---
+
+
+```{r}
+
+library(tidyverse)
+library(janitor)
+
+source("002_Functions.R")
+
+knitr::opts_chunk$set(results = 'hold') # collect the results from a chunk  
+
+
+```
+
+## Metadata  
+```{r}
+# df_landcover3_OLD <- readRDS("Data/159_df_landcover3.rds")
+df_landcover <- readRDS("Data/159_df_meta3.rds")
+
+df_landcover <- df_landcover %>%
+  mutate(bare_sparse = bare_rock + sparsely_vegetated + glacier,
+         decid_mixed = deciduous + mixed_forest,
+         lake_water = lake + water_ex_lake) %>%
+  select(-c(bare_rock, sparsely_vegetated, glacier, deciduous, mixed_forest, lake, water_ex_lake))
+
+```
+
+
+
+### 1. 1992-2016
+```{r}
+
+folder <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/trends_1992-2016_toc_totn_no3_relax_italy"
+file <- "trends_1992-2016_toc_totn_no3_relax_italy_results.csv"
+fn <- paste0(folder, "/", file)
+
+df1 <- read.csv(fn, encoding = "UTF-8")
+cat("Regression slopes and medians from:", sQuote(file), ",n =", nrow(df1), "\n\n")
+
+# count(df1, station_id) %>% nrow()
+
+#
+# Summarize by station
+#
+df1_stations <- df1 %>%
+  filter(variable %in% c("TOC_mg C/l", "TON_µg/l N")) %>%
+  select(station_id, variable, median) %>%
+  tidyr::pivot_wider(names_from = "variable", values_from = "median") %>%
+  left_join2(df_landcover, 
+                   by = "station_id", 
+                   print_vars = TRUE)
+
+
+```
+
+### 2. 2000-2016
+```{r}
+
+folder <- "https://raw.githubusercontent.com/JamesSample/icpw2/master/thematic_report_2020/results/trends_2000-2016_totn_no3"
+file <- "trends_2000-2016_totn_no3_results.csv"
+fn <- paste0(folder, "/", file)
+
+df2 <- read.csv(fn, encoding = "UTF-8")
+cat("Regression slopes and medians from:", sQuote(file), ",n =", nrow(df2), "\n\n")
+
+# count(df2, station_id) %>% nrow()
+
+#
+# Summarize by station
+#
+df2_stations <- df2 %>%
+  filter(variable %in% c("TOC_mg C/l", "TON_µg/l N")) %>%
+  select(station_id, variable, median) %>%
+  tidyr::pivot_wider(names_from = "variable", values_from = "median") %>%
+  left_join2(df_landcover, 
+                   by = "station_id", 
+                   print_vars = TRUE)
+
+```
+### Combine  
+```{r}
+
+df12_stations <- 
+  bind_rows(
+    df1_stations %>% mutate(Years = "1992-2016"),
+    df2_stations %>% mutate(Years = "2000-2016")
+  )
+
+
+```
+
+### Comparison countries, more cultivated accepted   
+
+```{r, echo=FALSE}
+
+percent_cultivated_max <- 10
+
+```
+
+Max percent cultivated: `r percent_cultivated_max`   
+Stations omitted: 23517, 38273  
+
+```{r, echo=FALSE}
+
+df12_stations_sel <- df12_stations %>%
+  filter(!station_id %in% c(23517, 38273)) %>%
+  filter(cultivated < percent_cultivated_max)
+
+cat("\n------------------------------------------------\n")
+cat("All data\n")
+cat("------------------------------------------------\n")
+
+df12_stations_sel %>%
+  tabyl(country, Years) %>% 
+  adorn_totals()
+
+cat("\n------------------------------------------------\n")
+cat("All data with catchment_area\n")
+cat("------------------------------------------------\n")
+
+df12_stations_sel %>%
+  filter(!is.na(catchment_area)) %>%
+  tabyl(country, Years) %>% 
+  adorn_totals()
+
+
+cat("\n------------------------------------------------\n")
+cat("All data with TOC\n")
+cat("------------------------------------------------\n")
+
+df12_stations_sel %>%
+  filter(!is.na(`TOC_mg C/l`)) %>%
+  tabyl(country, Years) %>% 
+  adorn_totals()
+
+
+cat("\n------------------------------------------------\n")
+cat("All data with catchment_area and TOC\n")
+cat("------------------------------------------------\n")
+
+df12_stations_sel %>%
+  filter(!is.na(catchment_area)) %>%
+  filter(!is.na(`TOC_mg C/l`)) %>%
+  tabyl(country, Years) %>% 
+  adorn_totals()
+
+
+```
+
+
+### Comparison countries, less cultivated accepted   
+
+```{r, echo=FALSE}
+
+percent_cultivated_max <- 5
+
+```
+
+Max percent cultivated: `r percent_cultivated_max`   
+Stations omitted: 23517, 38273  
+
+```{r, echo=FALSE}
+
+df12_stations_sel <- df12_stations %>%
+  filter(!station_id %in% c(23517, 38273)) %>%
+  filter(cultivated < percent_cultivated_max)
+
+cat("\n------------------------------------------------\n")
+cat("All data\n")
+cat("------------------------------------------------\n")
+
+df12_stations_sel %>%
+  tabyl(country, Years) %>% 
+  adorn_totals()
+
+cat("\n------------------------------------------------\n")
+cat("All data with catchment_area\n")
+cat("------------------------------------------------\n")
+
+df12_stations_sel %>%
+  filter(!is.na(catchment_area)) %>%
+  tabyl(country, Years) %>% 
+  adorn_totals()
+
+
+cat("\n------------------------------------------------\n")
+cat("All data with TOC\n")
+cat("------------------------------------------------\n")
+
+df12_stations_sel %>%
+  filter(!is.na(`TOC_mg C/l`)) %>%
+  tabyl(country, Years) %>% 
+  adorn_totals()
+
+
+cat("\n------------------------------------------------\n")
+cat("All data with catchment_area and TOC\n")
+cat("------------------------------------------------\n")
+
+df12_stations_sel %>%
+  filter(!is.na(catchment_area)) %>%
+  filter(!is.na(`TOC_mg C/l`)) %>%
+  tabyl(country, Years) %>% 
+  adorn_totals()
+
+
+```
+
+
+
+
