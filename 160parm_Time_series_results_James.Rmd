@@ -390,7 +390,9 @@ get_df_no3_decline <- function(data, variable_string){
         slope_no3_vs_time < 0 & p_no3_vs_time <= 0.05 ~ 1,
         TRUE ~ 0)
     )
-  df[variables]
+  # Variables that will be included in excel output (removed afterwards)
+  id_vars <- c("station_id", "station_code", "station_name", "country", "region", "continent")
+  df[c(id_vars, variables)]
 }
 
 cat("-------------------------------------------------------------\n")
@@ -423,6 +425,14 @@ table(dat$country, complete)
 
 # Keep only complete cases
 df_analysis <- df_analysis[complete.cases(df_analysis),]
+
+# Save to excel
+fn <- paste0(substr(params$document_title, 1, 5), "_data.xlsx")
+writexl::write_xlsx(df_analysis, paste0("Data_analysed/", fn))
+
+# Remove variables defined as 'id_vars' in function above
+df_analysis <- df_analysis %>%
+  select(-station_id, -station_code, -station_name, -country, -region, -continent)
 
 cat("\n\n")
 cat("Original data: n =", nrow(dat), "\n")

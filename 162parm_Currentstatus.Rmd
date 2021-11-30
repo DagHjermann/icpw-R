@@ -371,7 +371,9 @@ get_data_for_analysis <- function(data, variable_string){
       paste(variables[!found], collapse = " ,"), 
       "\n")
   # Data for analyses
-  data[variables]
+  # Variables that will be included in excel output (removed afterwards)
+  id_vars <- c("station_id", "station_code", "station_name", "country", "region", "continent")
+  data[c(id_vars, variables)]
 }
 
 cat("-------------------------------------------------------------\n")
@@ -410,6 +412,14 @@ table(dat$country, complete)
 
 # Keep only complete cases
 df_analysis <- df_analysis[complete.cases(df_analysis),]
+
+# Save to excel
+fn <- paste0(substr(params$document_title, 1, 5), "_data.xlsx")
+writexl::write_xlsx(df_analysis, paste0("Data_analysed/", fn))
+
+# Remove variables defined as 'id_vars' in function above
+df_analysis <- df_analysis %>%
+  select(-station_id, -station_code, -station_name, -country, -region, -continent)
 
 cat("\n\n")
 cat("Original data: n =", nrow(dat), "\n")
