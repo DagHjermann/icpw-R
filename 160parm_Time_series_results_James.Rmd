@@ -322,13 +322,17 @@ dat_4 <- left_join2(dat_3,
 
 ```
 
-### Drop locations with >10% cultivated    
+### Drop locations with >5% cultivated     
+- also excluding stations 23517, 38273  
 ```{r}
 
-dat_5 <- dat_4 %>%
-  filter(cultivated <= 10)
+cultivated_threshold <- 5
 
-cat(nrow(dat_4) - nrow(dat_5), "stations with > 10% cultivated deleted \n")
+dat_5 <- dat_4 %>%
+  filter(cultivated <= cultivated_threshold) %>%
+  filter(!station_id %in% c(23517, 38273)) 
+
+cat(nrow(dat_4) - nrow(dat_5), "stations with >",  cultivated_threshold, "% cultivated deleted \n")
 
 ```
 
