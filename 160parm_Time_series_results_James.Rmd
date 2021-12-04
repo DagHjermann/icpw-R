@@ -404,8 +404,9 @@ get_df_no3_decline <- function(data, variable_string){
         TRUE ~ 0)
     )
   # Variables that will be included in excel output (removed afterwards)
-  id_vars <- c("station_id", "station_code", "station_name", "country", "region", "continent")
-  df[c(id_vars, variables)]
+  vars_for_excel <- c("slope_no3_vs_time", "station_id", "station_code", 
+                      "station_name", "country", "region", "continent")
+  df[c(vars_for_excel, variables)]
 }
 
 cat("-------------------------------------------------------------\n")
@@ -417,7 +418,7 @@ df_analysis_allrows <- get_df_no3_decline(dat, params$selected_vars)
 
 # Save to excel
 fn <- paste0(substr(params$document_title, 1, 3), "_data.xlsx")
-writexl::write_xlsx(df_analysis, paste0("Data_analysed/", fn))
+writexl::write_xlsx(df_analysis_allrows, paste0("Data_analysed/", fn))
 cat("\nDataset after removing urban and cultivated saved as", sQuote(fn), "\n\n")
 
 # names(dat) %>% paste(collapse = ", ")
@@ -448,9 +449,9 @@ df_analysis <- df_analysis_allrows[complete.cases(df_analysis_allrows),]
 fn <- paste0(substr(params$document_title, 1, 5), "_data.xlsx")
 writexl::write_xlsx(df_analysis, paste0("Data_analysed/", fn))
 
-# Remove variables defined as 'id_vars' in function above
-df_analysis <- df_analysis %>%
-  select(-station_id, -station_code, -station_name, -country, -region, -continent)
+# Remove variables defined as 'vars_for_excel' in function above
+sel <- names(df_analysis) %in% vars_for_excel
+df_analysis <- df_analysis[!sel]
 
 cat("\n\n")
 cat("Data before removing missing predictors: n =", nrow(df_analysis_allrows), "\n")
