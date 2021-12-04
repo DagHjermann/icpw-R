@@ -361,7 +361,8 @@ dat %>%
 
 ### a. Select variables  
 * Select variables to use, and thereby also cases   
-* Also, 'AtlCan' data are excluded  
+* Also, 'AtlCan' data are excluded   
+* Saves data both before and after rows with removing missing predictors are removed
 ```{r}
 
 get_df_tocton_decrease <- function(data, variable_string){
@@ -394,8 +395,8 @@ df_analysis_allrows <- get_df_tocton_decrease(dat_filtered, params$selected_vars
 
 # Save to excel
 fn <- paste0(substr(params$document_title, 1, 3), "_data.xlsx")
-writexl::write_xlsx(df_analysis_allrows, fn)
-cat("Dataset after removing urban, cultivated, AtlCan and Italy saved as", sQuote(fn), "\n\n")
+writexl::write_xlsx(df_analysis, paste0("Data_analysed/", fn))
+cat("\nDataset after removing urban, cultivated, AtlCan and Italy saved as", sQuote(fn), "\n\n")
 
 
 # table(df_analysis_allrows$tocton_decrease)
@@ -424,7 +425,7 @@ table(df_analysis_allrows$country, complete)
 # Keep only complete cases
 df_analysis <- df_analysis_allrows[complete.cases(df_analysis_allrows),]
 
-# Save to excel
+# Save to excel 
 fn <- paste0(substr(params$document_title, 1, 5), "_data.xlsx")
 writexl::write_xlsx(df_analysis, paste0("Data_analysed/", fn))
 
