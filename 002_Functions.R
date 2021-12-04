@@ -39,9 +39,27 @@ left_join2 <- function(data1, data2, by = by, ..., print_vars = FALSE){
   
 }
 
+#
+# As dplyr::filter, but more talkative
+# - see exmples
+#
 
+filter2 <- function(.data, ..., text = NULL, print_output = TRUE){
+  result <- filter(.data, ...)
+  if (print_output)
+    cat("Removed", nrow(.data)-nrow(result), "rows")
+  if (!is.null(text))
+    cat(" (", text, ")", sep = "")
+  cat("\n")
+  result
+}
 
-
+if (FALSE){
+  iris2 <- iris %>% filter2(Species == "setosa")
+  # Removed 100 rows
+  iris2 <- iris %>% filter2(Species == "setosa", text = "keeps 'setosa' only")
+  # Removed 100 rows (keeps 'setosa' only)
+}
 
 get_data_no3trend <- function(print_steps = FALSE, data_folder = "Data") {
   
