@@ -22,7 +22,7 @@ vars <- paste(
   "no3_decline", 
   "catchment_area, TOC",     # change here
   "slope_dep_vs_time, NO3, TOTN_dep, latitude, longitude, altitude",
-  "pre, tmp, Slope_pre, Slope_tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous",
+  "pre, tmp, slope_pre, slope_tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous",
   "wetland, lake_water, bare_sparse",
   sep = ",")    # remember this
 
@@ -63,7 +63,7 @@ vars <- paste(
   "no3_decline", 
   "catchment_area, TOC",     # change here
   "slope_dep_vs_time, NO3, TOTN_dep, latitude, longitude, altitude",
-  "pre, tmp, Slope_pre, Slope_tmp, urban, cultivated, total_forest, total_shrub_herbaceous",
+  "pre, tmp, slope_pre, slope_tmp, urban, cultivated, total_forest, total_shrub_herbaceous",
   "wetland, lake_water, bare_sparse",
   sep = ",")    # remember this
 
@@ -104,7 +104,7 @@ vars <- paste(
   "no3_decline", 
   "TOC",                                # change here
   "slope_dep_vs_time, NO3, TOTN_dep, latitude, longitude, altitude",
-  "pre, tmp, Slope_pre, Slope_tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous",
+  "pre, tmp, slope_pre, slope_tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous",
   "wetland, lake_water, bare_sparse",
   sep = ",")    # remember this
 vars
@@ -148,7 +148,7 @@ vars <- paste(
   "no3_decline", 
   "TOC",                                # change here
   "slope_dep_vs_time, NO3, TOTN_dep, latitude, longitude, altitude",
-  "pre, tmp, Slope_pre, Slope_tmp, urban, cultivated, total_forest, total_shrub_herbaceous",
+  "pre, tmp, slope_pre, slope_tmp, urban, cultivated, total_forest, total_shrub_herbaceous",
   "wetland, lake_water, bare_sparse",
   sep = ",")    # remember this
 vars
@@ -192,7 +192,7 @@ vars <- paste(
   "no3_decline", 
                                   # change here
   "slope_dep_vs_time, NO3, TOTN_dep, latitude, longitude, altitude",
-  "pre, tmp, Slope_pre, Slope_tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous",
+  "pre, tmp, slope_pre, slope_tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous",
   "wetland, lake_water, bare_sparse",
   sep = ",")    # remember this
 
@@ -232,7 +232,7 @@ vars <- paste(
   "no3_decline", 
   # change here
   "slope_dep_vs_time, NO3, TOTN_dep, latitude, longitude, altitude",
-  "pre, tmp, Slope_pre, Slope_tmp, urban, cultivated, total_forest, total_shrub_herbaceous",
+  "pre, tmp, slope_pre, slope_tmp, urban, cultivated, total_forest, total_shrub_herbaceous",
   "wetland, lake_water, bare_sparse",
   sep = ",")    # remember this
 
@@ -273,7 +273,7 @@ vars <- paste(
   "no3_decline", 
   "TOC",                                
   "slope_dep_vs_time, NO3, TOTN_dep, latitude, longitude",   # altitude removed
-  "pre, tmp, Slope_pre, Slope_tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous",
+  "pre, tmp, slope_pre, slope_tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous",
   "wetland, lake_water, bare_sparse",
   sep = ",")    # remember this
 vars
@@ -318,7 +318,7 @@ vars <- paste(
   "no3_decline", 
   "TOC",                                
   "slope_dep_vs_time, NO3, TOTN_dep, latitude, longitude",   # altitude removed
-  "pre, tmp, Slope_pre, Slope_tmp, urban, cultivated, total_forest, total_shrub_herbaceous",
+  "pre, tmp, slope_pre, slope_tmp, urban, cultivated, total_forest, total_shrub_herbaceous",
   "wetland, lake_water, bare_sparse",
   sep = ",")    # remember this
 vars
