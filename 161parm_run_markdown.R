@@ -30,6 +30,7 @@
 vars <- paste(
   "tocton_decrease", 
   "catchment_area, TOC, TON",     # change here
+  "slope_pre, slope_tmp", 
   "slope_toc_vs_time, slope_ton_vs_time, slope_dep_vs_time, TOTN_dep, latitude, longitude, altitude",
   "pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous",
   "wetland, lake_water, bare_sparse",
@@ -40,6 +41,7 @@ vars <- paste(
 form <- paste(
   "tocton_decrease ~ catchment_area + TOC + TON +",                # change here
   "slope_toc_vs_time + slope_ton_vs_time + slope_dep_vs_time +",
+  "slope_pre + slope_tmp +",
   "altitude + decid_mixed + slope_dep_vs_time +", 
   "TOTN_dep + coniferous +",
   "tmp + lake_water + wetland"
@@ -74,6 +76,7 @@ rmarkdown::render(
 vars <- paste(
   "tocton_decrease", 
   "catchment_area, TOC, TON",     # change here
+  "slope_pre, slope_tmp", 
   "slope_dep_vs_time, TOTN_dep, latitude, longitude, altitude",
   "pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous",
   "wetland, lake_water, bare_sparse",
@@ -84,6 +87,7 @@ vars <- paste(
 form <- paste(
   "tocton_decrease ~ catchment_area + TOC + TON +",                # change here
   "slope_dep_vs_time +",
+  "slope_pre + slope_tmp +",
   "altitude + decid_mixed + slope_dep_vs_time +", 
   "TOTN_dep + coniferous +",
   "tmp + lake_water + wetland"
@@ -110,19 +114,63 @@ rmarkdown::render(
 
 #o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
 #
-# 161c1 - Also exclude 'catchment_area' + TOC  ----
-#   (in additon to excluding slope_toc_vs_time + slope_ton_vs_time)
-# Because I thought that it would include the Italian data, but it didn't  
+# 161c1 - Without TOC and TON ----
+#   as a1 but without TOC and TON
 #
 #o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
-
 
 # If many parameters, split up the lines with a 'paste()'  
 # Remember to set that the parts should be joined using a comma (sep = ",") 
 #   (or let each part end with a comma)
 vars <- paste(
   "tocton_decrease", 
-  "TON",     # change here
+  "catchment_area",     # change here
+  "slope_pre, slope_tmp", 
+  "slope_toc_vs_time, slope_ton_vs_time, slope_dep_vs_time, TOTN_dep, latitude, longitude, altitude",
+  "pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous",
+  "wetland, lake_water, bare_sparse",
+  sep = ",")    # remember this
+
+# If long formula, split up the lines with a 'paste()'  
+# Remember to end each line with '+', or use sep = "+"  
+form <- paste(
+  "tocton_decrease ~ catchment_area +",                    # change here
+  "slope_toc_vs_time + slope_ton_vs_time + slope_dep_vs_time +",
+  "slope_pre + slope_tmp +",
+  "altitude + decid_mixed + slope_dep_vs_time +", 
+  "TOTN_dep + coniferous +",
+  "tmp + lake_water + wetland"
+)
+
+# To find file names used:
+# dir(pattern = "161*")
+
+# Render HTML and .md files  
+rmarkdown::render(
+  input = '161parm_Time_series_tocton.Rmd',                                      # always the same         
+  output_file = '161c1_Time_series_tocton_without_2vars.html',                          # change here
+  params = list(
+    document_title = "161c1 Analyse TOC/TON decrease - w/o TOC, TON",            # change here
+    text_dataset = "Dataset: all variables (including catchment area)",          # change here
+    selected_vars = vars,
+    logistic_formula = form)
+)
+
+
+#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
+#
+# 161d1 - Without TOC, TON, slope_toc_vs_time and slope_ton_vs_time ----
+#   as a1 but without TOC, TON, slope_toc_vs_time and slope_ton_vs_time
+#
+#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
+
+# If many parameters, split up the lines with a 'paste()'  
+# Remember to set that the parts should be joined using a comma (sep = ",") 
+#   (or let each part end with a comma)
+vars <- paste(
+  "tocton_decrease", 
+  "catchment_area",     # change here
+  "slope_pre, slope_tmp", 
   "slope_dep_vs_time, TOTN_dep, latitude, longitude, altitude",
   "pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous",
   "wetland, lake_water, bare_sparse",
@@ -131,24 +179,24 @@ vars <- paste(
 # If long formula, split up the lines with a 'paste()'  
 # Remember to end each line with '+', or use sep = "+"  
 form <- paste(
-  "tocton_decrease ~ TON +",                      # change here
+  "tocton_decrease ~ catchment_area +",                    # change here
   "slope_dep_vs_time +",
+  "slope_pre + slope_tmp +",
   "altitude + decid_mixed + slope_dep_vs_time +", 
   "TOTN_dep + coniferous +",
   "tmp + lake_water + wetland"
 )
-
 
 # To find file names used:
 # dir(pattern = "161*")
 
 # Render HTML and .md files  
 rmarkdown::render(
-  input = '161parm_Time_series_tocton.Rmd',                                          # always the same         
-  output_file = '161c1_Time_series_tocton_wo_slopes_catcharea.html',                            # change here
+  input = '161parm_Time_series_tocton.Rmd',                                      # always the same         
+  output_file = '161d1_Time_series_tocton_without_4vars.html',                          # change here
   params = list(
-    document_title = "161c1 Analyse TOC/TON decrease - without catchment area, TOC, and TOC + TON slopes",   # change here
-    text_dataset = "Dataset: all variables except without catchment area, TOC, and TOC and TON slopes",     # change here
+    document_title = "161d1 Analyse TOC/TON decrease - w/o TOC, TON, slope_toc_vs_time, slope_ton_vs_time",            # change here
+    text_dataset = "Dataset: all variables (including catchment area)",          # change here
     selected_vars = vars,
     logistic_formula = form)
 )
@@ -178,6 +226,7 @@ rmarkdown::render(
 vars <- paste(
   "tocton_decrease", 
   "catchment_area, TOC, TON",     # change here
+  "slope_pre, slope_tmp", 
   "slope_toc_vs_time, slope_ton_vs_time, slope_dep_vs_time, TOTN_dep, latitude, longitude, altitude",
   "pre, tmp, urban, cultivated, total_forest, total_shrub_herbaceous",
   "wetland, lake_water, bare_sparse",
@@ -188,6 +237,7 @@ vars <- paste(
 form <- paste(
   "tocton_decrease ~ catchment_area + TOC + TON +",                # change here
   "slope_toc_vs_time + slope_ton_vs_time + slope_dep_vs_time +",
+  "slope_pre + slope_tmp +",
   "altitude + total_forest + slope_dep_vs_time +", 
   "TOTN_dep +",
   "tmp + lake_water + wetland"
@@ -222,6 +272,7 @@ rmarkdown::render(
 vars <- paste(
   "tocton_decrease", 
   "catchment_area, TOC, TON",     # change here
+  "slope_pre, slope_tmp", 
   "slope_dep_vs_time, TOTN_dep, latitude, longitude, altitude",
   "pre, tmp, urban, cultivated, total_forest, total_shrub_herbaceous",
   "wetland, lake_water, bare_sparse",
@@ -232,6 +283,7 @@ vars <- paste(
 form <- paste(
   "tocton_decrease ~ catchment_area + TOC + TON +",                # change here
   "slope_dep_vs_time +",
+  "slope_pre + slope_tmp +",
   "altitude + total_forest + slope_dep_vs_time +", 
   "TOTN_dep +",
   "tmp + lake_water + wetland"
@@ -254,23 +306,65 @@ rmarkdown::render(
 
 
 
-
-
 #o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
 #
-# 161c2 - Also exclude 'catchment_area' + TOC  ----
-#   (in additon to excluding slope_toc_vs_time + slope_ton_vs_time)
-# Because I thought that it would include the Italian data, but it didn't  
+# 161c2 - Without TOC and TON ----
+#   as a1 but without TOC and TON
 #
 #o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
-
 
 # If many parameters, split up the lines with a 'paste()'  
 # Remember to set that the parts should be joined using a comma (sep = ",") 
 #   (or let each part end with a comma)
 vars <- paste(
   "tocton_decrease", 
-  "TON",     # change here
+  "catchment_area",     # change here
+  "slope_pre, slope_tmp", 
+  "slope_toc_vs_time, slope_ton_vs_time, slope_dep_vs_time, TOTN_dep, latitude, longitude, altitude",
+  "pre, tmp, urban, cultivated, total_forest, total_shrub_herbaceous",
+  "wetland, lake_water, bare_sparse",
+  sep = ",")    # remember this
+
+# If long formula, split up the lines with a 'paste()'  
+# Remember to end each line with '+', or use sep = "+"  
+form <- paste(
+  "tocton_decrease ~ catchment_area +",                    # change here
+  "slope_toc_vs_time + slope_ton_vs_time + slope_dep_vs_time +",
+  "slope_pre + slope_tmp +",
+  "altitude + total_forest + slope_dep_vs_time +", 
+  "TOTN_dep +",
+  "tmp + lake_water + wetland"
+)
+
+# To find file names used:
+# dir(pattern = "161*")
+
+# Render HTML and .md files  
+rmarkdown::render(
+  input = '161parm_Time_series_tocton.Rmd',                                      # always the same         
+  output_file = '161c2_Time_series_tocton_without_2vars.html',                          # change here
+  params = list(
+    document_title = "161c2 Analyse TOC/TON decrease - w/o TOC, TON",            # change here
+    text_dataset = "Dataset: all variables (including catchment area)",          # change here
+    selected_vars = vars,
+    logistic_formula = form)
+)
+
+
+#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
+#
+# 161d2 - Without TOC, TON, slope_toc_vs_time and slope_ton_vs_time ----
+#   as a1 but without TOC, TON, slope_toc_vs_time and slope_ton_vs_time
+#
+#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
+
+# If many parameters, split up the lines with a 'paste()'  
+# Remember to set that the parts should be joined using a comma (sep = ",") 
+#   (or let each part end with a comma)
+vars <- paste(
+  "tocton_decrease", 
+  "catchment_area",     # change here
+  "slope_pre, slope_tmp", 
   "slope_dep_vs_time, TOTN_dep, latitude, longitude, altitude",
   "pre, tmp, urban, cultivated, total_forest, total_shrub_herbaceous",
   "wetland, lake_water, bare_sparse",
@@ -279,31 +373,25 @@ vars <- paste(
 # If long formula, split up the lines with a 'paste()'  
 # Remember to end each line with '+', or use sep = "+"  
 form <- paste(
-  "tocton_decrease ~ TON +",                      # change here
+  "tocton_decrease ~ catchment_area +",                    # change here
   "slope_dep_vs_time +",
+  "slope_pre + slope_tmp +",
   "altitude + total_forest + slope_dep_vs_time +", 
   "TOTN_dep +",
   "tmp + lake_water + wetland"
 )
-
 
 # To find file names used:
 # dir(pattern = "161*")
 
 # Render HTML and .md files  
 rmarkdown::render(
-  input = '161parm_Time_series_tocton.Rmd',                                          # always the same         
-  output_file = '161c2_Time_series_tocton_wo_slopes_catcharea.html',                            # change here
+  input = '161parm_Time_series_tocton.Rmd',                                      # always the same         
+  output_file = '161d2_Time_series_tocton_without_4vars.html',                          # change here
   params = list(
-    document_title = "161c2 Analyse TOC/TON decrease - without catchment area, TOC, and TOC + TON slopes",   # change here
-    text_dataset = "Dataset: all variables except without catchment area, TOC, and TOC and TON slopes",     # change here
+    document_title = "161d2 Analyse TOC/TON decrease - w/o TOC, TON, slope_toc_vs_time, slope_ton_vs_time",            # change here
+    text_dataset = "Dataset: all variables (including catchment area)",          # change here
     selected_vars = vars,
     logistic_formula = form)
 )
 
-
-
-
-
-
-  
