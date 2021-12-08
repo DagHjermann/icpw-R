@@ -40,7 +40,7 @@ params:
 
 * Response variable: 'Current NO3 level' (locations with signif. *increase* are *not* excluded)  
 * Data from https://github.com/JamesSample/icpw2/tree/master/thematic_report_2020/results      
-* Sen slope of NO3, TOTN, TOC/TON etc. 1992-2016
+* Sen slope of NO3, TON, TOC/TON etc. 1992-2016
 * Response variable in all analyses are *whether NO3 decreases or not*     
 * Predictors:
     - slope_dep_vs_time: Trend in Tot-N deposition 1992-2016    
@@ -63,7 +63,7 @@ library(lubridate)
 library(ggplot2)
 
 # Too many packages, not all are used
-library(mapview)
+# library(mapview)
 library(visreg)     # visreg
 library(rkt)        # Theil -Sen Regression
 
@@ -82,6 +82,7 @@ my_map <- map_data("world")
 library(effects)    # handles lme models  
 library(readxl)
 library(readr)
+library(stringr)    # str_extract
 
 source("002_Functions.R")
 source("160parm_functions.R")
@@ -165,14 +166,14 @@ Using medians
 
 # Medians 2012-2016  
 df1 <- df_medians %>%
-  select(station_id, `NO3.N_µg.l.N`, `TOTN_µg.l.N`, `TON_µg.l.N`, `TOC_mg.C.l`, TOC.TON) %>%
+  select(station_id, `NO3.N_µg.l.N`, `TON_µg.l.N`, `TON_µg.l.N`, `TOC_mg.C.l`, TOC.TON) %>%
   rename(median_no3 = `NO3.N_µg.l.N`,
-         median_totn = `TOTN_µg.l.N`,
+         median_ton = `TON_µg.l.N`,
          median_ton = `TON_µg.l.N`,
          median_toc = `TOC_mg.C.l`,
          median_tocton = `TOC.TON`) %>%
   mutate(log_median_no3 = log10(median_no3 + 0.1),
-         log_median_totn = log10(median_totn),
+         log_median_ton = log10(median_ton),
          log_median_ton = log10(median_ton),
          log_median_toc = log10(median_toc),
          log_median_tocton = log10(median_tocton))
@@ -190,19 +191,40 @@ cat("\n")
 cat("df1, n =", nrow(df1), "\n")
 cat("df2, n =", nrow(df2), "\n")
 
-dat_1 <- df1 %>%
+dat_1_allrows <- df1 %>%
   left_join(df2, by = "station_id")
 
-cat("dat_1, n =", nrow(dat_1), "\n")
+response_var <- str_extract(params$tree_formula, "[^[[:blank:]]]+")
+
+cat("dat_1_allrows, n =", nrow(dat_1_allrows), 
+    " (may include series where", response_var,  "= NA)\n")
+
+sel <- !is.na(dat_1_allrows[[response_var]])
+
+dat_1 <- dat_1_allrows[sel,]
+
+cat("dat_1, n =", nrow(dat_1), 
+    " (series where", response_var,  "has values)\n")
 ```
 
 ```
 ## 
 ## df1, n = 310 
 ## df2, n = 498 
-## dat_1, n = 310
+## dat_1_allrows, n = 310  (may include series where log_median_tocton = NA)
+## dat_1, n = 310  (series where log_median_tocton has values)
 ```
 
+
+```r
+sum(is.na(dat_1$log_median_no3))
+sum(is.na(dat_1$log_median_tocton))
+```
+
+```
+## [1] 0
+## [1] 0
+```
 
 ### Deposition trends and median 1992-2006     
 
@@ -236,7 +258,7 @@ dat_2 <- dat_1 %>%
 
 ```
 ## Variables before join: 
-## 'station_id', 'median_no3', 'median_totn', 'median_ton', 'median_toc', 'median_tocton', 'log_median_no3', 'log_median_totn', 'log_median_ton', 'log_median_toc', 'log_median_tocton', 'trend_NO3', 'trend_TOC', 'trend_TOTN'
+## 'station_id', 'median_no3', 'median_ton', 'median_toc', 'median_tocton', 'log_median_no3', 'log_median_ton', 'log_median_toc', 'log_median_tocton', 'trend_NO3', 'trend_TOC', 'trend_TOTN'
 ## 
 ## Variables used to join: 
 ## 'station_id'
@@ -297,7 +319,7 @@ cat("\n")
 
 df_climate_slope <- read_csv(fn) %>%
   select(station_id, variable, sen_slp) %>%
-  pivot_wider(names_from = "variable", values_from = "sen_slp", names_prefix = "Slope_")
+  pivot_wider(names_from = "variable", values_from = "sen_slp", names_prefix = "slope_")
 ```
 
 ```
@@ -327,7 +349,7 @@ dat_3 <- dat_2 %>%
 ```
 ## 
 ## Variables before join: 
-## 'station_id', 'median_no3', 'median_totn', 'median_ton', 'median_toc', 'median_tocton', 'log_median_no3', 'log_median_totn', 'log_median_ton', 'log_median_toc', 'log_median_tocton', 'trend_NO3', 'trend_TOC', 'trend_TOTN', 'TOTN_dep', 'slope_dep_vs_time', 'p_dep_vs_time'
+## 'station_id', 'median_no3', 'median_ton', 'median_toc', 'median_tocton', 'log_median_no3', 'log_median_ton', 'log_median_toc', 'log_median_tocton', 'trend_NO3', 'trend_TOC', 'trend_TOTN', 'TOTN_dep', 'slope_dep_vs_time', 'p_dep_vs_time'
 ## 
 ## Variables used to join: 
 ## 'station_id'
@@ -335,13 +357,13 @@ dat_3 <- dat_2 %>%
 ## Variables added: 
 ## 'pre', 'tmp'
 ## Variables before join: 
-## 'station_id', 'median_no3', 'median_totn', 'median_ton', 'median_toc', 'median_tocton', 'log_median_no3', 'log_median_totn', 'log_median_ton', 'log_median_toc', 'log_median_tocton', 'trend_NO3', 'trend_TOC', 'trend_TOTN', 'TOTN_dep', 'slope_dep_vs_time', 'p_dep_vs_time', 'pre', 'tmp'
+## 'station_id', 'median_no3', 'median_ton', 'median_toc', 'median_tocton', 'log_median_no3', 'log_median_ton', 'log_median_toc', 'log_median_tocton', 'trend_NO3', 'trend_TOC', 'trend_TOTN', 'TOTN_dep', 'slope_dep_vs_time', 'p_dep_vs_time', 'pre', 'tmp'
 ## 
 ## Variables used to join: 
 ## 'station_id'
 ## 
 ## Variables added: 
-## 'Slope_pre', 'Slope_tmp'
+## 'slope_pre', 'slope_tmp'
 ```
 
 ### Combine land cover types   
@@ -375,7 +397,7 @@ dat_4 <- left_join2(dat_3,
 
 ```
 ## Variables before join: 
-## 'station_id', 'median_no3', 'median_totn', 'median_ton', 'median_toc', 'median_tocton', 'log_median_no3', 'log_median_totn', 'log_median_ton', 'log_median_toc', 'log_median_tocton', 'trend_NO3', 'trend_TOC', 'trend_TOTN', 'TOTN_dep', 'slope_dep_vs_time', 'p_dep_vs_time', 'pre', 'tmp', 'Slope_pre', 'Slope_tmp'
+## 'station_id', 'median_no3', 'median_ton', 'median_toc', 'median_tocton', 'log_median_no3', 'log_median_ton', 'log_median_toc', 'log_median_tocton', 'trend_NO3', 'trend_TOC', 'trend_TOTN', 'TOTN_dep', 'slope_dep_vs_time', 'p_dep_vs_time', 'pre', 'tmp', 'slope_pre', 'slope_tmp'
 ## 
 ## Variables used to join: 
 ## 'station_id'
@@ -385,21 +407,26 @@ dat_4 <- left_join2(dat_3,
 ```
 
 
-### Drop locations with >5% cultivated     
-- also excluding stations 23517, 38273  
+
+### Drop locations with >5% cultivated and >5% urban     
+- also excluding stations 23517, 38273    
 
 ```r
 cultivated_threshold <- 5
+urban_threshold <- 5
 
 dat_5 <- dat_4 %>%
-  filter(cultivated <= cultivated_threshold) %>%
-  filter(!station_id %in% c(23517, 38273)) 
-
-cat(nrow(dat_4) - nrow(dat_5), "stations with >",  cultivated_threshold, "% cultivated deleted \n")
+  filter2(!station_id %in% c(23517, 38273), text = "Deleted stations 23517, 38273") %>%
+  filter2(cultivated <= cultivated_threshold, 
+          text = paste("Deleted stations with >", cultivated_threshold, "% cultivated")) %>%
+  filter2(urban <= urban_threshold, 
+          text = paste("Deleted stations with >", urban_threshold, "% urban"))
 ```
 
 ```
-## 16 stations with > 5 % cultivated deleted
+## Removed 1 rows (Deleted stations 23517, 38273)
+## Removed 15 rows (Deleted stations with > 5 % cultivated)
+## Removed 6 rows (Deleted stations with > 5 % urban)
 ```
 
 
@@ -409,7 +436,6 @@ cat(nrow(dat_4) - nrow(dat_5), "stations with >",  cultivated_threshold, "% cult
 ```r
 dat <- dat_5
 ```
-
 
 
 ## 3. Plot data      
@@ -424,7 +450,7 @@ gg <- ggplot(dat, aes(TOTN_dep, log_median_no3)) +
 gg
 ```
 
-![](162c2_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-14-1.png)<!-- -->
+![](162c2_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-15-1.png)<!-- -->
 
 
 ## 4. Select data   
@@ -434,6 +460,15 @@ gg
 * Also remove PL05, which has dubious values   
 
 ```r
+# Variables that will be included in excel output (removed afterwards)
+response_var_unlogged <- sub("log_", "", response_var)
+vars_for_excel <- c(response_var_unlogged, 
+                    "station_id", "station_code", "station_name", 
+                   "country", "region", "continent")
+
+if (response_var == "log_median_tocton")
+  vars_for_excel <- c(vars_for_excel, "median_ton", "median_toc")
+
 get_data_for_analysis <- function(data, variable_string){
   variable_string <- gsub(" ", "", variable_string)
   variables <- strsplit(variable_string, split = ",")[[1]]
@@ -444,9 +479,7 @@ get_data_for_analysis <- function(data, variable_string){
       paste(variables[!found], collapse = " ,"), 
       "\n")
   # Data for analyses
-  # Variables that will be included in excel output (removed afterwards)
-  id_vars <- c("station_id", "station_code", "station_name", "country", "region", "continent")
-  data[c(id_vars, variables)]
+  data[c(vars_for_excel, variables)]
 }
 
 cat("-------------------------------------------------------------\n")
@@ -454,35 +487,33 @@ cat("Variables: \n")
 cat(params$selected_vars)
 cat("\n-------------------------------------------------------------\n")
 
-sel <- dat$station_code %in% "PL05"
-dat <- dat[!sel,]
-message(sum(sel), " station removed - station PL05 (has dubious NO3 data)")  
-```
+dat <- dat %>%
+  filter2(!station_code %in% "PL05", text = "station PL05 (has dubious NO3 data)")
 
-```
-## 0 station removed - station PL05 (has dubious NO3 data)
-```
-
-```r
 # debugonce(get_data_for_analysis)
 # df_analysis <- get_data_for_analysis(dat, vars)  
-df_analysis <- get_data_for_analysis(dat, params$selected_vars)  
+df_analysis_allrows <- get_data_for_analysis(dat, params$selected_vars)  
+
+# Save to excel
+fn <- paste0(substr(params$document_title, 1, 3), "_", response_var, "_data.xlsx")
+writexl::write_xlsx(df_analysis_allrows, paste0("Data_analysed/", fn))
+cat("\nDataset after removing urban, cultivated, PL05 saved as", sQuote(fn), "\n\n")
 
 # names(dat) %>% paste(collapse = ", ")
 
 cat("Number of missing values per variable: \n")
-apply(is.na(df_analysis), 2, sum) 
+apply(is.na(df_analysis_allrows), 2, sum) 
 cat("\n")
 
 # What is missing? (long output)
 if (FALSE){
-dat %>% 
-  split(.$country) %>%
-  purrr::map(~apply(is.na(.), 2, mean))
+  dat %>% 
+    split(.$country) %>%
+    purrr::map(~apply(is.na(.), 2, mean))
 }
 
 cat("Number of complete observations: \n")
-complete <- complete.cases(df_analysis)
+complete <- complete.cases(df_analysis_allrows)
 table(complete)
 
 cat("\n\n")
@@ -490,19 +521,20 @@ cat("Number of complete observations by country: \n")
 table(dat$country, complete)
 
 # Keep only complete cases
-df_analysis <- df_analysis[complete.cases(df_analysis),]
+df_analysis <- df_analysis_allrows[complete.cases(df_analysis_allrows),]
 
 # Save to excel
 fn <- paste0(substr(params$document_title, 1, 5), "_data.xlsx")
 writexl::write_xlsx(df_analysis, paste0("Data_analysed/", fn))
 
-# Remove variables defined as 'id_vars' in function above
-df_analysis <- df_analysis %>%
-  select(-station_id, -station_code, -station_name, -country, -region, -continent)
+# Remove variables defined as 'vars_for_excel' in function above
+sel <- names(df_analysis) %in% vars_for_excel
+df_analysis <- df_analysis[!sel]
 
 cat("\n\n")
-cat("Original data: n =", nrow(dat), "\n")
-cat("Analysis: n =", nrow(df_analysis), "\n")
+cat("Data before removing PL05: n =", nrow(dat_5), "\n")
+cat("Data after removing PL05: n =", nrow(df_analysis_allrows), "\n")
+cat("Data after removing missing predictors: n =", nrow(df_analysis), "\n")
 ```
 
 ```
@@ -510,42 +542,49 @@ cat("Analysis: n =", nrow(df_analysis), "\n")
 ## Variables: 
 ## log_median_tocton,catchment_area, log_median_ton, log_median_toc,slope_dep_vs_time, TOTN_dep, latitude, longitude, altitude,pre, tmp, urban, cultivated, total_forest, total_shrub_herbaceous,wetland, lake_water, bare_sparse
 ## -------------------------------------------------------------
+## Removed 0 rows (station PL05 (has dubious NO3 data))
+## 
+## Dataset after removing urban, cultivated, PL05 saved as '162_log_median_tocton_data.xlsx' 
+## 
 ## Number of missing values per variable: 
-##             station_id           station_code           station_name                country 
+##          median_tocton             station_id           station_code           station_name 
 ##                      0                      0                      0                      0 
-##                 region              continent      log_median_tocton         catchment_area 
+##                country                 region              continent             median_ton 
 ##                      0                      0                      0                      0 
-##         log_median_ton         log_median_toc      slope_dep_vs_time               TOTN_dep 
+##             median_toc      log_median_tocton         catchment_area         log_median_ton 
 ##                      0                      0                      0                      0 
-##               latitude              longitude               altitude                    pre 
+##         log_median_toc      slope_dep_vs_time               TOTN_dep               latitude 
 ##                      0                      0                      0                      0 
-##                    tmp                  urban             cultivated           total_forest 
+##              longitude               altitude                    pre                    tmp 
 ##                      0                      0                      0                      0 
-## total_shrub_herbaceous                wetland             lake_water            bare_sparse 
+##                  urban             cultivated           total_forest total_shrub_herbaceous 
 ##                      0                      0                      0                      0 
+##                wetland             lake_water            bare_sparse 
+##                      0                      0                      0 
 ## 
 ## Number of complete observations: 
 ## complete
 ## TRUE 
-##  294 
+##  288 
 ## 
 ## 
 ## Number of complete observations by country: 
 ##                 complete
 ##                  TRUE
-##   Canada           73
+##   Canada           70
 ##   Czech Republic    2
-##   Finland          23
+##   Finland          22
 ##   Germany           1
-##   Italy             4
+##   Italy             3
 ##   Latvia            1
 ##   Norway           80
-##   Sweden           88
+##   Sweden           87
 ##   United Kingdom   22
 ## 
 ## 
-## Original data: n = 294 
-## Analysis: n = 294
+## Data before removing PL05: n = 288 
+## Data after removing PL05: n = 288 
+## Data after removing missing predictors: n = 288
 ```
 
 
@@ -556,7 +595,7 @@ gg <- GGally::ggcorr(df_analysis, method = c("complete.obs", "kendall"), label =
 gg + theme(plot.margin = unit(c(.8, 2, .8, 2.5), "cm"))
 ```
 
-![](162c2_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-16-1.png)<!-- -->
+![](162c2_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-17-1.png)<!-- -->
 
 ```r
 # SHOULD also workaccording to ?element_rect (update ggplot2?)
@@ -606,7 +645,7 @@ full_set <- df_analysis  %>%
 plot(ct, main="Conditional Inference Tree")
 ```
 
-![](162c2_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-18-1.png)<!-- -->
+![](162c2_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-19-1.png)<!-- -->
 
 ```
 ## 
@@ -619,46 +658,42 @@ plot(ct, main="Conditional Inference Tree")
 ## Fitted party:
 ## [1] root
 ## |   [2] log_median_toc <= 0.20412
-## |   |   [3] altitude <= 494
-## |   |   |   [4] slope_dep_vs_time <= -13.52158: 0.972 (n = 7, err = 0.2)
-## |   |   |   [5] slope_dep_vs_time > -13.52158: 1.145 (n = 13, err = 0.2)
-## |   |   [6] altitude > 494: 0.870 (n = 16, err = 0.4)
-## |   [7] log_median_toc > 0.20412
-## |   |   [8] log_median_toc <= 0.87795
-## |   |   |   [9] log_median_toc <= 0.71447
-## |   |   |   |   [10] log_median_ton <= 2.15715
-## |   |   |   |   |   [11] log_median_toc <= 0.34242: 1.279 (n = 16, err = 0.1)
-## |   |   |   |   |   [12] log_median_toc > 0.34242
-## |   |   |   |   |   |   [13] log_median_ton <= 2.01494: 1.514 (n = 8, err = 0.1)
-## |   |   |   |   |   |   [14] log_median_ton > 2.01494: 1.414 (n = 14, err = 0.1)
-## |   |   |   |   [15] log_median_ton > 2.15715
-## |   |   |   |   |   [16] log_median_toc <= 0.50515: 1.187 (n = 14, err = 0.1)
-## |   |   |   |   |   [17] log_median_toc > 0.50515
-## |   |   |   |   |   |   [18] log_median_ton <= 2.32736
-## |   |   |   |   |   |   |   [19] log_median_toc <= 0.617: 1.314 (n = 12, err = 0.0)
-## |   |   |   |   |   |   |   [20] log_median_toc > 0.617: 1.396 (n = 10, err = 0.0)
-## |   |   |   |   |   |   [21] log_median_ton > 2.32736: 1.252 (n = 13, err = 0.0)
-## |   |   |   [22] log_median_toc > 0.71447
-## |   |   |   |   [23] log_median_ton <= 2.39116
-## |   |   |   |   |   [24] log_median_ton <= 2.26986: 1.520 (n = 7, err = 0.0)
-## |   |   |   |   |   [25] log_median_ton > 2.26986: 1.467 (n = 17, err = 0.0)
-## |   |   |   |   [26] log_median_ton > 2.39116
-## |   |   |   |   |   [27] log_median_toc <= 0.80618: 1.339 (n = 15, err = 0.0)
-## |   |   |   |   |   [28] log_median_toc > 0.80618: 1.396 (n = 17, err = 0.0)
-## |   |   [29] log_median_toc > 0.87795
-## |   |   |   [30] urban <= 2.10865
-## |   |   |   |   [31] log_median_toc <= 1.05308
-## |   |   |   |   |   [32] log_median_ton <= 2.5172
-## |   |   |   |   |   |   [33] log_median_toc <= 0.94448: 1.512 (n = 13, err = 0.0)
-## |   |   |   |   |   |   [34] log_median_toc > 0.94448: 1.569 (n = 26, err = 0.1)
-## |   |   |   |   |   [35] log_median_ton > 2.5172: 1.437 (n = 13, err = 0.0)
-## |   |   |   |   [36] log_median_toc > 1.05308: 1.586 (n = 37, err = 0.2)
-## |   |   |   [37] urban > 2.10865
-## |   |   |   |   [38] lake_water <= 13.827: 1.456 (n = 19, err = 0.1)
-## |   |   |   |   [39] lake_water > 13.827: 1.328 (n = 7, err = 0.0)
+## |   |   [3] altitude <= 494: 1.102 (n = 19, err = 0.4)
+## |   |   [4] altitude > 494: 0.870 (n = 16, err = 0.4)
+## |   [5] log_median_toc > 0.20412
+## |   |   [6] log_median_toc <= 0.87795
+## |   |   |   [7] log_median_toc <= 0.71447
+## |   |   |   |   [8] log_median_ton <= 2.15715
+## |   |   |   |   |   [9] log_median_toc <= 0.34242: 1.281 (n = 15, err = 0.1)
+## |   |   |   |   |   [10] log_median_toc > 0.34242
+## |   |   |   |   |   |   [11] log_median_ton <= 2.01494: 1.514 (n = 8, err = 0.1)
+## |   |   |   |   |   |   [12] log_median_ton > 2.01494: 1.414 (n = 14, err = 0.1)
+## |   |   |   |   [13] log_median_ton > 2.15715
+## |   |   |   |   |   [14] log_median_toc <= 0.49136: 1.181 (n = 11, err = 0.1)
+## |   |   |   |   |   [15] log_median_toc > 0.49136
+## |   |   |   |   |   |   [16] log_median_ton <= 2.32736: 1.345 (n = 21, err = 0.1)
+## |   |   |   |   |   |   [17] log_median_ton > 2.32736: 1.252 (n = 13, err = 0.0)
+## |   |   |   [18] log_median_toc > 0.71447
+## |   |   |   |   [19] log_median_ton <= 2.39116
+## |   |   |   |   |   [20] log_median_ton <= 2.26986: 1.520 (n = 7, err = 0.0)
+## |   |   |   |   |   [21] log_median_ton > 2.26986: 1.467 (n = 17, err = 0.0)
+## |   |   |   |   [22] log_median_ton > 2.39116
+## |   |   |   |   |   [23] log_median_toc <= 0.80618: 1.339 (n = 15, err = 0.0)
+## |   |   |   |   |   [24] log_median_toc > 0.80618: 1.396 (n = 17, err = 0.0)
+## |   |   [25] log_median_toc > 0.87795
+## |   |   |   [26] urban <= 2.10865
+## |   |   |   |   [27] log_median_toc <= 1.05308
+## |   |   |   |   |   [28] log_median_ton <= 2.5172
+## |   |   |   |   |   |   [29] log_median_toc <= 0.94448: 1.512 (n = 13, err = 0.0)
+## |   |   |   |   |   |   [30] log_median_toc > 0.94448: 1.569 (n = 26, err = 0.1)
+## |   |   |   |   |   [31] log_median_ton > 2.5172: 1.437 (n = 13, err = 0.0)
+## |   |   |   |   [32] log_median_toc > 1.05308: 1.586 (n = 37, err = 0.2)
+## |   |   |   [33] urban > 2.10865
+## |   |   |   |   [34] lake_water <= 13.827: 1.456 (n = 19, err = 0.1)
+## |   |   |   |   [35] lake_water > 13.827: 1.328 (n = 7, err = 0.0)
 ## 
-## Number of inner nodes:    19
-## Number of terminal nodes: 20
+## Number of inner nodes:    17
+## Number of terminal nodes: 18
 ```
 
 ### b. Evtree (Evolutionary Learning)   
@@ -670,7 +705,7 @@ ev.raw = evtree(as.formula(params$tree_formula),
 plot(ev.raw)
 ```
 
-![](162c2_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-19-1.png)<!-- -->
+![](162c2_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-20-1.png)<!-- -->
 
 
 ### c. Random forest  
@@ -693,8 +728,8 @@ model1
 ##                      Number of trees: 500
 ## No. of variables tried at each split: 5
 ## 
-##           Mean of squared residuals: 0.007219344
-##                     % Var explained: 82.31
+##           Mean of squared residuals: 0.007572006
+##                     % Var explained: 80.99
 ```
 
 
@@ -727,14 +762,14 @@ importance <- measure_importance(model1)
 plot_multi_way_importance(importance, size_measure = "no_of_nodes", no_of_labels = 12)  
 ```
 
-![](162c2_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-21-1.png)<!-- -->
+![](162c2_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-22-1.png)<!-- -->
 
 ```r
 plot_multi_way_importance(importance, x_measure = "mse_increase", y_measure = "node_purity_increase",
                           size_measure = "p_value", no_of_labels = 12)
 ```
 
-![](162c2_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-21-2.png)<!-- -->
+![](162c2_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-22-2.png)<!-- -->
 
 
 
@@ -868,26 +903,36 @@ subset(dredged_models, delta < 2)
 ##     na.action = "na.fail")
 ## ---
 ## Model selection table 
-##      (Int)        alt    bar_spr   ctc_are log_mdn_toc log_mdn_ton       pre       tmp    ttl_frs       urb
-## 755  2.858            -0.0003373                0.9798     -0.9290 1.289e-05 -0.003683            -0.003310
-## 1777 2.817                                      1.0450     -0.9124 1.120e-05 -0.003370            -0.003161
-## 754  2.856 -1.544e-05                           0.9824     -0.9275 1.248e-05 -0.003685            -0.003679
-## 1778 2.820 -1.247e-05                           1.0300     -0.9102 1.213e-05 -0.003625            -0.003548
-## 756  2.856 -9.478e-06 -0.0002660                0.9770     -0.9258 1.325e-05 -0.003811            -0.003577
-## 753  2.862                                      0.9905     -0.9346 1.137e-05 -0.003369            -0.003210
-## 1779 2.836            -0.0002417                1.0120     -0.9187 1.237e-05 -0.003595            -0.003256
-## 759  2.857            -0.0003405 8.119e-06      0.9790     -0.9281 1.292e-05 -0.003650            -0.003405
-## 1011 2.858            -0.0003551                0.9809     -0.9276 1.262e-05 -0.003697 -4.919e-05 -0.003216
-##      log_mdn_toc:log_mdn_ton df  logLik    AICc delta weight
-## 755                           8 561.101 -1105.7  0.00  0.197
-## 1777                -0.02631  8 560.761 -1105.0  0.68  0.140
-## 754                           8 560.554 -1104.6  1.09  0.114
-## 1778                -0.02212  9 561.571 -1104.5  1.19  0.108
-## 756                           9 561.509 -1104.4  1.31  0.102
-## 753                           7 559.265 -1104.1  1.56  0.090
-## 1779                -0.01406  9 561.384 -1104.1  1.56  0.090
-## 759                           9 561.299 -1104.0  1.73  0.083
-## 1011                          9 561.216 -1103.8  1.90  0.076
+##      (Int)        alt    bar_spr   ctc_are    lak_wtr log_mdn_toc log_mdn_ton       pre
+## 243  2.860            -0.0004037                           0.9718     -0.9287 1.285e-05
+## 755  2.848            -0.0003836                           0.9703     -0.9219 1.129e-05
+## 1265 2.813                                                 1.0480     -0.9095 1.074e-05
+## 1267 2.835            -0.0003011                           1.0070     -0.9174 1.222e-05
+## 499  2.859            -0.0004322                           0.9734     -0.9262 1.234e-05
+## 756  2.844 -9.193e-06 -0.0003127                           0.9676     -0.9185 1.158e-05
+## 251  2.859            -0.0004416           -0.0001843      0.9672     -0.9254 1.227e-05
+## 1777 2.805                                                 1.0400     -0.9050 9.372e-06
+## 244  2.859 -6.167e-06 -0.0003578                           0.9701     -0.9271 1.318e-05
+## 763  2.847            -0.0004209           -0.0001812      0.9658     -0.9186 1.072e-05
+## 759  2.845            -0.0003849 8.789e-06                 0.9694     -0.9206 1.126e-05
+## 1779 2.828            -0.0003000                           0.9992     -0.9129 1.085e-05
+## 247  2.859            -0.0004057 5.654e-06                 0.9713     -0.9283 1.293e-05
+## 1778 2.807 -1.313e-05                                      1.0240     -0.9025 1.028e-05
+##            tmp    ttl_frs       urb log_mdn_toc:log_mdn_ton df  logLik    AICc delta weight
+## 243  -0.003443                                               7 556.097 -1097.8  0.00  0.141
+## 755  -0.003116            -0.003090                          8 557.054 -1097.6  0.20  0.127
+## 1265 -0.003054                                     -0.03033  7 555.440 -1096.5  1.31  0.073
+## 1267 -0.003328                                     -0.01523  8 556.442 -1096.4  1.43  0.069
+## 499  -0.003447 -7.818e-05                                    8 556.404 -1096.3  1.50  0.066
+## 756  -0.003232            -0.003480                          9 557.454 -1096.3  1.53  0.065
+## 251  -0.003426                                               8 556.376 -1096.2  1.56  0.065
+## 1777 -0.002765            -0.002933                -0.02762  8 556.288 -1096.1  1.73  0.059
+## 244  -0.003548                                               8 556.282 -1096.0  1.74  0.059
+## 763  -0.003101            -0.003075                          9 557.326 -1096.0  1.79  0.058
+## 759  -0.003073            -0.003351                          9 557.294 -1095.9  1.85  0.056
+## 1779 -0.003039            -0.002920                -0.01258  9 557.288 -1095.9  1.87  0.055
+## 247  -0.003433                                               8 556.198 -1095.9  1.91  0.054
+## 1778 -0.003023            -0.003475                -0.02304  9 557.226 -1095.8  1.99  0.052
 ## Models ranked by AICc(x)
 ```
 
@@ -915,7 +960,7 @@ if (length(modelvars$additive_vars) > 0){
 }
 ```
 
-![](162c2_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-25-1.png)<!-- -->
+![](162c2_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-26-1.png)<!-- -->
 
 
 

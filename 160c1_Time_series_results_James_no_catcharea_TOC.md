@@ -13,7 +13,7 @@ params:
   text_dataset: 
     value: 'Data with slope_dep_vs_time, NO3, and TOTN_dep'
   selected_vars: 
-    value: 'no3_decline,catchment_area, TOC,slope_dep_vs_time, NO3, TOTN_dep, latitude, longitude, altitude,pre, tmp, Slope_pre, Slope_tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse'
+    value: 'no3_decline,catchment_area, TOC,slope_dep_vs_time, NO3, TOTN_dep, latitude, longitude, altitude,pre, tmp, slope_pre, slope_tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse'
   extra_pairwise_plots:
     value: 'TOC,NO3; slope_dep_vs_time,TOTN_dep; altitude,decid_mixed'
   pairwise_plots_same_scale:
@@ -196,11 +196,16 @@ cat("df1, n =", nrow(df1), "\n")
 cat("df2, n =", nrow(df2), "\n")
 cat("df3, n =", nrow(df3), "\n")
 
-dat_1 <- df1 %>%
+dat_1_all <- df1 %>%
   full_join(df2, by = "station_id") %>%
   full_join(df3, by = "station_id")
 
-cat("dat_1, n =", nrow(dat_1), "\n")
+cat("dat_1_all, n =", nrow(dat_1_all), " (may include series without slope_no3_vs_time)\n")
+
+dat_1 <- dat_1_all %>%
+  filter(!is.na(slope_no3_vs_time))
+
+cat("dat_1, n =", nrow(dat_1), " (all data with existing values of 'slope_no3_vs_time')\n")
 ```
 
 ```
@@ -208,7 +213,8 @@ cat("dat_1, n =", nrow(dat_1), "\n")
 ## df1, n = 498 
 ## df2, n = 498 
 ## df3, n = 498 
-## dat_1, n = 498
+## dat_1_all, n = 498  (may include series without slope_no3_vs_time)
+## dat_1, n = 498  (all data with existing values of 'slope_no3_vs_time')
 ```
 
 
@@ -313,7 +319,7 @@ cat("\n")
 
 df_climate_slope <- read_csv(fn) %>%
   select(station_id, variable, sen_slp) %>%
-  pivot_wider(names_from = "variable", values_from = "sen_slp", names_prefix = "Slope_")
+  pivot_wider(names_from = "variable", values_from = "sen_slp", names_prefix = "slope_")
 ```
 
 ```
@@ -357,7 +363,7 @@ dat_3 <- dat_2 %>%
 ## 'station_id'
 ## 
 ## Variables added: 
-## 'Slope_pre', 'Slope_tmp'
+## 'slope_pre', 'slope_tmp'
 ```
 
 ### Combine land cover types   
@@ -391,7 +397,7 @@ dat_4 <- left_join2(dat_3,
 
 ```
 ## Variables before join: 
-## 'station_id', 'slope_no3_vs_time', 'slope_tocton_vs_time', 'p_no3_vs_time', 'p_tocton_vs_time', 'NO3', 'TOC', 'TOTN_dep', 'slope_dep_vs_time', 'p_dep_vs_time', 'pre', 'tmp', 'Slope_pre', 'Slope_tmp'
+## 'station_id', 'slope_no3_vs_time', 'slope_tocton_vs_time', 'p_no3_vs_time', 'p_tocton_vs_time', 'NO3', 'TOC', 'TOTN_dep', 'slope_dep_vs_time', 'p_dep_vs_time', 'pre', 'tmp', 'slope_pre', 'slope_tmp'
 ## 
 ## Variables used to join: 
 ## 'station_id'
@@ -400,21 +406,26 @@ dat_4 <- left_join2(dat_3,
 ## 'station_code', 'station_name', 'latitude', 'longitude', 'altitude', 'continent', 'country', 'region', 'group', 'catchment_area', 'urban', 'cultivated', 'total_forest', 'coniferous', 'total_shrub_herbaceous', 'grasslands', 'heathlands', 'transitional_woodland_shrub', 'wetland', 'other', 'bare_sparse', 'decid_mixed', 'lake_water'
 ```
 
-### Drop locations with >5% cultivated     
-- also excluding stations 23517, 38273  
+
+### Drop locations with >5% cultivated and >5% urban     
+- also excluding stations 23517, 38273    
 
 ```r
 cultivated_threshold <- 5
+urban_threshold <- 5
 
 dat_5 <- dat_4 %>%
-  filter(cultivated <= cultivated_threshold) %>%
-  filter(!station_id %in% c(23517, 38273)) 
-
-cat(nrow(dat_4) - nrow(dat_5), "stations with >",  cultivated_threshold, "% cultivated deleted \n")
+  filter2(!station_id %in% c(23517, 38273), text = "Deleted stations 23517, 38273") %>%
+  filter2(cultivated <= cultivated_threshold, 
+          text = paste("Deleted stations with >", cultivated_threshold, "% cultivated")) %>%
+  filter2(urban <= urban_threshold, 
+          text = paste("Deleted stations with >", urban_threshold, "% urban"))
 ```
 
 ```
-## 39 stations with > 5 % cultivated deleted
+## Removed 2 rows (Deleted stations 23517, 38273)
+## Removed 37 rows (Deleted stations with > 5 % cultivated)
+## Removed 6 rows (Deleted stations with > 5 % urban)
 ```
 
 
@@ -470,8 +481,13 @@ dat %>%
 
 ### a. Selection of variables  
 * Select variables to use, and thereby also cases  
+* Saves data both before and after rows with removing missing predictors are removed
 
 ```r
+# Variables that will be included in excel output (removed afterwards)
+vars_for_excel <- c("slope_no3_vs_time", "station_id", "station_code", 
+                    "station_name", "country", "region", "continent")
+
 get_df_no3_decline <- function(data, variable_string){
   variable_string <- gsub(" ", "", variable_string)
   variables <- strsplit(variable_string, split = ",")[[1]]
@@ -482,9 +498,7 @@ get_df_no3_decline <- function(data, variable_string){
         slope_no3_vs_time < 0 & p_no3_vs_time <= 0.05 ~ 1,
         TRUE ~ 0)
     )
-  # Variables that will be included in excel output (removed afterwards)
-  id_vars <- c("station_id", "station_code", "station_name", "country", "region", "continent")
-  df[c(id_vars, variables)]
+  df[c(vars_for_excel, variables)]
 }
 
 cat("-------------------------------------------------------------\n")
@@ -492,12 +506,17 @@ cat("Variables: \n")
 cat(params$selected_vars)
 cat("\n-------------------------------------------------------------\n")
 
-df_analysis <- get_df_no3_decline(dat, params$selected_vars)  
+df_analysis_allrows <- get_df_no3_decline(dat, params$selected_vars)  
+
+# Save to excel
+fn <- paste0(substr(params$document_title, 1, 3), "_data.xlsx")
+writexl::write_xlsx(df_analysis_allrows, paste0("Data_analysed/", fn))
+cat("\nDataset after removing urban and cultivated saved as", sQuote(fn), "\n\n")
 
 # names(dat) %>% paste(collapse = ", ")
 
 cat("Number of missing values per variable: \n")
-apply(is.na(df_analysis), 2, sum) 
+apply(is.na(df_analysis_allrows), 2, sum) 
 cat("\n")
 
 # What is missing? (long output)
@@ -508,7 +527,7 @@ dat %>%
 }
 
 cat("Number of complete observations: \n")
-complete <- complete.cases(df_analysis)
+complete <- complete.cases(df_analysis_allrows)
 table(complete)
 
 cat("\n\n")
@@ -516,70 +535,73 @@ cat("Number of complete observations by country: \n")
 table(dat$country, complete)
 
 # Keep only complete cases
-df_analysis <- df_analysis[complete.cases(df_analysis),]
+df_analysis <- df_analysis_allrows[complete.cases(df_analysis_allrows),]
 
 # Save to excel
 fn <- paste0(substr(params$document_title, 1, 5), "_data.xlsx")
 writexl::write_xlsx(df_analysis, paste0("Data_analysed/", fn))
 
-# Remove variables defined as 'id_vars' in function above
-df_analysis <- df_analysis %>%
-  select(-station_id, -station_code, -station_name, -country, -region, -continent)
+# Remove variables defined as 'vars_for_excel' in function above
+sel <- names(df_analysis) %in% vars_for_excel
+df_analysis <- df_analysis[!sel]
 
 cat("\n\n")
-cat("Original data: n =", nrow(dat), "\n")
-cat("Analysis: n =", nrow(df_analysis), "\n")
+cat("Data before removing missing predictors: n =", nrow(df_analysis_allrows), "\n")
+cat("Data after removing missing predictors: n =", nrow(df_analysis), "\n")
 ```
 
 ```
 ## -------------------------------------------------------------
 ## Variables: 
-## no3_decline,slope_dep_vs_time, NO3, TOTN_dep, latitude, longitude, altitude,pre, tmp, Slope_pre, Slope_tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse
+## no3_decline,slope_dep_vs_time, NO3, TOTN_dep, latitude, longitude, altitude,pre, tmp, slope_pre, slope_tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse
 ## -------------------------------------------------------------
+## 
+## Dataset after removing urban and cultivated saved as '160_data.xlsx' 
+## 
 ## Number of missing values per variable: 
-##             station_id           station_code           station_name                country 
+##      slope_no3_vs_time             station_id           station_code           station_name 
 ##                      0                      0                      0                      0 
-##                 region              continent            no3_decline      slope_dep_vs_time 
+##                country                 region              continent            no3_decline 
 ##                      0                      0                      0                      0 
-##                    NO3               TOTN_dep               latitude              longitude 
+##      slope_dep_vs_time                    NO3               TOTN_dep               latitude 
 ##                      0                      0                      0                      0 
-##               altitude                    pre                    tmp              Slope_pre 
+##              longitude               altitude                    pre                    tmp 
 ##                      0                      0                      0                      0 
-##              Slope_tmp                  urban             cultivated             coniferous 
-##                      0                      0                      0                      9 
-##            decid_mixed total_shrub_herbaceous                wetland             lake_water 
-##                      9                      0                      0                      0 
-##            bare_sparse 
-##                      0 
+##              slope_pre              slope_tmp                  urban             cultivated 
+##                      0                      0                      0                      0 
+##             coniferous            decid_mixed total_shrub_herbaceous                wetland 
+##                      9                      9                      0                      0 
+##             lake_water            bare_sparse 
+##                      0                      0 
 ## 
 ## Number of complete observations: 
 ## complete
 ## FALSE  TRUE 
-##     9   450 
+##     9   444 
 ## 
 ## 
 ## Number of complete observations by country: 
 ##                 complete
 ##                  FALSE TRUE
-##   Canada             3  106
+##   Canada             3  103
 ##   Czech Republic     0    8
-##   Finland            0   25
+##   Finland            0   24
 ##   Germany            0   19
 ##   Ireland            0    3
-##   Italy              0    6
+##   Italy              0    5
 ##   Latvia             0    1
 ##   Netherlands        0    3
 ##   Norway             0   80
 ##   Poland             0    5
 ##   Slovakia           0   12
-##   Sweden             0   88
+##   Sweden             0   87
 ##   Switzerland        6    0
 ##   United Kingdom     0   21
 ##   United States      0   73
 ## 
 ## 
-## Original data: n = 459 
-## Analysis: n = 450
+## Data before removing missing predictors: n = 453 
+## Data after removing missing predictors: n = 444
 ```
 
 
@@ -649,39 +671,41 @@ table(tr.pred[,"P1"] > 0.5, valid_set$no3_decline_f)
 ## 
 ## Model formula:
 ## no3_decline_f ~ slope_dep_vs_time + NO3 + TOTN_dep + altitude + 
-##     pre + tmp + Slope_pre + Slope_tmp + urban + cultivated + 
+##     pre + tmp + slope_pre + slope_tmp + urban + cultivated + 
 ##     coniferous + decid_mixed + total_shrub_herbaceous + wetland + 
 ##     lake_water + bare_sparse
 ## 
 ## Fitted party:
 ## [1] root
 ## |   [2] altitude <= 205
-## |   |   [3] slope_dep_vs_time <= -22.47896: 0 (n = 46, err = 47.8%)
-## |   |   [4] slope_dep_vs_time > -22.47896
-## |   |   |   [5] total_shrub_herbaceous <= 37.157: 0 (n = 109, err = 5.5%)
-## |   |   |   [6] total_shrub_herbaceous > 37.157: 1 (n = 7, err = 42.9%)
-## |   [7] altitude > 205
-## |   |   [8] decid_mixed <= 66.204
-## |   |   |   [9] bare_sparse <= 23.181: 1 (n = 168, err = 45.2%)
-## |   |   |   [10] bare_sparse > 23.181: 1 (n = 32, err = 9.4%)
-## |   |   [11] decid_mixed > 66.204: 0 (n = 44, err = 18.2%)
+## |   |   [3] decid_mixed <= 7.408: 0 (n = 56, err = 39.3%)
+## |   |   [4] decid_mixed > 7.408
+## |   |   |   [5] total_shrub_herbaceous <= 33.19745
+## |   |   |   |   [6] NO3 <= 63.5: 0 (n = 92, err = 2.2%)
+## |   |   |   |   [7] NO3 > 63.5: 0 (n = 8, err = 37.5%)
+## |   |   |   [8] total_shrub_herbaceous > 33.19745: 1 (n = 7, err = 28.6%)
+## |   [9] altitude > 205
+## |   |   [10] decid_mixed <= 66.204
+## |   |   |   [11] bare_sparse <= 23.181: 1 (n = 163, err = 44.2%)
+## |   |   |   [12] bare_sparse > 23.181: 1 (n = 31, err = 9.7%)
+## |   |   [13] decid_mixed > 66.204: 0 (n = 43, err = 23.3%)
 ## 
-## Number of inner nodes:    5
-## Number of terminal nodes: 6
+## Number of inner nodes:    6
+## Number of terminal nodes: 7
 ## 
 ## 
 ## Table of prediction errors 
 ##    
 ##       0   1
-##   0 163  36
-##   1  82 125
+##   0 162  37
+##   1  77 124
 ## 
 ## 
 ## Classification of training set 
 ##        
 ##          0  1
-##   FALSE 15  4
-##   TRUE   8 17
+##   FALSE 13  4
+##   TRUE  11 16
 ```
 
 ### b. Evtree (Evolutionary Learning)   
@@ -706,12 +730,12 @@ cat("\n\nPrediction errors in training data: \n")
 ## Predicted in training data: 
 ##    
 ##       0   1
-##   0 204  33
-##   1  41 128
+##   0 211  32
+##   1  28 129
 ## 
 ## 
 ## Prediction errors in training data: 
-## [1] 0.182266
+## [1] 0.15
 ```
 
 
@@ -741,9 +765,9 @@ cat("Error rate for training data:", round(error_fraction*100, 1), "%\n")
 ```
 ##           
 ## pred_valid  0  1
-##          0 19  6
-##          1  4 15
-## Error rate for training data: 22.7 %
+##          0 18  5
+##          1  6 15
+## Error rate for training data: 25 %
 ```
 
 #### c1b. Model for all data    
@@ -773,8 +797,8 @@ cat("Error rate for training data:", round(error_fraction*100, 1), "%\n")
 ```
 ##           
 ## pred_valid  0  1
-##          0 23  0
-##          1  0 21
+##          0 24  0
+##          1  0 20
 ## Error rate for training data: 0 %
 ```
 
@@ -940,27 +964,27 @@ subset(dredged_models, delta < 2)
 ## ---
 ## Model selection table 
 ##      (Int)      alt      cnf  dcd_mxd   lak_wtr        NO3 slp_dep_vs_tim     tmp    TOT_dep
-## 376 0.2408 0.001904 -0.01392 -0.02652           -0.0011450       -0.04028 -0.1859           
-## 120 0.4200 0.001871 -0.01486 -0.02727           -0.0011940       -0.04038 -0.1865           
-## 360 0.4490 0.001648 -0.01434 -0.02699                            -0.03325 -0.2007           
-## 488 0.3758 0.001852 -0.01482 -0.02664                            -0.05039 -0.1486 -0.0008649
-## 104 0.6478 0.001597 -0.01534 -0.02779                            -0.03299 -0.2019           
-## 504 0.2299 0.001993 -0.01424 -0.02634           -0.0009236       -0.04980 -0.1544 -0.0005619
-## 384 0.4292 0.001882 -0.01480 -0.02695 -0.007719 -0.0012590       -0.04099 -0.1905           
-## 128 0.6579 0.001845 -0.01598 -0.02780 -0.010500 -0.0013450       -0.04137 -0.1927           
-## 232 0.5679 0.001815 -0.01587 -0.02747                            -0.05076 -0.1477 -0.0008963
-## 248 0.4080 0.001966 -0.01521 -0.02711           -0.0009647       -0.05015 -0.1539 -0.0005786
+## 376 0.3211 0.001846 -0.01531 -0.02725           -0.0011160       -0.04415 -0.1968           
+## 488 0.4348 0.001852 -0.01627 -0.02730                            -0.05804 -0.1473 -0.0010580
+## 120 0.4973 0.001810 -0.01627 -0.02798           -0.0011660       -0.04438 -0.1976           
+## 232 0.6217 0.001815 -0.01733 -0.02810                            -0.05859 -0.1462 -0.0010930
+## 360 0.5204 0.001603 -0.01563 -0.02768                            -0.03687 -0.2104           
+## 504 0.3082 0.001970 -0.01578 -0.02702           -0.0008062       -0.05748 -0.1532 -0.0007835
+## 104 0.7163 0.001550 -0.01664 -0.02846                            -0.03674 -0.2117           
+## 248 0.4825 0.001941 -0.01677 -0.02778           -0.0008455       -0.05800 -0.1525 -0.0008043
+## 128 0.6856 0.001792 -0.01710 -0.02835 -0.008469 -0.0012810       -0.04506 -0.2027           
+## 384 0.4567 0.001832 -0.01591 -0.02753 -0.005662 -0.0011950       -0.04458 -0.2002           
 ##         wtl df   logLik  AICc delta weight
-## 376 0.01858  8 -247.997 512.3  0.00  0.172
-## 120          7 -249.280 512.8  0.49  0.135
-## 360 0.01951  7 -249.375 513.0  0.68  0.122
-## 488 0.01895  8 -248.491 513.3  0.99  0.105
-## 104          6 -250.788 513.8  1.45  0.084
-## 504 0.01840  9 -247.690 513.8  1.47  0.083
-## 384 0.01706  9 -247.743 513.9  1.57  0.078
-## 128          8 -248.790 513.9  1.59  0.078
-## 232          7 -249.834 513.9  1.60  0.077
-## 248          8 -248.956 514.2  1.92  0.066
+## 376 0.01795  8 -243.950 504.2  0.00  0.144
+## 488 0.01814  8 -243.991 504.3  0.08  0.138
+## 120          7 -245.134 504.5  0.29  0.124
+## 232          7 -245.209 504.7  0.44  0.115
+## 360 0.01889  7 -245.258 504.8  0.54  0.110
+## 504 0.01767  9 -243.382 505.2  0.95  0.089
+## 104          6 -246.567 505.3  1.09  0.083
+## 248          8 -244.536 505.4  1.17  0.080
+## 128          8 -244.833 506.0  1.76  0.059
+## 384 0.01686  9 -243.821 506.1  1.83  0.058
 ## Models ranked by AICc(x)
 ```
 
@@ -999,7 +1023,7 @@ if (length(modelvars$additive_vars) > 0){
 ![](160c1_Time_series_results_James_no_catcharea_TOC_files/figure-html/unnamed-chunk-26-1.png)<!-- -->![](160c1_Time_series_results_James_no_catcharea_TOC_files/figure-html/unnamed-chunk-26-2.png)<!-- -->
 
 ```
-## Percentage of deviance explained: 81.7 %
+## Percentage of deviance explained: 81.3 %
 ```
 
 

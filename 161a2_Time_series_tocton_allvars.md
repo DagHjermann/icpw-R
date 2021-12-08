@@ -1,7 +1,7 @@
 ---
-title: "161a2 Analyse TOC/TON decrease - all variables"
+title: "161a2 Analyse TOC/TON decrease - medians and slopes of TOC and TON)"
 author: "DHJ"
-date: "8 5 2020"
+date: "7 12 2021"
 output: 
   html_document:
     toc: true    
@@ -13,7 +13,7 @@ params:
   text_dataset: 
     value: 'Data with slope_dep_vs_time, NO3, and TOTN_dep'
   selected_vars: 
-    value: 'tocton_decrease,catchment_area, TOC, TON,slope_toc_vs_time, slope_ton_vs_time, slope_dep_vs_time, TOTN_dep, latitude, longitude, altitude,pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse'
+    value: 'tocton_decrease,catchment_area, TOC, TON, TOCTON, slope_toc_vs_time, slope_ton_vs_time, slope_dep_vs_time, TOTN_dep, latitude, longitude, altitude,pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse'
   extra_pairwise_plots:
     value: 'TOC,NO3; slope_dep_vs_time,TOTN_dep; altitude,decid_mixed'
   pairwise_plots_same_scale:
@@ -45,7 +45,7 @@ As 160, but analysing the trend in TOC/TON ratio
     - Land cover 
   
 Technical details: This html file was created with `161parm_Time_series_tocton.Rmd` run with `161parm_run_markdown.R`    
-Code: https://github.com/DagHjermann/icpw-R   
+Code: https://github.com/DagHjermann/icpw-R  
 
 ## 1. Libraries  
 
@@ -58,7 +58,7 @@ library(lubridate)
 library(ggplot2)
 
 # Too many packages, not all are used
-library(mapview)
+# library(mapview)
 library(visreg)     # visreg
 library(rkt)        # Theil -Sen Regression
 
@@ -105,13 +105,6 @@ cat("Regression slopes and medians from:", sQuote(file), ",n =", nrow(reg_ratio)
 
 # Station metadata
 # THESE WILL BE ADDED WITH LAND COVER  
-# file <- "trends_1992-2016_toc_totn_no3_relax_italy_stations.csv"
-# fn <- paste0(folder, "/", file)
-# df_metadata <- read.csv(fn, encoding = "UTF-8")
-# cat("Regression result metadata:", sQuote(file), ",n =", nrow(df_metadata), "\n\n")
-
-# cat("Countries with trends: \n")
-# xtabs(~country, df_metadata)  
 ```
 
 ```
@@ -158,23 +151,29 @@ df3 <- reg_ratio %>%
          TON = `TON_µg/l N`)
 
 cat("\n")
-cat("df1, n =", nrow(df1), "\n")
+cat("df1, n =", nrow(df1), " (number of rows for slopes, including NA values in toc/ton slope)\n")
 cat("df2, n =", nrow(df2), "\n")
 cat("df3, n =", nrow(df3), "\n")
 
-dat_1 <- df1 %>%
+dat_1_all <- df1 %>%
   full_join(df2, by = "station_id") %>%
   full_join(df3, by = "station_id")
 
-cat("dat_1, n =", nrow(dat_1), "\n")
+cat("dat_1_all, n =", nrow(dat_1_all), " (includes series without toc/ton)\n")
+
+dat_1 <- dat_1_all %>%
+  filter(!is.na(slope_tocton_vs_time))
+
+cat("dat_1, n =", nrow(dat_1), " (all data with existing values of 'slope_tocton_vs_time')\n")
 ```
 
 ```
 ## 
-## df1, n = 293 
+## df1, n = 293  (number of rows for slopes, including NA values in toc/ton slope)
 ## df2, n = 293 
 ## df3, n = 293 
-## dat_1, n = 293
+## dat_1_all, n = 293  (includes series without toc/ton)
+## dat_1, n = 287  (all data with existing values of 'slope_tocton_vs_time')
 ```
 
 ### Deposition trends and median 1992-2006     
@@ -242,55 +241,28 @@ dat_2 <- dat_1 %>%
 ```r
 fn <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/climate/cru_climate_trends_icpw_stns.csv"
 
-df_climate_mean <- read_csv(fn) %>% 
+df_climate <- read_csv(fn, 
+                       col_types = cols(
+                         station_id = col_double(),
+                         variable = col_character(),
+                         median = col_double(),
+                         mk_p_val = col_double(),
+                         mk_trend = col_character(),
+                         sen_slp = col_double(),
+                         sen_incpt = col_double(),
+                         sen_trend = col_character()
+                       ))
+                            
+df_climate_mean <- df_climate %>% 
   select(station_id, variable, median) %>%
   pivot_wider(names_from = "variable", values_from = "median")
-```
-
-```
-## Rows: 1112 Columns: 8
-```
-
-```
-## ── Column specification ───────────────────────────────────────────────────────────────────────
-## Delimiter: ","
-## chr (3): variable, mk_trend, sen_trend
-## dbl (5): station_id, median, mk_p_val, sen_slp, sen_incpt
-```
-
-```
-## 
-## ℹ Use `spec()` to retrieve the full column specification for this data.
-## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
-```
-
-```r
 cat("\n")
 # names(df_climate_mean)
 
-df_climate_slope <- read_csv(fn) %>%
+df_climate_slope <- df_climate %>%
   select(station_id, variable, sen_slp) %>%
-  pivot_wider(names_from = "variable", values_from = "sen_slp", names_prefix = "Slope_")
-```
+  pivot_wider(names_from = "variable", values_from = "sen_slp", names_prefix = "slope_")
 
-```
-## Rows: 1112 Columns: 8
-```
-
-```
-## ── Column specification ───────────────────────────────────────────────────────────────────────
-## Delimiter: ","
-## chr (3): variable, mk_trend, sen_trend
-## dbl (5): station_id, median, mk_p_val, sen_slp, sen_incpt
-```
-
-```
-## 
-## ℹ Use `spec()` to retrieve the full column specification for this data.
-## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
-```
-
-```r
 # Add
 dat_3 <- dat_2 %>%
   left_join2(df_climate_mean, by = "station_id", print_vars = TRUE) %>%
@@ -314,7 +286,7 @@ dat_3 <- dat_2 %>%
 ## 'station_id'
 ## 
 ## Variables added: 
-## 'Slope_pre', 'Slope_tmp'
+## 'slope_pre', 'slope_tmp'
 ```
 
 ### Combine land cover types   
@@ -348,7 +320,7 @@ dat_4 <- left_join2(dat_3,
 
 ```
 ## Variables before join: 
-## 'station_id', 'slope_no3_vs_time', 'slope_ton_vs_time', 'slope_toc_vs_time', 'slope_tocton_vs_time', 'p_no3_vs_time', 'p_ton_vs_time', 'p_toc_vs_time', 'p_tocton_vs_time', 'NO3', 'TON', 'TOC', 'TOCTON', 'TOTN_dep', 'slope_dep_vs_time', 'p_dep_vs_time', 'pre', 'tmp', 'Slope_pre', 'Slope_tmp'
+## 'station_id', 'slope_no3_vs_time', 'slope_ton_vs_time', 'slope_toc_vs_time', 'slope_tocton_vs_time', 'p_no3_vs_time', 'p_ton_vs_time', 'p_toc_vs_time', 'p_tocton_vs_time', 'NO3', 'TON', 'TOC', 'TOCTON', 'TOTN_dep', 'slope_dep_vs_time', 'p_dep_vs_time', 'pre', 'tmp', 'slope_pre', 'slope_tmp'
 ## 
 ## Variables used to join: 
 ## 'station_id'
@@ -356,22 +328,25 @@ dat_4 <- left_join2(dat_3,
 ## Variables added: 
 ## 'station_code', 'station_name', 'latitude', 'longitude', 'altitude', 'continent', 'country', 'region', 'group', 'catchment_area', 'urban', 'cultivated', 'total_forest', 'coniferous', 'total_shrub_herbaceous', 'grasslands', 'heathlands', 'transitional_woodland_shrub', 'wetland', 'other', 'bare_sparse', 'decid_mixed', 'lake_water'
 ```
-
-### Drop locations with >5% cultivated     
-- also excluding stations 23517, 38273  
+### Drop locations with >5% cultivated and >5% urban     
+- also excluding stations 23517, 38273    
 
 ```r
 cultivated_threshold <- 5
+urban_threshold <- 5
 
 dat_5 <- dat_4 %>%
-  filter(cultivated <= cultivated_threshold) %>%
-  filter(!station_id %in% c(23517, 38273)) 
-
-cat(nrow(dat_4) - nrow(dat_5), "stations with >",  cultivated_threshold, "% cultivated deleted \n")
+  filter2(!station_id %in% c(23517, 38273), text = "Deleted stations 23517, 38273") %>%
+  filter2(cultivated <= cultivated_threshold, 
+          text = paste("Deleted stations with >", cultivated_threshold, "% cultivated")) %>%
+  filter2(urban <= urban_threshold, 
+          text = paste("Deleted stations with >", urban_threshold, "% urban"))
 ```
 
 ```
-## 13 stations with > 5 % cultivated deleted
+## Removed 1 rows (Deleted stations 23517, 38273)
+## Removed 12 rows (Deleted stations with > 5 % cultivated)
+## Removed 5 rows (Deleted stations with > 5 % urban)
 ```
 
 
@@ -439,12 +414,19 @@ dat %>%
 
 
 ## 4. Select data    
+   
+**See Section 2 - Drop locations... for data rows deleted before this part**    
 
-### a. Select variables  
+### a. Select variables   
 * Select variables to use, and thereby also cases   
-* Also, 'AtlCan' data are excluded  
+* Also, 'AtlCan' data are excluded   
+* Saves data both before and after rows with removing missing predictors are removed
 
 ```r
+# Variables that will be included in excel output (removed afterwards)
+vars_for_excel <- c("slope_tocton_vs_time", "station_id", "station_code", 
+                    "station_name", "country", "region", "continent")
+
 get_df_tocton_decrease <- function(data, variable_string){
   variable_string <- gsub(" ", "", variable_string)
   variables <- strsplit(variable_string, split = ",")[[1]]
@@ -455,9 +437,7 @@ get_df_tocton_decrease <- function(data, variable_string){
         slope_tocton_vs_time < 0 & p_tocton_vs_time <= 0.05 ~ 1,
         TRUE ~ 0)
     )
-  # Variables that will be included in excel output (removed afterwards)
-  id_vars <- c("station_id", "station_code", "station_name", "country", "region", "continent")
-  df[c(id_vars, variables)]
+  df[c(vars_for_excel, variables)]
 }
 
 
@@ -468,19 +448,25 @@ cat("Variables: \n")
 cat(params$selected_vars)
 cat("\n-------------------------------------------------------------\n")
 
+cat("\nStarting with partially filtered data - see 'Section 2 - Drop locations...' \n\n")
+
 dat_filtered <- dat %>%
-  filter(region != "AtlCan")
+  filter2(region != "AtlCan" & country != "Italy", text = "Remove AtlCan and Italy")  
 
-df_analysis <- get_df_tocton_decrease(dat_filtered, params$selected_vars)  
+df_analysis_allrows <- get_df_tocton_decrease(dat_filtered, params$selected_vars)  
 
-# table(df_analysis$tocton_decrease)
+# Save to excel
+fn <- paste0(substr(params$document_title, 1, 3), "_data.xlsx")
+writexl::write_xlsx(df_analysis_allrows, paste0("Data_analysed/", fn))
+cat("\nDataset at this point saved as", sQuote(fn), "\n\n")
 
 
+# table(df_analysis_allrows$tocton_decrease)
 
 # names(dat) %>% paste(collapse = ", ")
 
 cat("Number of missing values per variable: \n")
-apply(is.na(df_analysis), 2, sum) 
+apply(is.na(df_analysis_allrows), 2, sum) 
 cat("\n")
 
 # What is missing? (long output)
@@ -491,45 +477,54 @@ if (FALSE){
 }
 
 cat("Number of complete observations: \n")
-complete <- complete.cases(df_analysis)
+complete <- complete.cases(df_analysis_allrows)
 table(complete)
 
 cat("\n\n")
 cat("Number of complete observations by country: \n")
-table(df_analysis$country, complete)
+table(df_analysis_allrows$country, complete)
 
 # Keep only complete cases
-df_analysis <- df_analysis[complete.cases(df_analysis),]
+df_analysis <- df_analysis_allrows[complete.cases(df_analysis_allrows),]
 
-# Save to excel
+# Save to excel 
 fn <- paste0(substr(params$document_title, 1, 5), "_data.xlsx")
 writexl::write_xlsx(df_analysis, paste0("Data_analysed/", fn))
 
-# Remove variables defined as 'id_vars' in function above
-df_analysis <- df_analysis %>%
-  select(-station_id, -station_code, -station_name, -country, -region, -continent)
+# Remove variables defined as 'vars_for_excel' in function above
+sel <- names(df_analysis) %in% vars_for_excel
+df_analysis <- df_analysis[!sel]
 
 cat("\n\n")
-cat("Original data: n =", nrow(dat), "\n")
-cat("Data after filtering: n =", nrow(dat_filtered), "\n")
-cat("Analysis: n =", nrow(df_analysis), "\n")
+cat("Data before removing AtlCan and Italy: n =", nrow(dat), " (also see 'Section 2 - Drop locations...')\n")
+cat("Data after removing AtlCan and Italy: n =", nrow(df_analysis_allrows), "\n")
+cat("Data after removing missing predictors: n =", nrow(df_analysis), "\n")
 ```
 
 ```
 ## 
-##     Alps   AtlCan   NoNord      Ont   SoNord UK-IE-NL      WCE 
-##        6       58       49        7      138       21        1 
+##   AtlCan   NoNord      Ont   SoNord UK-IE-NL      WCE 
+##       55       49        7      136       21        1 
 ## -------------------------------------------------------------
 ## Variables: 
-## tocton_decrease,catchment_area, TOC, TON,slope_toc_vs_time, slope_ton_vs_time, slope_dep_vs_time, TOTN_dep, latitude, longitude, altitude,pre, tmp, urban, cultivated, total_forest, total_shrub_herbaceous,wetland, lake_water, bare_sparse
+## tocton_decrease,catchment_area, TOC, TON, TOCTON,slope_pre, slope_tmp,slope_toc_vs_time, slope_ton_vs_time, slope_dep_vs_time, TOTN_dep, latitude, longitude, altitude,pre, tmp, urban, cultivated, total_forest, total_shrub_herbaceous,wetland, lake_water, bare_sparse
 ## -------------------------------------------------------------
+## 
+## Starting with partially filtered data - see 'Section 2 - Drop locations...' 
+## 
+## Removed 55 rows (Remove AtlCan and Italy)
+## 
+## Dataset at this point saved as '161_data.xlsx' 
+## 
 ## Number of missing values per variable: 
-##             station_id           station_code           station_name                country 
+##   slope_tocton_vs_time             station_id           station_code           station_name 
 ##                      0                      0                      0                      0 
-##                 region              continent        tocton_decrease         catchment_area 
+##                country                 region              continent        tocton_decrease 
 ##                      0                      0                      0                      0 
-##                    TOC                    TON      slope_toc_vs_time      slope_ton_vs_time 
-##                      6                      0                      6                      0 
+##         catchment_area                    TOC                    TON                 TOCTON 
+##                      0                      0                      0                      0 
+##              slope_pre              slope_tmp      slope_toc_vs_time      slope_ton_vs_time 
+##                      0                      0                      0                      0 
 ##      slope_dep_vs_time               TOTN_dep               latitude              longitude 
 ##                      0                      0                      0                      0 
 ##               altitude                    pre                    tmp                  urban 
@@ -541,25 +536,24 @@ cat("Analysis: n =", nrow(df_analysis), "\n")
 ## 
 ## Number of complete observations: 
 ## complete
-## FALSE  TRUE 
-##     6   216 
+## TRUE 
+##  214 
 ## 
 ## 
 ## Number of complete observations by country: 
 ##                 complete
-##                  FALSE TRUE
-##   Canada             0    7
-##   Finland            0   25
-##   Germany            0    1
-##   Italy              6    0
-##   Norway             0   80
-##   Sweden             0   82
-##   United Kingdom     0   21
+##                  TRUE
+##   Canada            7
+##   Finland          24
+##   Germany           1
+##   Norway           80
+##   Sweden           81
+##   United Kingdom   21
 ## 
 ## 
-## Original data: n = 280 
-## Data after filtering: n = 222 
-## Analysis: n = 216
+## Data before removing AtlCan and Italy: n = 269  (also see 'Section 2 - Drop locations...')
+## Data after removing AtlCan and Italy: n = 214 
+## Data after removing missing predictors: n = 214
 ```
 
 
@@ -631,13 +625,13 @@ table(tr.pred[,"P1"] > 0.5, valid_set$tocton_decrease_f)
 ```
 ## 
 ## Model formula:
-## tocton_decrease_f ~ catchment_area + TOC + TON + slope_toc_vs_time + 
-##     slope_ton_vs_time + slope_dep_vs_time + TOTN_dep + altitude + 
-##     pre + tmp + urban + cultivated + total_forest + total_shrub_herbaceous + 
-##     wetland + lake_water + bare_sparse
+## tocton_decrease_f ~ catchment_area + TOC + TON + TOCTON + slope_pre + 
+##     slope_tmp + slope_toc_vs_time + slope_ton_vs_time + slope_dep_vs_time + 
+##     TOTN_dep + altitude + pre + tmp + urban + cultivated + total_forest + 
+##     total_shrub_herbaceous + wetland + lake_water + bare_sparse
 ## 
 ## Fitted party:
-## [1] root: 0 (n = 197, err = 5.1%) 
+## [1] root: 0 (n = 195, err = 4.1%) 
 ## 
 ## Number of inner nodes:    0
 ## Number of terminal nodes: 1
@@ -646,14 +640,14 @@ table(tr.pred[,"P1"] > 0.5, valid_set$tocton_decrease_f)
 ## Table of prediction errors 
 ##    
 ##       0   1
-##   0 187  10
+##   0 187   8
 ##   1   0   0
 ## 
 ## 
 ## Classification of training set 
 ##        
-##          0
-##   FALSE 19
+##          0  1
+##   FALSE 17  2
 ```
 
 ### b. Evtree (Evolutionary Learning)   
@@ -678,12 +672,12 @@ cat("\n\nPrediction errors in training data: \n")
 ## Predicted in training data: 
 ##    
 ##       0   1
-##   0 185   4
-##   1   2   6
+##   0 184   4
+##   1   3   4
 ## 
 ## 
 ## Prediction errors in training data: 
-## [1] 0.03045685
+## [1] 0.03589744
 ```
 
 
@@ -708,11 +702,11 @@ model1
 ##                      Number of trees: 500
 ## No. of variables tried at each split: 5
 ## 
-##         OOB estimate of  error rate: 4.06%
+##         OOB estimate of  error rate: 3.59%
 ## Confusion matrix:
 ##     0 1 class.error
-## 0 187 0         0.0
-## 1   8 2         0.8
+## 0 186 1 0.005347594
+## 1   6 2 0.750000000
 ```
 
 
@@ -727,9 +721,9 @@ table(pred_valid, valid_set$tocton_decrease_f)
 
 ```
 ##           
-## pred_valid  0
-##          0 19
-##          1  0
+## pred_valid  0  1
+##          0 17  2
+##          1  0  0
 ```
 
 
@@ -751,9 +745,9 @@ table(pred_valid, valid_set$tocton_decrease_f)
 
 ```
 ##           
-## pred_valid  0
-##          0 19
-##          1  0
+## pred_valid  0  1
+##          0 17  2
+##          1  0  0
 ```
 
 
@@ -885,8 +879,28 @@ subset(dredged_models, delta < 2)
 ##     data = df_analysis, na.action = "na.fail")
 ## ---
 ## Model selection table 
-##     (Int)     alt slp_toc_vs_tim slp_ton_vs_tim   TOC    TON df logLik AICc delta weight
-## 434 33.54 -0.7386         -45330          990.2 332.3 -13.42  6      0 12.4     0      1
+##        (Int)      alt ctc_are lak_wtr slp_dep_vs_tim slp_pre  slp_tmp slp_toc_vs_tim
+## 7394   798.5  -0.6563                                          -17270         -31350
+## 5354   763.0  -0.6586                          31.25           -19350         -45970
+## 4334   637.3  -0.7396         -12.090          38.36           -17200         -72450
+## 6374  1053.0  -1.0640         -11.000                          -23790         -71850
+## 4582  1141.0  -1.4830          -9.841                          -38890        -115300
+## 6626  2473.0  -2.3220                                          -65900        -131000
+## 4586  2836.0  -2.6850                          44.98           -81530        -169600
+## 6372  3404.0  -3.6030   12.14                                  -89780        -212500
+## 4332  7409.0  -8.7380   38.41                 318.00          -232700        -669200
+## 6386 89190.0 -61.9900                                  -1728 -2015000       -4187000
+##      slp_ton_vs_tim    tmp ttl_frs  TOT_dep     wtl df logLik AICc delta weight
+## 7394          661.1          3.744  -0.6362  -104.2  8  0.000 16.7  0.00  0.100
+## 5354          893.9          4.525           -105.1  8  0.000 16.7  0.00  0.100
+## 4334         1472.0                          -224.7  8  0.000 16.7  0.00  0.100
+## 6374         1531.0                 -1.0620  -251.5  8  0.000 16.7  0.00  0.100
+## 4582         2584.0 -211.7                   -262.7  8  0.000 16.7  0.00  0.100
+## 6626         2981.0 -180.8          -1.1070  -310.3  8  0.000 16.7  0.00  0.100
+## 4586         3869.0 -282.2                   -389.9  8  0.000 16.7  0.00  0.100
+## 6372         4335.0                 -2.8310  -511.4  8  0.000 16.7  0.00  0.100
+## 4332        12990.0                         -1317.0  8 -0.001 16.7  0.00  0.100
+## 6386        77680.0                -65.0900 -8684.0  8 -0.009 16.7  0.02  0.099
 ## Models ranked by AICc(x)
 ```
 
@@ -917,7 +931,7 @@ if (length(modelvars$additive_vars) > 0){
 }
 ```
 
-![](161a2_Time_series_tocton_allvars_files/figure-html/unnamed-chunk-25-1.png)<!-- -->
+![](161a2_Time_series_tocton_allvars_files/figure-html/unnamed-chunk-24-1.png)<!-- -->![](161a2_Time_series_tocton_allvars_files/figure-html/unnamed-chunk-24-2.png)<!-- -->
 
 
 

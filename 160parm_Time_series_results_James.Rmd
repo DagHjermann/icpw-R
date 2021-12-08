@@ -392,6 +392,9 @@ dat %>%
 * Select variables to use, and thereby also cases  
 * Saves data both before and after rows with removing missing predictors are removed
 ```{r}
+# Variables that will be included in excel output (removed afterwards)
+vars_for_excel <- c("slope_no3_vs_time", "station_id", "station_code", 
+                    "station_name", "country", "region", "continent")
 
 get_df_no3_decline <- function(data, variable_string){
   variable_string <- gsub(" ", "", variable_string)
@@ -403,9 +406,6 @@ get_df_no3_decline <- function(data, variable_string){
         slope_no3_vs_time < 0 & p_no3_vs_time <= 0.05 ~ 1,
         TRUE ~ 0)
     )
-  # Variables that will be included in excel output (removed afterwards)
-  vars_for_excel <- c("slope_no3_vs_time", "station_id", "station_code", 
-                      "station_name", "country", "region", "continent")
   df[c(vars_for_excel, variables)]
 }
 
