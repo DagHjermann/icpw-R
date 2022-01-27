@@ -25,50 +25,13 @@ get_model_variables <- function(model){
 # get_model_variables(fit)  
 
 
-#
-# left_join2 
-#
-# as 'left_join', but     
-# - Does not accept common variables that are not key variables (specified in "by")  
-# - Gives warning if there are nn-unique combinations of key variables i data set 2, so number of rows increase (duplicating rows in data set no. 1)   
-# - Optionally, Lists existing variables, key variables and added variables (if print_vars = TRUE)  
-
-left_join2 <- function(data1, data2, by = by, ..., print_vars = FALSE){
-  
-  common_vars <- intersect(names(data1), names(data2))
-  common_vars_not_in_by <- common_vars[!common_vars %in% by]
-  
-  if (length(common_vars_not_in_by) > 0){
-    stop("Columns ", paste(sQuote(common_vars_not_in_by), collapse = ", "), " exists in both data sets")
-  }
-  result <- left_join(data1, data2, by = by, ...)
-  
-  if (nrow(result) > nrow(data1)){
-    warning("Data set 2 does not have unique rows. Number of rows increased from ", 
-            nrow(data1), " to ", nrow(result))
-  }
-  
-  vars_added <-   names(data2)[!names(data2) %in% names(data1)]
-  
-  if (print_vars){
-    cat("Variables before join: \n")
-    paste(sQuote(names(data1), q = FALSE), collapse = ", ") %>% cat()
-    cat("\n\nVariables used to join: \n")
-    paste(sQuote(by, q = FALSE), collapse = ", ") %>% cat()
-    cat("\n\nVariables added: \n")
-    paste(sQuote(vars_added, q = FALSE), collapse = ", ") %>% cat()
-    cat("\n")
-    
-  }
-  
-  result
-  
-}
-
 
 
 # Function for plotting partial effects  
-# Used in 161parm (see 160parm also)  
+# Used in 160parm, 161parm, 162parm   
+
+# NOTE: assumes the existence of 'plotdata' and 'full_set' 
+#  'plotdata' = a list consisting of data frames with 3 variables, where number 3 is called 'yhat'  
 
 plot_pair_number <- function(i, zrange = NULL, legend_title = ""){
   
@@ -78,11 +41,11 @@ plot_pair_number <- function(i, zrange = NULL, legend_title = ""){
   gg <- ggplot(plotdata[[i]], aes(!!variable_x, !!variable_y)) +
     geom_tile(aes(fill = yhat)) +
     geom_contour(aes(z = yhat), color = "white") +
-    geom_point(data = valid_set, shape = 21, size = 2, colour = "white", bg = "red") +
+    geom_point(data = full_set, shape = 21, size = 1, colour = "white", bg = "red") +
     theme_bw()
   
   if (is.null(zrange)){
-    gg + scale_fill_viridis_c(legend_title")
+    gg + scale_fill_viridis_c(legend_title)
   } else {
     gg + scale_fill_viridis_c(legend_title, limits = zrange)
   }
