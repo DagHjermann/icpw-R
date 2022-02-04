@@ -12,6 +12,8 @@ params:
     value: '160x Analyse NO3 decline - test run'
   text_dataset: 
     value: 'Data with slope_dep_vs_time, NO3, and TOTN_dep'
+  extra_selection_variable: 'continent'
+  extra_selection_values: 'Europe;North America'
   selected_vars: 
     value: 'no3_decline,catchment_area, TOC,slope_dep_vs_time, NO3, TOTN_dep, latitude, longitude, altitude,pre, tmp, slope_pre, slope_tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse'
   extra_pairwise_plots:
@@ -344,11 +346,21 @@ dat_5 <- dat_4 %>%
 
 ```
 
+### Extra selection (given by 'extra_selection_variable')  
+```{r}
+
+selection_values <- params$extra_selection_values %>% strsplit(split = ";") %>% .[[1]]
+sel <- dat_5[[params$extra_selection_variable]] %in% selection_values
+sum(sel)
+mean(sel)
+dat_6 <- dat_5[sel,]
+
+```
 
 ### Data set used  
 ```{r}
 
-dat <- dat_5
+dat <- dat_6
 
 ```
 
