@@ -349,3 +349,102 @@ rmarkdown::render(
 
 
 
+
+#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
+#
+# 160e1 - As 160d1, but for North America only ----
+#       - All variables incl. TOC, excl. altitude (coniferous + decid_mixed separately)
+#
+#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
+
+
+# If many parameters, split up the lines with a 'paste()'  
+# Remember to set that the parts should be joined using a comma (sep = ",") 
+#   (or let each part end with a comma)
+vars <- paste(
+  "no3_decline", 
+  "TOC",                                
+  "slope_dep_vs_time, NO3, TOTN_dep, latitude, longitude",   # altitude removed
+  "pre, tmp, slope_pre, slope_tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous",
+  "wetland, lake_water, bare_sparse",
+  sep = ",")    # remember this
+vars
+#
+# If long formula, split up the lines with a 'paste()'  
+#
+form <- paste(
+  "no3_decline ~ TOC +",                # change here
+  "TOTN_dep*slope_dep_vs_time + NO3 +", 
+  "decid_mixed + coniferous +",
+  "tmp + lake_water + wetland"
+)
+# form 
+
+# To find file names used:
+# dir(pattern = "160*")
+
+# Render HTML and .md files  
+rmarkdown::render(
+  input = '160parm_Time_series_results_James.Rmd',          
+  output_file = '160d1_Time_series_results_James_no_altitude.html',                     # change here
+  params = list(
+    document_title = "160d1 Analyse NO3 decline - excl. altitude and catchment_area",                 # change here
+    text_dataset = "Dataset: all variables except altitude and catchment area (but including TOC)",  # change here
+    selected_vars = vars,
+    logistic_formula = form,
+    extra_selection_variable = 'continent',
+    extra_selection_values = 'North America'
+  )
+)
+
+
+#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
+#
+# 160f1 - As 160d1, but for Europe only ----
+#       - All variables incl. TOC, excl. altitude (coniferous + decid_mixed separately)
+#
+#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
+
+
+# If many parameters, split up the lines with a 'paste()'  
+# Remember to set that the parts should be joined using a comma (sep = ",") 
+#   (or let each part end with a comma)
+vars <- paste(
+  "no3_decline", 
+  "TOC",                                
+  "slope_dep_vs_time, NO3, TOTN_dep, latitude, longitude",   # altitude removed
+  "pre, tmp, slope_pre, slope_tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous",
+  "wetland, lake_water, bare_sparse",
+  sep = ",")    # remember this
+vars
+#
+# If long formula, split up the lines with a 'paste()'  
+#
+form <- paste(
+  "no3_decline ~ TOC +",                # change here
+  "TOTN_dep*slope_dep_vs_time + NO3 +", 
+  "decid_mixed + coniferous +",
+  "tmp + lake_water + wetland"
+)
+# form 
+
+# To find file names used:
+# dir(pattern = "160*")
+
+# Render HTML and .md files  
+rmarkdown::render(
+  input = '160parm_Time_series_results_James.Rmd',          
+  output_file = '160d1_Time_series_results_James_no_altitude.html',                     # change here
+  params = list(
+    document_title = "160d1 Analyse NO3 decline - excl. altitude and catchment_area",                 # change here
+    text_dataset = "Dataset: all variables except altitude and catchment area (but including TOC)",  # change here
+    selected_vars = vars,
+    logistic_formula = form,
+    extra_selection_variable = 'continent',
+    extra_selection_values = 'Europe'
+  )
+)
+
+
+
+
