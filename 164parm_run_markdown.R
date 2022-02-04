@@ -41,7 +41,7 @@ form <- paste(
   "median_no3 ~ TOTN_dep +", 
   "slope_dep_vs_time + TOTN_dep:slope_dep_vs_time +",
   "median_toc + TOTN_dep:median_toc +",
-  "tmp + pre + altitude +",
+  "tmp + pre +",
   "decid_mixed + bare_sparse + coniferous +",
   "catchment_area + lake_water + total_shrub_herbaceous"
 )
@@ -90,7 +90,7 @@ vars
 form <- paste(
   "median_no3 ~ TOTN_dep +", 
   "slope_dep_vs_time + TOTN_dep:slope_dep_vs_time +",
-  "tmp + pre + altitude +",
+  "tmp + pre + ",
   "decid_mixed + bare_sparse + coniferous +",
   "lake_water + total_shrub_herbaceous"
 )
@@ -141,7 +141,7 @@ form <- paste(
   "median_tocton ~ median_ton + median_toc +", 
   "median_ton:median_toc +",
   "tmp + pre +",                          # change here
-  "altitude + bare_sparse + coniferous +",
+  "bare_sparse + coniferous +",
   "lake_water + decid_mixed +", 
   "urban + catchment_area"
 )
@@ -190,7 +190,7 @@ vars <- paste(
 form <- paste(
   "median_tocton ~", 
   "tmp + pre +",                          # change here
-  "altitude + bare_sparse + coniferous +",
+  "bare_sparse + coniferous +",
   "lake_water + decid_mixed +", 
   "urban + catchment_area"
 )
@@ -249,7 +249,7 @@ form <- paste(
   "median_no3 ~ TOTN_dep +", 
   "slope_dep_vs_time + TOTN_dep:slope_dep_vs_time +",
   "median_toc + TOTN_dep:median_toc +",
-  "tmp + pre + altitude +",
+  "tmp + pre +",
   "bare_sparse + total_forest +",
   "catchment_area + lake_water + total_shrub_herbaceous"
 )
@@ -298,7 +298,7 @@ vars
 form <- paste(
   "median_no3 ~ TOTN_dep +", 
   "slope_dep_vs_time + TOTN_dep:slope_dep_vs_time +",
-  "tmp + pre + altitude +",
+  "tmp + pre +",
   "bare_sparse + total_forest +",
   "lake_water + total_shrub_herbaceous"
 )
@@ -349,7 +349,7 @@ form <- paste(
   "median_tocton ~ median_ton + median_toc +", 
   "median_ton:median_toc +",
   "tmp + pre +",                          # change here
-  "altitude + bare_sparse + total_forest +",
+  "bare_sparse + total_forest +",
   "lake_water +", 
   "urban + catchment_area"
 )
@@ -398,7 +398,7 @@ vars <- paste(
 form <- paste(
   "median_tocton ~", 
   "tmp + pre +",                          # change here
-  "altitude + bare_sparse + total_forest +",
+  "bare_sparse + total_forest +",
   "lake_water +", 
   "urban + catchment_area"
 )
