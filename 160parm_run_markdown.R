@@ -386,9 +386,9 @@ form <- paste(
 # Render HTML and .md files  
 rmarkdown::render(
   input = '160parm_Time_series_results_James.Rmd',          
-  output_file = '160d1_Time_series_results_James_no_altitude.html',                     # change here
+  output_file = '160e1_Time_series_results_James_no_altitude_NAmerica.html',                     # change here
   params = list(
-    document_title = "160d1 Analyse NO3 decline - excl. altitude and catchment_area",                 # change here
+    document_title = "160e1 Analyse NO3 decline - excl. altitude and catchment_area - N. America",                 # change here
     text_dataset = "Dataset: all variables except altitude and catchment area (but including TOC)",  # change here
     selected_vars = vars,
     logistic_formula = form,
@@ -434,9 +434,9 @@ form <- paste(
 # Render HTML and .md files  
 rmarkdown::render(
   input = '160parm_Time_series_results_James.Rmd',          
-  output_file = '160d1_Time_series_results_James_no_altitude.html',                     # change here
+  output_file = '160f1_Time_series_results_James_no_altitude_Europe.html',                     # change here
   params = list(
-    document_title = "160d1 Analyse NO3 decline - excl. altitude and catchment_area",                 # change here
+    document_title = "160f1 Analyse NO3 decline - excl. altitude and catchment_area - Europe",                 # change here
     text_dataset = "Dataset: all variables except altitude and catchment area (but including TOC)",  # change here
     selected_vars = vars,
     logistic_formula = form,
