@@ -9,11 +9,11 @@ output:
     keep_md: true
 params:
   document_title: 
-    value: '162x Analyse NO3 status - test run'
+    value: '164a1 Analyse NO3 medians 2012-2016 - all variables'
   text_line1: 
     value: 'Analysis of NO3 medians (2012-2016)'
   text_line2: 
-    value: 'Data with NO3, TOTN_dep, slope_dep_vs_time, TOC, tmp (temperature), pre (precipitation)'
+    value: 'Dataset: NO3 medians data set incl. catchment_area + TOC'
   medians_filename:
     value: 'medians_2012-2016_no3.csv'        
   selected_vars: 
@@ -29,10 +29,11 @@ params:
 
 ---
 
+
 ```{r, echo = FALSE}  
 
 #
-# This file is designed to be run using '162parm_run_markdown.R'  
+# This file is designed to be run using '164parm_run_markdown.R'  
 # The scripts in that file renders 3 result html file: 19\60a, b and c (different variable sets and data)  
 #
 
@@ -70,7 +71,7 @@ library(lubridate)
 library(ggplot2)
 
 # Too many packages, not all are used
-library(mapview)
+# library(mapview)
 library(visreg)     # visreg
 library(rkt)        # Theil -Sen Regression
 
@@ -103,7 +104,7 @@ options(width = 95)
 
 
 ## 2. Data  
-* The data part (part 2) is quite similar in scripts 160, 161 and 162 
+* The data part (part 2) is quite similar in scripts 160-164 
 
 ### Available files
 ```{r, echo=FALSE, results='hold'}
@@ -626,8 +627,8 @@ fm <- lm(
   na.action = "na.fail")
 
 dredged_models <- dredge(fm)                       # only once
-# saveRDS(dredged_models, "Data/162_all_dredged_models.rds")    # save it as it takes a couple of minutes
-# dredged_models <- readRDS("Data/162_all_dredged_models.rds")
+# saveRDS(dredged_models, "Data/164_all_dredged_models.rds")    # save it as it takes a couple of minutes
+# dredged_models <- readRDS("Data/164_all_dredged_models.rds")
 
 # cat("\n\nR2: \n")
 # mod1 <- get.models(dredged_models, 1)[[1]]  
