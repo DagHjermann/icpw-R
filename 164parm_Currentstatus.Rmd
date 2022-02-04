@@ -17,15 +17,15 @@ params:
   medians_filename:
     value: 'medians_2012-2016_no3.csv'        
   selected_vars: 
-    value: 'log_median_no3,catchment_area, log_median_toc,slope_dep_vs_time, TOTN_dep, latitude, longitude, altitude,pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse'
+    value: 'median_no3, catchment_area, median_toc,slope_dep_vs_time, TOTN_dep, latitude, longitude, pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse'
   tree_formula:
-    value: 'log_median_no3 ~ .'
+    value: 'median_no3 ~ .'
   extra_pairwise_plots:
-    value: 'TOC,NO3; slope_dep_vs_time,TOTN_dep; altitude,decid_mixed'
+    value: 'TOC,NO3; slope_dep_vs_time,TOTN_dep'
   pairwise_plots_same_scale:
     value: 'FALSE'
   logistic_formula: 
-    value: 'log_median_no3 ~ TOTN_dep + slope_dep_vs_time + TOTN_dep:slope_dep_vs_time + log_median_toc + TOTN_dep:log_median_toc + tmp + pre + altitude + decid_mixed + bare_sparse + coniferous + catchment_area + lake_water + total_shrub_herbaceous'
+    value: 'median_no3 ~ TOTN_dep + slope_dep_vs_time + TOTN_dep:slope_dep_vs_time + median_toc + TOTN_dep:median_toc + tmp + pre + decid_mixed + bare_sparse + coniferous + catchment_area + lake_water + total_shrub_herbaceous'
 
 ---
 
@@ -610,12 +610,17 @@ for (i in 1:length(plotdata)){
 
   }
   
+  # Save gg obkjct for later plotting / changes
+  fn <- paste0(
+    "Figures/Partial_plots/gg_",
+    params$document_title %>% stringr::str_extract("([^[[:blank:]]]+)"),
+    "_", i, ".rds")
+  saveRDS(gg, fn)
+
 }
   
 
 ```
-
-
 
 
 ## 6. Linear regression      
@@ -647,6 +652,9 @@ subset(dredged_models, delta < 2)
 # select(as.data.frame(df) %>% round(6), -`(Intercept)`, -logLik, -AICc)
 
 ```
+
+
+
 ```{r, echo = FALSE}
 
 #
