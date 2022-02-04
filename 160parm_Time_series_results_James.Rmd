@@ -737,6 +737,14 @@ for (i in 1:length(plotdata)){
 
   }
   
+  # Save gg object for later plotting / changes
+  fn <- paste0(
+    "Figures/Partial_plots/gg_",
+    params$document_title %>% stringr::str_extract("([^[[:blank:]]]+)"),
+    "_", i, ".rds")
+  saveRDS(gg, fn)
+  
+  
 }
   
 
