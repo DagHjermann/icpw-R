@@ -10,13 +10,13 @@
 #o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
 #
 # 1. USING coniferous + decid_mixed ----
-# 162a1, 162b1, 162c1, 162d1
+# 164a1, 164b1, 164c1, 164d1
 #
 #o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
 
 #o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
 #
-# 162a1 - log_median_no3 ~ incl. catchment_area + TOC ----
+# 164a1 - log_median_no3 ~ incl. catchment_area + TOC ----
 #
 # Using dataset for NO3: 'medians_2012-2016_no3.csv'  
 #
@@ -48,14 +48,14 @@ form <- paste(
 # form
 
 # To find file names used:
-# dir(pattern = "162*")
+# dir(pattern = "164*")
 
 # Render HTML and .md files  
 rmarkdown::render(
-  input = '162parm_Currentstatus.Rmd',                                        # always the same         
-  output_file = '162a1_Currentstatus_NO3_allvars.html',                        # change here
+  input = '164parm_Currentstatus.Rmd',                                        # always the same         
+  output_file = '164a1_Currentstatus_NO3_allvars.html',                        # change here
   params = list(
-    document_title = "162a1 Analyse NO3 medians 2012-2016 - all variables",    # change here
+    document_title = "164a1 Analyse NO3 medians 2012-2016 - all variables",    # change here
     text_line1 = "Analysis of NO3 medians (2012-2016)",                       # change here
     text_line2 = "Dataset: NO3 medians data set incl. catchment_area + TOC",                             # change here
     medians_filename = "medians_2012-2016_no3.csv",
@@ -66,7 +66,7 @@ rmarkdown::render(
 
 #o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
 #
-# 162b1 - log_median_no3 ~ excluding catchment_area + TOC ----
+# 164b1 - log_median_no3 ~ excluding catchment_area + TOC ----
 #
 # Using dataset for NO3: 'medians_2012-2016_no3.csv'  
 # Without 'log_median_toc'  
@@ -97,14 +97,14 @@ form <- paste(
 # form
 
 # To find file names used:
-# dir(pattern = "162*")
+# dir(pattern = "164*")
 
 # Render HTML and .md files  
 rmarkdown::render(
-  input = '162parm_Currentstatus.Rmd',                                        # always the same         
-  output_file = '162b1_Currentstatus_NO3_no_TOC.html',                        # change here
+  input = '164parm_Currentstatus.Rmd',                                        # always the same         
+  output_file = '164b1_Currentstatus_NO3_no_TOC.html',                        # change here
   params = list(
-    document_title = "162b1 Analyse NO3 medians 2012-2016 - without TOC + catchment area",    # change here
+    document_title = "164b1 Analyse NO3 medians 2012-2016 - without TOC + catchment area",    # change here
     text_line1 = "Analysis of NO3 medians (2012-2016)",                       # change here
     text_line2 = "Dataset: NO3 medians data set excl. TOC and catchment_area",                             # change here
     medians_filename = "medians_2012-2016_no3.csv",
@@ -116,7 +116,7 @@ rmarkdown::render(
 
 #o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
 #
-# 162c1 - log_median_tocton ~ all variables ----
+# 164c1 - log_median_tocton ~ all variables ----
 #
 # Using dataset for TOC/TON: 'medians_2012-2016_toc_totn_no3.csv'  
 #
@@ -147,14 +147,14 @@ form <- paste(
 # form
 
 # To find file names used:
-# dir(pattern = "162*")
+# dir(pattern = "164*")
 
 # Render HTML and .md files  
 rmarkdown::render(
-  input = '162parm_Currentstatus.Rmd',                                          # always the same         
-  output_file = '162c1_Currentstatus_TOCTON_allvars.html',                          # change here
+  input = '164parm_Currentstatus.Rmd',                                          # always the same         
+  output_file = '164c1_Currentstatus_TOCTON_allvars.html',                          # change here
   params = list(
-    document_title = "162c1 Analyse TOC/TON medians 2012-2016 - all variables",  # change here
+    document_title = "164c1 Analyse TOC/TON medians 2012-2016 - all variables",  # change here
     text_line1 = "Analysis of TOC/TON medians (2012-2016)",                     # change here
     text_line2 = "Dataset: TOC/TON medians data set",                             # change here
     medians_filename = "medians_2012-2016_toc_totn_no3.csv",
@@ -166,7 +166,7 @@ rmarkdown::render(
 
 #o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
 #
-# 162d1 - log_median_tocton ~ excluding TOC and TON ----
+# 164d1 - log_median_tocton ~ excluding TOC and TON ----
 #
 # Using dataset for TOC/TON: 'medians_2012-2016_toc_totn_no3.csv'  
 #
@@ -196,14 +196,14 @@ form <- paste(
 # form
 
 # To find file names used:
-# dir(pattern = "162*")
+# dir(pattern = "164*")
 
 # Render HTML and .md files  
 rmarkdown::render(
-  input = '162parm_Currentstatus.Rmd',                                          # always the same         
-  output_file = '162d_Currentstatus_TOCTON_no_TOC_TON.html',                          # change here
+  input = '164parm_Currentstatus.Rmd',                                          # always the same         
+  output_file = '164d_Currentstatus_TOCTON_no_TOC_TON.html',                          # change here
   params = list(
-    document_title = "162d Analyse TOC/TON medians 2012-2016 - without TOC and TON",  # change here
+    document_title = "164d Analyse TOC/TON medians 2012-2016 - without TOC and TON",  # change here
     text_line1 = "Analysis of TOC/TON medians (2012-2016)",                        # change here
     text_line2 = "Dataset: TOC/TON medians data set, but not incudig TOC and TIN medians",                             # change here
     medians_filename = "medians_2012-2016_toc_totn_no3.csv",
@@ -217,13 +217,13 @@ rmarkdown::render(
 #o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
 #
 # 2. USING total_forest ----
-# 162a2, 162b1, 162c2, 162d2
+# 164a2, 164b1, 164c2, 164d2
 #
 #o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
 
 #o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
 #
-# 162a1 - log_median_no3 ~ incl. catchment_area + TOC ----
+# 164a1 - log_median_no3 ~ incl. catchment_area + TOC ----
 #
 # Using dataset for NO3: 'medians_2012-2016_no3.csv'  
 #
@@ -255,14 +255,14 @@ form <- paste(
 # form
 
 # To find file names used:
-# dir(pattern = "162*")
+# dir(pattern = "164*")
 
 # Render HTML and .md files  
 rmarkdown::render(
-  input = '162parm_Currentstatus.Rmd',                                        # always the same         
-  output_file = '162a2_Currentstatus_NO3_allvars.html',                        # change here
+  input = '164parm_Currentstatus.Rmd',                                        # always the same         
+  output_file = '164a2_Currentstatus_NO3_allvars.html',                        # change here
   params = list(
-    document_title = "162a2 Analyse NO3 medians 2012-2016 - all variables",    # change here
+    document_title = "164a2 Analyse NO3 medians 2012-2016 - all variables",    # change here
     text_line1 = "Analysis of NO3 medians (2012-2016)",                       # change here
     text_line2 = "Dataset: NO3 medians data set incl. catchment_area + TOC",                             # change here
     medians_filename = "medians_2012-2016_no3.csv",
@@ -273,7 +273,7 @@ rmarkdown::render(
 
 #o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
 #
-# 162b2 - log_median_no3 ~ excluding catchment_area + TOC ----
+# 164b2 - log_median_no3 ~ excluding catchment_area + TOC ----
 #
 # Using dataset for NO3: 'medians_2012-2016_no3.csv'  
 # Without 'log_median_toc'  
@@ -304,14 +304,14 @@ form <- paste(
 # form
 
 # To find file names used:
-# dir(pattern = "162*")
+# dir(pattern = "164*")
 
 # Render HTML and .md files  
 rmarkdown::render(
-  input = '162parm_Currentstatus.Rmd',                                        # always the same         
-  output_file = '162b2_Currentstatus_NO3_no_TOC.html',                        # change here
+  input = '164parm_Currentstatus.Rmd',                                        # always the same         
+  output_file = '164b2_Currentstatus_NO3_no_TOC.html',                        # change here
   params = list(
-    document_title = "162b2 Analyse NO3 medians 2012-2016 - without TOC + catchment area",    # change here
+    document_title = "164b2 Analyse NO3 medians 2012-2016 - without TOC + catchment area",    # change here
     text_line1 = "Analysis of NO3 medians (2012-2016)",                       # change here
     text_line2 = "Dataset: NO3 medians data set excl. TOC and catchment_area",                             # change here
     medians_filename = "medians_2012-2016_no3.csv",
@@ -323,7 +323,7 @@ rmarkdown::render(
 
 #o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
 #
-# 162c2 - log_median_tocton ~ all variables ----
+# 164c2 - log_median_tocton ~ all variables ----
 #
 # Using dataset for TOC/TON: 'medians_2012-2016_toc_totn_no3.csv'  
 #
@@ -354,14 +354,14 @@ form <- paste(
 # form
 
 # To find file names used:
-# dir(pattern = "162*")
+# dir(pattern = "164*")
 
 # Render HTML and .md files  
 rmarkdown::render(
-  input = '162parm_Currentstatus.Rmd',                                          # always the same         
-  output_file = '162c2_Currentstatus_TOCTON_allvars.html',                          # change here
+  input = '164parm_Currentstatus.Rmd',                                          # always the same         
+  output_file = '164c2_Currentstatus_TOCTON_allvars.html',                          # change here
   params = list(
-    document_title = "162c2 Analyse TOC/TON medians 2012-2016 - all variables",  # change here
+    document_title = "164c2 Analyse TOC/TON medians 2012-2016 - all variables",  # change here
     text_line1 = "Analysis of TOC/TON medians (2012-2016)",                     # change here
     text_line2 = "Dataset: TOC/TON medians data set",                             # change here
     medians_filename = "medians_2012-2016_toc_totn_no3.csv",
@@ -373,7 +373,7 @@ rmarkdown::render(
 
 #o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
 #
-# 162d2 - log_median_tocton ~ excluding TOC and TON ----
+# 164d2 - log_median_tocton ~ excluding TOC and TON ----
 #
 # Using dataset for TOC/TON: 'medians_2012-2016_toc_totn_no3.csv'  
 #
@@ -403,14 +403,14 @@ form <- paste(
 # form
 
 # To find file names used:
-# dir(pattern = "162*")
+# dir(pattern = "164*")
 
 # Render HTML and .md files  
 rmarkdown::render(
-  input = '162parm_Currentstatus.Rmd',                                          # always the same         
-  output_file = '162d2_Currentstatus_TOCTON_no_TOC_TON.html',                          # change here
+  input = '164parm_Currentstatus.Rmd',                                          # always the same         
+  output_file = '164d2_Currentstatus_TOCTON_no_TOC_TON.html',                          # change here
   params = list(
-    document_title = "162d2 Analyse TOC/TON medians 2012-2016 - without TOC and TON",  # change here
+    document_title = "164d2 Analyse TOC/TON medians 2012-2016 - without TOC and TON",  # change here
     text_line1 = "Analysis of TOC/TON medians (2012-2016)",                        # change here
     text_line2 = "Dataset: TOC/TON medians data set, but not incudig TOC and TIN medians",                             # change here
     medians_filename = "medians_2012-2016_toc_totn_no3.csv",
