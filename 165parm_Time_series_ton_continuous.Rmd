@@ -102,20 +102,21 @@ options(width = 95)
 ### James' trends and medians     
 ```{r}
 
-#
-# Regression results 1
-#
-folder <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/trends_1992-2016_no3"
-file <- "trends_1992-2016_no3_results.csv"
-fn <- paste0(folder, "/", file)
-
-dat_start <- read.csv(fn, encoding = "UTF-8")
-cat("Data source:", sQuote(file), ",n =", nrow(dat_start), "\n\n")
-
-cat("Number of TON records:", sum(dat_start$variable == "TON_µg/l N"), "\n")
-# 302
-
 if (FALSE){
+  #
+  # Regression results 1
+  #
+  folder <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/trends_1992-2016_no3"
+  file <- "trends_1992-2016_no3_results.csv"
+  fn <- paste0(folder, "/", file)
+  
+  dat_start <- read.csv(fn, encoding = "UTF-8")
+  cat("Data source:", sQuote(file), ",n =", nrow(dat_start), "\n\n")
+  
+  cat("Number of TON records:", sum(dat_start$variable == "TON_µg/l N"), "\n")
+  # 302
+  
+} else {
   #
   # Regression results 2
   #
@@ -173,13 +174,13 @@ cat("df2, n =", nrow(df2), "\n")
 cat("df3, n =", nrow(df3), "\n")
 
 dat_1_all <- df1 %>%
-  full_join(df2, by = "station_id") %>%
-  full_join(df3, by = "station_id")
+  left_join2(df2, by = "station_id") %>%
+  left_join2(df3, by = "station_id")
 
 cat("dat_1_all, n =", nrow(dat_1_all), " \n")
 
 dat_1 <- dat_1_all %>%
-  filter(!is.na(slope_ton_vs_time))
+  filter(!is.na(slope_ton_vs_time) & !is.na(slope_toc_vs_time))
 
 cat("dat_1, n =", nrow(dat_1), " \n")
 
