@@ -65,6 +65,59 @@ rmarkdown::render(
     logistic_formula = form)
 )
 
+
+#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
+#
+# 164ab1 - median_no3 ~ incl. TOC but not catchment_area ----
+#
+# Using dataset for NO3: 'medians_2012-2016_no3.csv'  
+#
+#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
+
+
+# If many parameters, split up the lines with a 'paste()'  
+# Remember to set that the parts should be joined using a comma (sep = ",") 
+#   (or let each part end with a comma)
+vars <- paste(
+  "median_no3", 
+  "median_toc",     # change here
+  "slope_dep_vs_time, TOTN_dep, latitude, longitude, altitude",
+  "pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous",
+  "wetland, lake_water, bare_sparse",
+  sep = ",")    # remember this
+vars
+# If long formula, split up the lines with a 'paste()'  
+# Remember to end each line with '+', or use sep = "+"  
+form <- paste(
+  "median_no3 ~ TOTN_dep +", 
+  "slope_dep_vs_time + TOTN_dep:slope_dep_vs_time +",
+  "median_toc + TOTN_dep:median_toc +",
+  "tmp + pre + altitude +",
+  "coniferous + decid_mixed + bare_sparse +",
+  "lake_water + total_shrub_herbaceous"
+)
+
+# form
+
+# To find file names used:
+# dir(pattern = "164*")
+
+# Render HTML and .md files  
+rmarkdown::render(
+  input = '164parm_Currentstatus.Rmd',                                        # always the same         
+  output_file = '164ab1_Currentstatus_NO3_allvars.html',                        # change here
+  params = list(
+    document_title = "164ab1 Analyse NO3 medians 2012-2016 - not area",       # change here
+    text_line1 = "Analysis of NO3 medians (2012-2016)",                       # change here
+    text_line2 = "Dataset: NO3 medians data set incl. TOC",                   # change here
+    medians_filename = "medians_2012-2016_no3.csv",
+    selected_vars = vars,
+    tree_formula = 'median_no3 ~ .'  ,                                     # change here
+    logistic_formula = form)
+)
+
+
+
 #o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
 #
 # 164b1 - median_no3 ~ excluding catchment_area + TOC ----
@@ -272,6 +325,58 @@ rmarkdown::render(
     tree_formula = 'median_no3 ~ .'  ,                                     # change here
     logistic_formula = form)
 )
+
+
+#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
+#
+# 164ab2 - median_no3 ~ incl. TOC but not catchment_area ----
+#
+# Using dataset for NO3: 'medians_2012-2016_no3.csv'  
+#
+#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
+
+
+# If many parameters, split up the lines with a 'paste()'  
+# Remember to set that the parts should be joined using a comma (sep = ",") 
+#   (or let each part end with a comma)
+vars <- paste(
+  "median_no3", 
+  "median_toc",     # change here
+  "slope_dep_vs_time, TOTN_dep, latitude, longitude, altitude",
+  "pre, tmp, urban, cultivated, total_forest, total_shrub_herbaceous",
+  "wetland, lake_water, bare_sparse",
+  sep = ",")    # remember this
+vars
+# If long formula, split up the lines with a 'paste()'  
+# Remember to end each line with '+', or use sep = "+"  
+form <- paste(
+  "median_no3 ~ TOTN_dep +", 
+  "slope_dep_vs_time + TOTN_dep:slope_dep_vs_time +",
+  "median_toc + TOTN_dep:median_toc +",
+  "tmp + pre + altitude +",
+  "total_forest + bare_sparse +",
+  "lake_water + total_shrub_herbaceous"
+)
+
+# form
+
+# To find file names used:
+# dir(pattern = "164*")
+
+# Render HTML and .md files  
+rmarkdown::render(
+  input = '164parm_Currentstatus.Rmd',                                        # always the same         
+  output_file = '164ab2_Currentstatus_NO3_allvars.html',                        # change here
+  params = list(
+    document_title = "164ab2 Analyse NO3 medians 2012-2016 - not area",       # change here
+    text_line1 = "Analysis of NO3 medians (2012-2016)",                       # change here
+    text_line2 = "Dataset: NO3 medians data set incl. TOC",                   # change here
+    medians_filename = "medians_2012-2016_no3.csv",
+    selected_vars = vars,
+    tree_formula = 'median_no3 ~ .'  ,                                     # change here
+    logistic_formula = form)
+)
+
 
 #o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
 #
