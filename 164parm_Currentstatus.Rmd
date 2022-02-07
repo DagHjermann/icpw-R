@@ -17,15 +17,15 @@ params:
   medians_filename:
     value: 'medians_2012-2016_no3.csv'        
   selected_vars: 
-    value: 'median_no3,catchment_area, median_toc,slope_dep_vs_time, TOTN_dep, latitude, longitude, altitude,pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse'
+    value: 'median_no3,catchment_area, median_toc,slope_dep_vs_time, TOTN_dep, latitude, longitude, pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse'
   tree_formula:
     value: 'median_no3 ~ .'
   extra_pairwise_plots:
-    value: 'TOC,NO3; slope_dep_vs_time,TOTN_dep; altitude,decid_mixed'
+    value: 'TOC,NO3; TOTN_dep,slope_dep_vs_time'
   pairwise_plots_same_scale:
     value: 'FALSE'
   logistic_formula: 
-    value: 'median_no3 ~ TOTN_dep + slope_dep_vs_time + TOTN_dep:slope_dep_vs_time + median_toc + TOTN_dep:median_toc + tmp + pre + altitude + decid_mixed + bare_sparse + coniferous + catchment_area + lake_water + total_shrub_herbaceous'
+    value: 'median_no3 ~ TOTN_dep + slope_dep_vs_time + TOTN_dep:slope_dep_vs_time + median_toc + TOTN_dep:median_toc + tmp + pre + decid_mixed + bare_sparse + coniferous + catchment_area + lake_water + total_shrub_herbaceous'
 
 ---
 
@@ -386,16 +386,7 @@ gg
 * Also remove PL05, which has dubious values   
 ```{r}
 
-# Variables that will be included in excel output (removed afterwards)
-response_var_unlogged <- sub("log_", "", response_var)
-vars_for_excel <- c(response_var_unlogged, 
-                    "station_id", "station_code", "station_name", 
-                   "country", "region", "continent")
-
-if (response_var == "median_tocton")
-  vars_for_excel <- c(vars_for_excel, "median_ton", "median_toc")
-
-get_data_for_analysis <- function(data, variable_string){
+add_flag_variable <- function(data, variable_string){
   variable_string <- gsub(" ", "", variable_string)
   variables <- strsplit(variable_string, split = ",")[[1]]
   # Check if all variables are there
@@ -405,7 +396,18 @@ get_data_for_analysis <- function(data, variable_string){
       paste(variables[!found], collapse = " ,"), 
       "\n")
   # Data for analyses
-  data[c(vars_for_excel, variables)]
+  complete <- complete.cases(data[variables])
+  data$Row_excluded <- !complete
+  variables %>% 
+    purrr::map_dfr(~data.frame(Var = .x, Missing = sum(is.na(data[[.x]])))) %>%
+    print()
+  data
+}
+
+delete_unused_variables <- function(data, variable_string){
+  variable_string <- gsub(" ", "", variable_string)
+  variables <- strsplit(variable_string, split = ",")[[1]]
+  data[variables]
 }
 
 cat("-------------------------------------------------------------\n")
@@ -416,38 +418,25 @@ cat("\n-------------------------------------------------------------\n")
 dat <- dat %>%
   filter2(!station_code %in% "PL05", text = "station PL05 (has dubious NO3 data)")
 
-# debugonce(get_data_for_analysis)
-# df_analysis <- get_data_for_analysis(dat, vars)  
-df_analysis_allrows <- get_data_for_analysis(dat, params$selected_vars)  
+# debugonce(add_flag_variable)
+# df_analysis <- add_flag_variable(dat, vars)  
+df_analysis_allrows <- add_flag_variable(dat, params$selected_vars)  
 
 # Save to excel
 fn <- paste0(substr(params$document_title, 1, 3), "_", response_var, "_data.xlsx")
 writexl::write_xlsx(df_analysis_allrows, paste0("Data_analysed/", fn))
 cat("\nDataset after removing urban, cultivated, PL05 saved as", sQuote(fn), "\n\n")
 
-# names(dat) %>% paste(collapse = ", ")
-
-cat("Number of missing values per variable: \n")
-apply(is.na(df_analysis_allrows), 2, sum) 
-cat("\n")
-
-# What is missing? (long output)
-if (FALSE){
-  dat %>% 
-    split(.$country) %>%
-    purrr::map(~apply(is.na(.), 2, mean))
-}
-
-cat("Number of complete observations: \n")
-complete <- complete.cases(df_analysis_allrows)
-table(complete)
+cat("Number of rows that will be excluded: \n")
+table(df_analysis_allrows$Row_excluded)
 
 cat("\n\n")
 cat("Number of complete observations by country: \n")
-table(dat$country, complete)
+xtabs(~country + Row_excluded, df_analysis_allrows)
 
 # Keep only complete cases
-df_analysis <- df_analysis_allrows[complete.cases(df_analysis_allrows),]
+df_analysis <- df_analysis_allrows %>%
+  filter(!Row_excluded)
 
 # Save to excel
 fn <- paste0(
@@ -455,9 +444,8 @@ fn <- paste0(
   "_data.xlsx")
 writexl::write_xlsx(df_analysis, paste0("Data_analysed/", fn))
 
-# Remove variables defined as 'vars_for_excel' in function above
-sel <- names(df_analysis) %in% vars_for_excel
-df_analysis <- df_analysis[!sel]
+# Remove variables that will note be used
+df_analysis <- delete_unused_variables(df_analysis, params$selected_vars)
 
 cat("\n\n")
 cat("Data before removing PL05: n =", nrow(dat_5), "\n")
@@ -577,9 +565,9 @@ importance <- measure_importance(model1)
 
 ```{r}
 
-plot_multi_way_importance(importance, size_measure = "no_of_nodes", no_of_labels = 12)  
+plot_multi_way_importance(importance, size_measure = "no_of_nodes", no_of_labels = 6)  
 plot_multi_way_importance(importance, x_measure = "mse_increase", y_measure = "node_purity_increase",
-                          size_measure = "p_value", no_of_labels = 12)
+                          size_measure = "p_value", no_of_labels = 6)
 
 ```
 
@@ -657,6 +645,14 @@ for (i in 1:length(plotdata)){
     print(gg)
 
   }
+  
+  # Save gg object for later plotting / changes
+  # Saved in Figures/Partial_plots' with name e.g. "gg_164a1_7.rds" for plot number 7
+  fn <- paste0(
+    "Figures/Partial_plots/gg_",
+    stringr::str_extract(params$document_title, "([^[[:blank:]]]+)"),   # extract e.g. "164a1"
+    "_", i, ".rds")
+  saveRDS(gg, fn)
   
 }
   
