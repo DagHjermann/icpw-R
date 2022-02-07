@@ -81,7 +81,7 @@ rmarkdown::render(
 vars <- paste(
   "median_no3", 
   "median_toc",     # change here
-  "slope_dep_vs_time, TOTN_dep, latitude, longitude, altitude",
+  "slope_dep_vs_time, TOTN_dep, latitude, longitude",
   "pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous",
   "wetland, lake_water, bare_sparse",
   sep = ",")    # remember this
@@ -92,7 +92,7 @@ form <- paste(
   "median_no3 ~ TOTN_dep +", 
   "slope_dep_vs_time + TOTN_dep:slope_dep_vs_time +",
   "median_toc + TOTN_dep:median_toc +",
-  "tmp + pre + altitude +",
+  "tmp + pre  +",
   "coniferous + decid_mixed + bare_sparse +",
   "lake_water + total_shrub_herbaceous"
 )
@@ -342,7 +342,7 @@ rmarkdown::render(
 vars <- paste(
   "median_no3", 
   "median_toc",     # change here
-  "slope_dep_vs_time, TOTN_dep, latitude, longitude, altitude",
+  "slope_dep_vs_time, TOTN_dep, latitude, longitude",
   "pre, tmp, urban, cultivated, total_forest, total_shrub_herbaceous",
   "wetland, lake_water, bare_sparse",
   sep = ",")    # remember this
@@ -353,7 +353,7 @@ form <- paste(
   "median_no3 ~ TOTN_dep +", 
   "slope_dep_vs_time + TOTN_dep:slope_dep_vs_time +",
   "median_toc + TOTN_dep:median_toc +",
-  "tmp + pre + altitude +",
+  "tmp + pre  +",
   "total_forest + bare_sparse +",
   "lake_water + total_shrub_herbaceous"
 )
