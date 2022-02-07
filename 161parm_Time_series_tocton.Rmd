@@ -1,7 +1,7 @@
 ---
 title: "`r params$document_title`"
 author: "DHJ"
-date: "8 5 2020"
+date: "7 12 2021"
 output: 
   html_document:
     toc: true    
@@ -13,7 +13,7 @@ params:
   text_dataset: 
     value: 'Data with slope_dep_vs_time, NO3, and TOTN_dep'
   selected_vars: 
-    value: 'tocton_decrease,catchment_area, TOC, TON,slope_toc_vs_time, slope_ton_vs_time, slope_dep_vs_time, TOTN_dep, latitude, longitude, altitude,pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse'
+    value: 'tocton_decrease,catchment_area, TOC, TON, TOCTON, slope_toc_vs_time, slope_ton_vs_time, slope_dep_vs_time, TOTN_dep, latitude, longitude, altitude,pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse'
   extra_pairwise_plots:
     value: 'TOC,NO3; slope_dep_vs_time,TOTN_dep; altitude,decid_mixed'
   pairwise_plots_same_scale:
@@ -52,7 +52,7 @@ As 160, but analysing the trend in TOC/TON ratio
     - Land cover 
   
 Technical details: This html file was created with `161parm_Time_series_tocton.Rmd` run with `161parm_run_markdown.R`    
-Code: https://github.com/DagHjermann/icpw-R   
+Code: https://github.com/DagHjermann/icpw-R  
 
 ## 1. Libraries  
 ```{r, results='hide', message=FALSE, warning=FALSE}
@@ -65,7 +65,7 @@ library(lubridate)
 library(ggplot2)
 
 # Too many packages, not all are used
-library(mapview)
+# library(mapview)
 library(visreg)     # visreg
 library(rkt)        # Theil -Sen Regression
 
@@ -113,13 +113,6 @@ cat("Regression slopes and medians from:", sQuote(file), ",n =", nrow(reg_ratio)
 
 # Station metadata
 # THESE WILL BE ADDED WITH LAND COVER  
-# file <- "trends_1992-2016_toc_totn_no3_relax_italy_stations.csv"
-# fn <- paste0(folder, "/", file)
-# df_metadata <- read.csv(fn, encoding = "UTF-8")
-# cat("Regression result metadata:", sQuote(file), ",n =", nrow(df_metadata), "\n\n")
-
-# cat("Countries with trends: \n")
-# xtabs(~country, df_metadata)  
 
 ```
 
@@ -163,15 +156,20 @@ df3 <- reg_ratio %>%
          TON = `TON_µg/l N`)
 
 cat("\n")
-cat("df1, n =", nrow(df1), "\n")
+cat("df1, n =", nrow(df1), " (number of rows for slopes, including NA values in toc/ton slope)\n")
 cat("df2, n =", nrow(df2), "\n")
 cat("df3, n =", nrow(df3), "\n")
 
-dat_1 <- df1 %>%
+dat_1_all <- df1 %>%
   full_join(df2, by = "station_id") %>%
   full_join(df3, by = "station_id")
 
-cat("dat_1, n =", nrow(dat_1), "\n")
+cat("dat_1_all, n =", nrow(dat_1_all), " (includes series without toc/ton)\n")
+
+dat_1 <- dat_1_all %>%
+  filter(!is.na(slope_tocton_vs_time))
+
+cat("dat_1, n =", nrow(dat_1), " (all data with existing values of 'slope_tocton_vs_time')\n")
 
 ```
 
@@ -229,15 +227,27 @@ dat_2 <- dat_1 %>%
 
 fn <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/climate/cru_climate_trends_icpw_stns.csv"
 
-df_climate_mean <- read_csv(fn) %>% 
+df_climate <- read_csv(fn, 
+                       col_types = cols(
+                         station_id = col_double(),
+                         variable = col_character(),
+                         median = col_double(),
+                         mk_p_val = col_double(),
+                         mk_trend = col_character(),
+                         sen_slp = col_double(),
+                         sen_incpt = col_double(),
+                         sen_trend = col_character()
+                       ))
+                            
+df_climate_mean <- df_climate %>% 
   select(station_id, variable, median) %>%
   pivot_wider(names_from = "variable", values_from = "median")
 cat("\n")
 # names(df_climate_mean)
 
-df_climate_slope <- read_csv(fn) %>%
+df_climate_slope <- df_climate %>%
   select(station_id, variable, sen_slp) %>%
-  pivot_wider(names_from = "variable", values_from = "sen_slp", names_prefix = "Slope_")
+  pivot_wider(names_from = "variable", values_from = "sen_slp", names_prefix = "slope_")
 
 # Add
 dat_3 <- dat_2 %>%
@@ -277,14 +287,19 @@ dat_4 <- left_join2(dat_3,
 
 
 ```
-
-### Drop locations with >10% cultivated    
+### Drop locations with >5% cultivated and >5% urban     
+- also excluding stations 23517, 38273    
 ```{r}
 
-dat_5 <- dat_4 %>%
-  filter(cultivated <= 10)
+cultivated_threshold <- 5
+urban_threshold <- 5
 
-cat(nrow(dat_4) - nrow(dat_5), "stations with > 10% cultivated deleted \n")
+dat_5 <- dat_4 %>%
+  filter2(!station_id %in% c(23517, 38273), text = "Deleted stations 23517, 38273") %>%
+  filter2(cultivated <= cultivated_threshold, 
+          text = paste("Deleted stations with >", cultivated_threshold, "% cultivated")) %>%
+  filter2(urban <= urban_threshold, 
+          text = paste("Deleted stations with >", urban_threshold, "% urban"))
 
 ```
 
@@ -343,11 +358,18 @@ dat %>%
 
 
 ## 4. Select data    
+   
+**See Section 2 - Drop locations... for data rows deleted before this part**    
 
-### a. Select variables  
+### a. Select variables   
 * Select variables to use, and thereby also cases   
-* Also, 'AtlCan' data are excluded  
+* Also, 'AtlCan' data are excluded   
+* Saves data both before and after rows with removing missing predictors are removed
 ```{r}
+
+# Variables that will be included in excel output (removed afterwards)
+vars_for_excel <- c("slope_tocton_vs_time", "station_id", "station_code", 
+                    "station_name", "country", "region", "continent")
 
 get_df_tocton_decrease <- function(data, variable_string){
   variable_string <- gsub(" ", "", variable_string)
@@ -359,7 +381,7 @@ get_df_tocton_decrease <- function(data, variable_string){
         slope_tocton_vs_time < 0 & p_tocton_vs_time <= 0.05 ~ 1,
         TRUE ~ 0)
     )
-  df[c(variables, "country")]   # because 'country' will be used for statistics further down
+  df[c(vars_for_excel, variables)]
 }
 
 
@@ -370,19 +392,25 @@ cat("Variables: \n")
 cat(params$selected_vars)
 cat("\n-------------------------------------------------------------\n")
 
+cat("\nStarting with partially filtered data - see 'Section 2 - Drop locations...' \n\n")
+
 dat_filtered <- dat %>%
-  filter(region != "AtlCan")
+  filter2(region != "AtlCan" & country != "Italy", text = "Remove AtlCan and Italy")  
 
-df_analysis <- get_df_tocton_decrease(dat_filtered, params$selected_vars)  
+df_analysis_allrows <- get_df_tocton_decrease(dat_filtered, params$selected_vars)  
 
-# table(df_analysis$tocton_decrease)
+# Save to excel
+fn <- paste0(substr(params$document_title, 1, 3), "_data.xlsx")
+writexl::write_xlsx(df_analysis_allrows, paste0("Data_analysed/", fn))
+cat("\nDataset at this point saved as", sQuote(fn), "\n\n")
 
 
+# table(df_analysis_allrows$tocton_decrease)
 
 # names(dat) %>% paste(collapse = ", ")
 
 cat("Number of missing values per variable: \n")
-apply(is.na(df_analysis), 2, sum) 
+apply(is.na(df_analysis_allrows), 2, sum) 
 cat("\n")
 
 # What is missing? (long output)
@@ -393,21 +421,28 @@ if (FALSE){
 }
 
 cat("Number of complete observations: \n")
-complete <- complete.cases(df_analysis)
+complete <- complete.cases(df_analysis_allrows)
 table(complete)
 
 cat("\n\n")
 cat("Number of complete observations by country: \n")
-table(df_analysis$country, complete)
+table(df_analysis_allrows$country, complete)
 
 # Keep only complete cases
-df_analysis <- df_analysis[complete.cases(df_analysis),] %>%
-  select(-country)
+df_analysis <- df_analysis_allrows[complete.cases(df_analysis_allrows),]
+
+# Save to excel 
+fn <- paste0(substr(params$document_title, 1, 5), "_data.xlsx")
+writexl::write_xlsx(df_analysis, paste0("Data_analysed/", fn))
+
+# Remove variables defined as 'vars_for_excel' in function above
+sel <- names(df_analysis) %in% vars_for_excel
+df_analysis <- df_analysis[!sel]
 
 cat("\n\n")
-cat("Original data: n =", nrow(dat), "\n")
-cat("Data after filtering: n =", nrow(dat_filtered), "\n")
-cat("Analysis: n =", nrow(df_analysis), "\n")
+cat("Data before removing AtlCan and Italy: n =", nrow(dat), " (also see 'Section 2 - Drop locations...')\n")
+cat("Data after removing AtlCan and Italy: n =", nrow(df_analysis_allrows), "\n")
+cat("Data after removing missing predictors: n =", nrow(df_analysis), "\n")
 
 
 ```
@@ -604,7 +639,7 @@ for (i in 1:length(plotdata)){
 
 
 ## 6. Logistic regression      
-```{r, results  = "hold"}
+```{r logistic_regression, results  = "hold"}
 
 #   tocton_decrease ~ as.formula(params$logistic_formula),
 # 

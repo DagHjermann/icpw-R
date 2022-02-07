@@ -15,7 +15,7 @@ params:
   extra_selection_variable: 'continent'
   extra_selection_values: 'Europe;North America'
   selected_vars: 
-    value: 'no3_decline,catchment_area, TOC,slope_dep_vs_time, NO3, TOTN_dep, latitude, longitude, altitude,pre, tmp, Slope_pre, Slope_tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse'
+    value: 'no3_decline,catchment_area, TOC,slope_dep_vs_time, NO3, TOTN_dep, latitude, longitude, altitude,pre, tmp, slope_pre, slope_tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse'
   extra_pairwise_plots:
     value: 'TOC,NO3; slope_dep_vs_time,TOTN_dep; altitude,decid_mixed'
   pairwise_plots_same_scale:
@@ -204,11 +204,16 @@ cat("df1, n =", nrow(df1), "\n")
 cat("df2, n =", nrow(df2), "\n")
 cat("df3, n =", nrow(df3), "\n")
 
-dat_1 <- df1 %>%
+dat_1_all <- df1 %>%
   full_join(df2, by = "station_id") %>%
   full_join(df3, by = "station_id")
 
-cat("dat_1, n =", nrow(dat_1), "\n")
+cat("dat_1_all, n =", nrow(dat_1_all), " (may include series without slope_no3_vs_time)\n")
+
+dat_1 <- dat_1_all %>%
+  filter(!is.na(slope_no3_vs_time))
+
+cat("dat_1, n =", nrow(dat_1), " (all data with existing values of 'slope_no3_vs_time')\n")
 
 ```
 
@@ -283,7 +288,7 @@ cat("\n")
 
 df_climate_slope <- read_csv(fn) %>%
   select(station_id, variable, sen_slp) %>%
-  pivot_wider(names_from = "variable", values_from = "sen_slp", names_prefix = "Slope_")
+  pivot_wider(names_from = "variable", values_from = "sen_slp", names_prefix = "slope_")
 
 # Add
 dat_3 <- dat_2 %>%
@@ -324,13 +329,20 @@ dat_4 <- left_join2(dat_3,
 
 ```
 
-### Drop locations with >10% cultivated    
+
+### Drop locations with >5% cultivated and >5% urban     
+- also excluding stations 23517, 38273    
 ```{r}
 
-dat_5 <- dat_4 %>%
-  filter(cultivated <= 10)
+cultivated_threshold <- 5
+urban_threshold <- 5
 
-cat(nrow(dat_4) - nrow(dat_5), "stations with > 10% cultivated deleted \n")
+dat_5 <- dat_4 %>%
+  filter2(!station_id %in% c(23517, 38273), text = "Deleted stations 23517, 38273") %>%
+  filter2(cultivated <= cultivated_threshold, 
+          text = paste("Deleted stations with >", cultivated_threshold, "% cultivated")) %>%
+  filter2(urban <= urban_threshold, 
+          text = paste("Deleted stations with >", urban_threshold, "% urban"))
 
 ```
 ### Extra selection  
@@ -344,6 +356,16 @@ dat_6 <- dat_5[sel,]
 
 ```
 
+### Extra selection (given by 'extra_selection_variable')  
+```{r}
+
+selection_values <- params$extra_selection_values %>% strsplit(split = ";") %>% .[[1]]
+sel <- dat_5[[params$extra_selection_variable]] %in% selection_values
+sum(sel)
+mean(sel)
+dat_6 <- dat_5[sel,]
+
+```
 
 ### Data set used  
 ```{r}
@@ -390,7 +412,11 @@ dat %>%
 
 ### a. Selection of variables  
 * Select variables to use, and thereby also cases  
+* Saves data both before and after rows with removing missing predictors are removed
 ```{r}
+# Variables that will be included in excel output (removed afterwards)
+vars_for_excel <- c("slope_no3_vs_time", "station_id", "station_code", 
+                    "station_name", "country", "region", "continent")
 
 get_df_no3_decline <- function(data, variable_string){
   variable_string <- gsub(" ", "", variable_string)
@@ -402,7 +428,7 @@ get_df_no3_decline <- function(data, variable_string){
         slope_no3_vs_time < 0 & p_no3_vs_time <= 0.05 ~ 1,
         TRUE ~ 0)
     )
-  df[variables]
+  df[c(vars_for_excel, variables)]
 }
 
 cat("-------------------------------------------------------------\n")
@@ -410,12 +436,17 @@ cat("Variables: \n")
 cat(params$selected_vars)
 cat("\n-------------------------------------------------------------\n")
 
-df_analysis <- get_df_no3_decline(dat, params$selected_vars)  
+df_analysis_allrows <- get_df_no3_decline(dat, params$selected_vars)  
+
+# Save to excel
+fn <- paste0(substr(params$document_title, 1, 3), "_data.xlsx")
+writexl::write_xlsx(df_analysis_allrows, paste0("Data_analysed/", fn))
+cat("\nDataset after removing urban and cultivated saved as", sQuote(fn), "\n\n")
 
 # names(dat) %>% paste(collapse = ", ")
 
 cat("Number of missing values per variable: \n")
-apply(is.na(df_analysis), 2, sum) 
+apply(is.na(df_analysis_allrows), 2, sum) 
 cat("\n")
 
 # What is missing? (long output)
@@ -426,7 +457,7 @@ dat %>%
 }
 
 cat("Number of complete observations: \n")
-complete <- complete.cases(df_analysis)
+complete <- complete.cases(df_analysis_allrows)
 table(complete)
 
 cat("\n\n")
@@ -434,12 +465,19 @@ cat("Number of complete observations by country: \n")
 table(dat$country, complete)
 
 # Keep only complete cases
-df_analysis <- df_analysis[complete.cases(df_analysis),]
+df_analysis <- df_analysis_allrows[complete.cases(df_analysis_allrows),]
+
+# Save to excel
+fn <- paste0(substr(params$document_title, 1, 5), "_data.xlsx")
+writexl::write_xlsx(df_analysis, paste0("Data_analysed/", fn))
+
+# Remove variables defined as 'vars_for_excel' in function above
+sel <- names(df_analysis) %in% vars_for_excel
+df_analysis <- df_analysis[!sel]
 
 cat("\n\n")
-cat("Original data: n =", nrow(dat), "\n")
-cat("Analysis: n =", nrow(df_analysis), "\n")
-
+cat("Data before removing missing predictors: n =", nrow(df_analysis_allrows), "\n")
+cat("Data after removing missing predictors: n =", nrow(df_analysis), "\n")
 
 ```
 
@@ -564,9 +602,12 @@ cat("Error rate for training data:", round(error_fraction*100, 1), "%\n")
 
 
 ```
+
 #### c1c. Quasi R-squared   
 - Proportion of deviance explained    
 ```{r 5c1c_calculate_deviance_explained}
+
+pred_prob <- predict(model1, type = "prob")
 
 # Make data frame with P (modelled probability of no3_decline), Obs (observed no3_decline, 0 or 1),
 #   and log-likelihood of data given the model
@@ -588,10 +629,27 @@ df_prob <- df_prob %>%
     Loglik_null = log(P_null*Obs + (1-P_null)*(1-Obs))
     )
     
+#
+# Summary statistics
+#
 dev_model <- -2*sum(df_prob$Loglik)
 dev_null <- -2*sum(df_prob$Loglik_null)
+cat("Deviance of random forest model:", dev_model, "\n")
+cat("Deviance of null model:", dev_null, "\n")
 
 Quasi_R2 <- (dev_null - dev_model)/dev_null
+cat("Proportion of deviance explained by model (quasi R.squared):", Quasi_R2, "\n")
+
+#
+# Plot
+#
+ggplot(df_prob, aes(P, Obs)) + 
+  geom_jitter(width = 0, height = 0.05) +
+  labs(x = "Probability of observing '1' according to model",
+       y = "Actual observation"
+  )
+
+
 
 ```
 
@@ -615,7 +673,6 @@ plot_multi_way_importance(importance,
                           size_measure = "p_value", no_of_labels = 6)
 
 ```
-
 
 
 #### c3. Random forest, show partial effects  
@@ -691,6 +748,14 @@ for (i in 1:length(plotdata)){
 
   }
   
+  # Save gg object for later plotting / changes
+  fn <- paste0(
+    "Figures/Partial_plots/gg_",
+    params$document_title %>% stringr::str_extract("([^[[:blank:]]]+)"),
+    "_", i, ".rds")
+  saveRDS(gg, fn)
+  
+  
 }
   
 
@@ -722,6 +787,8 @@ for (i in 1:length(plotdata)){
 # visreg(dd1b_mod1, scale = "response")
 
 ```
+
+
 
 
 ## 6. Logistic regression       
