@@ -21,7 +21,7 @@ params:
   tree_formula:
     value: 'median_no3 ~ .'
   extra_pairwise_plots:
-    value: 'TOC,NO3; slope_dep_vs_time,TOTN_dep'
+    value: 'TOC,NO3; TOTN_dep,slope_dep_vs_time'
   pairwise_plots_same_scale:
     value: 'FALSE'
   logistic_formula: 
