@@ -9,31 +9,31 @@ output:
     keep_md: true
 params:
   document_title: 
-    value: '160x Analyse NO3 decline - test run'
+    value: '166x Analyse NO3 decline - test run'
   text_dataset: 
     value: 'Data with slope_dep_vs_time, NO3, and TOTN_dep'
   selected_vars: 
-    value: 'no3_decline,catchment_area, TOC,slope_dep_vs_time, NO3, TOTN_dep, latitude, longitude, altitude,pre, tmp, slope_pre, slope_tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse'
+    value: 'slope_no3_vs_time,catchment_area, TOC,slope_dep_vs_time, NO3, TOTN_dep, latitude, longitude, altitude,pre, tmp, slope_pre, slope_tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse'
   extra_pairwise_plots:
     value: 'TOC,NO3; slope_dep_vs_time,TOTN_dep; altitude,decid_mixed'
   pairwise_plots_same_scale:
     value: 'FALSE'
   logistic_formula: 
-    value: 'no3_decline ~ TOC*altitude + TOTN_dep*slope_dep_vs_time + NO3 + decid_mixed + coniferous + tmp + lake_water + wetland'
+    value: 'slope_no3_vs_time ~ TOC*altitude + TOTN_dep*slope_dep_vs_time + NO3 + decid_mixed + coniferous + tmp + lake_water + wetland'
 
 ---
 
 ```{r, echo = FALSE}  
 
 #
-# This file is designed to be run using '160parm_run_markdown.R'  
+# This file is designed to be run using '166parm_run_markdown.R'  
 # The scripts in that file renders 3 result html file: 19\60a, b and c (different variable sets and data)  
 #
 
 ```
 
 
-**Analysis of NO3 decrease as continuous variable (not categorical as in 160)**  
+**Analysis of NO3 decrease as continuous variable (not categorical as in 166)**  
   
 **`r params$text_dataset`**   
 
@@ -49,7 +49,7 @@ params:
     - pre, tmp: mean precipitation + temp   
     - Land cover 
   
-Technical details: This html file was rendered with `160parm_run_markdown.R` which runs the script `160parm_Time_series_results_James.Rmd` with different inputs, resulting in html files 160a, 160b and 160c.    
+Technical details: This html file was rendered with `166parm_run_markdown.R` which runs the script `166parm_Time_series_results_James.Rmd` with different inputs, resulting in html files 166a, 166b and 166c.    
 
 ## 1. Libraries  
 ```{r, results='hide', message=FALSE, warning=FALSE}
@@ -393,7 +393,6 @@ dat %>%
 * Saves data both before and after rows with removing missing predictors are removed
 ```{r}  
 
-
 add_flag_variable <- function(data, variable_string){
   variable_string <- gsub(" ", "", variable_string)
   variables <- strsplit(variable_string, split = ",")[[1]]
@@ -508,7 +507,7 @@ valid_set <- df_analysis[!train,] %>%
 #### c1a. Predict on training data
 ```{r}  
 
-model1 <- randomForest(no3_decline_f ~ ., 
+model1 <- randomForest(slope_no3_vs_time ~ ., 
                        data = train_set, 
                        mtry = 5,
                        importance = TRUE)
@@ -516,11 +515,11 @@ model1 <- randomForest(no3_decline_f ~ .,
 # Predicting on train set
 pred_valid <- predict(model1, valid_set, type = "class")
 # Checking classification accuracy
-table(pred_valid, valid_set$no3_decline_f)  
+table(pred_valid, valid_set$no3_decline)  
 
 error_fraction <- mean(
-  (pred_valid == 0 & valid_set$no3_decline_f == 1) | 
-    (pred_valid == 1 & valid_set$no3_decline_f == 0))
+  (pred_valid == 0 & valid_set$no3_decline == 1) | 
+    (pred_valid == 1 & valid_set$no3_decline == 0))
 cat("Error rate for training data:", round(error_fraction*100, 1), "%\n")
 
 ```
@@ -529,11 +528,11 @@ cat("Error rate for training data:", round(error_fraction*100, 1), "%\n")
 ```{r}  
 
 full_set <- df_analysis  %>% 
-  mutate(no3_decline_f = factor(no3_decline)) %>% 
+  mutate(no3_decline = factor(no3_decline)) %>% 
   select(-no3_decline, -longitude, - latitude) %>%
   as.data.frame()
 
-model1 <- randomForest(no3_decline_f ~ ., 
+model1 <- randomForest(slope_no3_vs_time ~ ., 
                        data = full_set, 
                        mtry = 5,
                        importance = TRUE)
@@ -541,11 +540,11 @@ model1 <- randomForest(no3_decline_f ~ .,
 # Predicting on train set
 pred_valid <- predict(model1, valid_set, type = "class")
 # Checking classification accuracy
-table(pred_valid, valid_set$no3_decline_f)  
+table(pred_valid, valid_set$no3_decline)  
 
 error_fraction <- mean(
-  (pred_valid == 0 & valid_set$no3_decline_f == 1) | 
-    (pred_valid == 1 & valid_set$no3_decline_f == 0))
+  (pred_valid == 0 & valid_set$no3_decline == 1) | 
+    (pred_valid == 1 & valid_set$no3_decline == 0))
 cat("Error rate for training data:", round(error_fraction*100, 1), "%\n")
 
 ```
@@ -657,31 +656,3 @@ for (i in 1:length(plotdata)){
   
 
 ```
-
-
-```{r, echo = FALSE, results  = "hold"}
-
-# #   no3_decline ~ as.formula(params$logistic_formula),
-# 
-# fm <- glm(
-#   as.formula(params$logistic_formula),
-#   data = df_analysis, 
-#   family = "binomial",
-#   na.action = "na.fail")
-# 
-# dd1b <- dredge(fm)                       # only once
-# saveRDS(dd1b, "Data/160_all_dd1b.rds")    # save it as it takes a couple of minutes
-# # dd1b <- readRDS("Data/160_all_dd1b.rds")
-# 
-# # subset(dd1b, delta < 1)
-# subset(dd1b, delta < 2)
-# 
-# cat("\n\nR2: \n")
-# dd1b_mod1 <- get.models(dd1b, 1)[[1]]  
-# # summary(dd1b_mod1)  
-# 
-# par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
-# visreg(dd1b_mod1, scale = "response")
-
-```
-
