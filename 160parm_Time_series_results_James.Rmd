@@ -348,7 +348,12 @@ dat_5 <- dat_4 %>%
 ### Data set used  
 ```{r}
 
-dat <- dat_5
+dat <- dat_5 %>%
+  mutate(
+    no3_decline = case_when(
+      slope_no3_vs_time < 0 & p_no3_vs_time <= 0.05 ~ 1,
+      TRUE ~ 0)
+  )
 
 ```
 
@@ -601,6 +606,10 @@ plot_multi_way_importance(importance,
                           x_measure = "accuracy_decrease", 
                           y_measure = "gini_decrease", 
                           size_measure = "p_value", no_of_labels = 6)
+
+# Plot immportance table as well
+importance %>% 
+  arrange(times_a_root)
 
 ```
 
