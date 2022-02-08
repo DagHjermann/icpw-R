@@ -565,6 +565,55 @@ table(pred_valid, valid_set$tocton_decrease_f)
 ```
 
 
+#### c1c. Quasi R-squared  
+
+- Proportion of deviance explained  
+
+```{r}
+pred_prob <- predict(model1, type = "prob")
+
+# Make data frame with P (modelled probability of no3_decline), Obs (observed no3_decline, 0 or 1),
+#   and log-likelihood of data given the model
+df_prob <- tibble(
+  P = pred_prob[,2], 
+  Obs = as.numeric(full_set$no3_decline) - 1
+) %>%
+  mutate(
+    Lik = P*Obs + (1-P)*(1-Obs),
+    Loglik = log(P*Obs + (1-P)*(1-Obs))
+  )
+
+# Null model (same probability for all observations)
+df_prob$P_null <- mean(df_prob$Obs)
+
+# Null probability   
+df_prob <- df_prob %>%
+  mutate(
+    Loglik_null = log(P_null*Obs + (1-P_null)*(1-Obs))
+    )
+    
+#
+# Summary statistics
+#
+dev_model <- -2*sum(df_prob$Loglik)
+dev_null <- -2*sum(df_prob$Loglik_null)
+cat("Deviance of random forest model:", dev_model, "\n")
+cat("Deviance of null model:", dev_null, "\n")
+
+Quasi_R2 <- (dev_null - dev_model)/dev_null
+cat("Proportion of deviance explained by model (quasi R.squared):", Quasi_R2, "\n")
+
+#
+# Plot
+#
+ggplot(df_prob, aes(P, Obs)) + 
+  geom_jitter(width = 0, height = 0.05) +
+  labs(x = "Probability of observing '1' according to model",
+       y = "Actual observation"
+  )
+```
+
+
 #### c2. Importance of variables
 ```{r 5c2_calculate_importance}
 
@@ -577,9 +626,14 @@ importance <- measure_importance(model1)
 
 ```{r}
 
-plot_multi_way_importance(importance, size_measure = "no_of_nodes", no_of_labels = 12)  
+plot_multi_way_importance(importance, size_measure = "no_of_nodes", no_of_labels = 6)  
 plot_multi_way_importance(importance, x_measure = "accuracy_decrease", y_measure = "gini_decrease", 
-                          size_measure = "p_value", no_of_labels = 12)
+                          size_measure = "p_value", no_of_labels = 6)
+
+# Plot immportance table as well
+importance %>% 
+  arrange(times_a_root)
+
 
 ```
 
@@ -630,6 +684,15 @@ for (i in 1:length(plotdata)){
     print(gg)
 
   }
+  
+  # Save gg object for later plotting / changes
+  # Saved in Figures/Partial_plots' with name e.g. "gg_164a1_7.rds" for plot number 7
+  fn <- paste0(
+    "Figures/Partial_plots/gg_",
+    stringr::str_extract(params$document_title, "([^[[:blank:]]]+)"),   # extract e.g. "164a1"
+    "_", i, ".rds")
+  saveRDS(gg, fn)
+  
   
 }
   
