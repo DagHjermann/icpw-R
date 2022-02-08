@@ -1,6 +1,6 @@
 
 # 
-# This is the file used to render HTML documents based on 160parm_Time_series_results_James.Rmd'  
+# This is the file used to render HTML documents based on 166parm_Time_series_results_James.Rmd'  
 #
 # NOTE WHEN PASSING PARAMETERS FROM rmarkdown::render: 
 #   even if you pass 'params = ..."  from the 'params' MUST be in the YAML of the Rmd file (with some default values)
@@ -10,7 +10,7 @@
 
 #o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
 #
-# 160a1 - All variables incl. catchment_area + TOC (coniferous + decid_mixed separately) ----
+# 166a1 - All variables incl. catchment_area + TOC (coniferous + decid_mixed separately) ----
 #
 #o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
 
@@ -35,14 +35,14 @@ form <- paste(
 )
 
 # To find file names used:
-# dir(pattern = "160*")
+# dir(pattern = "166*")
 
 # Render HTML and .md files  
 rmarkdown::render(
-  input = '160parm_Time_series_results_James.Rmd',          
-  output_file = '160a1_Time_series_results_James_allvars.html',                   # change here
+  input = '166parm_Time_series_results_James.Rmd',          
+  output_file = '166a1_Time_series_results_James_allvars.html',                   # change here
   params = list(
-    document_title = "160a1 Analyse NO3 decline - all variables",                 # change here
+    document_title = "166a1 Analyse NO3 decline - all variables",                 # change here
     text_dataset = "Dataset: all variables (including catchment area and TOC)",  # change here
     selected_vars = vars,
     logistic_formula = form)
@@ -51,7 +51,7 @@ rmarkdown::render(
 
 #o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
 #
-# 160a2 - All variables incl. catchment_area + TOC (total_forest) ----
+# 166a2 - All variables incl. catchment_area + TOC (total_forest) ----
 #
 #o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
 
@@ -76,14 +76,14 @@ form <- paste(
 )
 
 # To find file names used:
-# dir(pattern = "160*")
+# dir(pattern = "166*")
 
 # Render HTML and .md files  
 rmarkdown::render(
-  input = '160parm_Time_series_results_James.Rmd',          
-  output_file = '160a2_Time_series_results_James_allvars.html',                   # change here
+  input = '166parm_Time_series_results_James.Rmd',          
+  output_file = '166a2_Time_series_results_James_allvars.html',                   # change here
   params = list(
-    document_title = "160a2 Analyse NO3 decline - all variables",                 # change here
+    document_title = "166a2 Analyse NO3 decline - all variables",                 # change here
     text_dataset = "Dataset: all variables (including catchment area and TOC)",  # change here
     selected_vars = vars,
     logistic_formula = form)
@@ -92,7 +92,7 @@ rmarkdown::render(
 
 #o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
 #
-# 160b1 - All variables incl. TOC, excl. catchment_area (coniferous + decid_mixed separately) ----
+# 166b1 - All variables incl. TOC, excl. catchment_area (coniferous + decid_mixed separately) ----
 #
 #o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
 
@@ -121,14 +121,14 @@ form <- paste(
 # form 
 
 # To find file names used:
-# dir(pattern = "160*")
+# dir(pattern = "166*")
 
 # Render HTML and .md files  
 rmarkdown::render(
-  input = '160parm_Time_series_results_James.Rmd',          
-  output_file = '160b1_Time_series_results_James_no_catcharea.html',                     # change here
+  input = '166parm_Time_series_results_James.Rmd',          
+  output_file = '166b1_Time_series_results_James_no_catcharea.html',                     # change here
   params = list(
-    document_title = "160b1 Analyse NO3 decline - excl. catchment_area",                 # change here
+    document_title = "166b1 Analyse NO3 decline - excl. catchment_area",                 # change here
     text_dataset = "Dataset: all variables except catchment area (but including TOC)",  # change here
     selected_vars = vars,
     logistic_formula = form)
@@ -136,7 +136,7 @@ rmarkdown::render(
 
 #o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
 #
-# 160b2 - All variables incl. TOC, excl. catchment_area (total_forest) ----
+# 166b2 - All variables incl. TOC, excl. catchment_area (total_forest) ----
 #
 #o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
 
@@ -165,14 +165,14 @@ form <- paste(
 # form 
 
 # To find file names used:
-# dir(pattern = "160*")
+# dir(pattern = "166*")
 
 # Render HTML and .md files  
 rmarkdown::render(
-  input = '160parm_Time_series_results_James.Rmd',          
-  output_file = '160b2_Time_series_results_James_no_catcharea.html',                     # change here
+  input = '166parm_Time_series_results_James.Rmd',          
+  output_file = '166b2_Time_series_results_James_no_catcharea.html',                     # change here
   params = list(
-    document_title = "160b2 Analyse NO3 decline - excl. catchment_area",                 # change here
+    document_title = "166b2 Analyse NO3 decline - excl. catchment_area",                 # change here
     text_dataset = "Dataset: all variables except catchment area (but including TOC)",  # change here
     selected_vars = vars,
     logistic_formula = form)
@@ -181,7 +181,7 @@ rmarkdown::render(
 
 #o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
 #
-# 160c1 - All variables excl. TOC, excl. catchment_area (coniferous + decid_mixed separately) ----
+# 166c1 - All variables excl. TOC, excl. catchment_area (coniferous + decid_mixed separately) ----
 #
 #o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
 
@@ -205,14 +205,14 @@ form <- paste(
 )
 
 # To find file names used:
-# dir(pattern = "160*")
+# dir(pattern = "166*")
 
 # Render HTML and .md files  
 rmarkdown::render(
-  input = '160parm_Time_series_results_James.Rmd',          
-  output_file = '160c1_Time_series_results_James_no_catcharea_TOC.html',                     # change here
+  input = '166parm_Time_series_results_James.Rmd',          
+  output_file = '166c1_Time_series_results_James_no_catcharea_TOC.html',                     # change here
   params = list(
-    document_title = "160c1 Analyse NO3 decline - excl. catchment_area and TOC",                 # change here
+    document_title = "166c1 Analyse NO3 decline - excl. catchment_area and TOC",                 # change here
     text_dataset = "Dataset: all variables except catchment area and TOC",  # change here
     selected_vars = vars,
     logistic_formula = form)
@@ -221,7 +221,7 @@ rmarkdown::render(
 
 #o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
 #
-# 160c2 - All variables excl. TOC, excl. catchment_area (total_forest) ----
+# 166c2 - All variables excl. TOC, excl. catchment_area (total_forest) ----
 #
 #o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
 
@@ -245,14 +245,14 @@ form <- paste(
 )
 
 # To find file names used:
-# dir(pattern = "160*")
+# dir(pattern = "166*")
 
 # Render HTML and .md files  
 rmarkdown::render(
-  input = '160parm_Time_series_results_James.Rmd',          
-  output_file = '160c2_Time_series_results_James_no_catcharea_TOC.html',                     # change here
+  input = '166parm_Time_series_results_James.Rmd',          
+  output_file = '166c2_Time_series_results_James_no_catcharea_TOC.html',                     # change here
   params = list(
-    document_title = "160c2 Analyse NO3 decline - excl. catchment_area and TOC",                 # change here
+    document_title = "166c2 Analyse NO3 decline - excl. catchment_area and TOC",                 # change here
     text_dataset = "Dataset: all variables except catchment area and TOC",  # change here
     selected_vars = vars,
     logistic_formula = form)
@@ -261,7 +261,7 @@ rmarkdown::render(
 
 #o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
 #
-# 160d1 - All variables incl. TOC, excl. altitude (coniferous + decid_mixed separately) ----
+# 166d1 - All variables incl. TOC, excl. altitude (coniferous + decid_mixed separately) ----
 #
 #o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
 
@@ -289,14 +289,14 @@ form <- paste(
 # form 
 
 # To find file names used:
-# dir(pattern = "160*")
+# dir(pattern = "166*")
 
 # Render HTML and .md files  
 rmarkdown::render(
-  input = '160parm_Time_series_results_James.Rmd',          
-  output_file = '160d1_Time_series_results_James_no_altitude.html',                     # change here
+  input = '166parm_Time_series_results_James.Rmd',          
+  output_file = '166d1_Time_series_results_James_no_altitude.html',                     # change here
   params = list(
-    document_title = "160d1 Analyse NO3 decline - excl. altitude and catchment_area",                 # change here
+    document_title = "166d1 Analyse NO3 decline - excl. altitude and catchment_area",                 # change here
     text_dataset = "Dataset: all variables except altitude and catchment area (but including TOC)",  # change here
     selected_vars = vars,
     logistic_formula = form)
@@ -306,7 +306,7 @@ rmarkdown::render(
 
 #o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
 #
-# 160d2 - All variables incl. TOC, excl. altitude (total_forest) ----
+# 166d2 - All variables incl. TOC, excl. altitude (total_forest) ----
 #
 #o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
 
@@ -334,14 +334,14 @@ form <- paste(
 # form 
 
 # To find file names used:
-# dir(pattern = "160*")
+# dir(pattern = "166*")
 
 # Render HTML and .md files  
 rmarkdown::render(
-  input = '160parm_Time_series_results_James.Rmd',          
-  output_file = '160d2_Time_series_results_James_no_altitude.html',                     # change here
+  input = '166parm_Time_series_results_James.Rmd',          
+  output_file = '166d2_Time_series_results_James_no_altitude.html',                     # change here
   params = list(
-    document_title = "160d2 Analyse NO3 decline - excl. altitude and catchment_area",                 # change here
+    document_title = "166d2 Analyse NO3 decline - excl. altitude and catchment_area",                 # change here
     text_dataset = "Dataset: all variables except altitude and catchment area (but including TOC)",  # change here
     selected_vars = vars,
     logistic_formula = form)
