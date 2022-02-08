@@ -19,7 +19,7 @@
 # Remember to set that the parts should be joined using a comma (sep = ",") 
 #   (or let each part end with a comma)
 vars <- paste(
-  "no3_decline", 
+  "slope_no3_vs_time", 
   "catchment_area, TOC",     # change here
   "slope_dep_vs_time, NO3, TOTN_dep, latitude, longitude, altitude",
   "pre, tmp, slope_pre, slope_tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous",
@@ -28,7 +28,7 @@ vars <- paste(
 
 # If long formula, split up the lines with a 'paste()'  
 form <- paste(
-  "no3_decline ~ catchment_area + TOC +",                # change here
+  "slope_no3_vs_time ~ catchment_area + TOC +",                # change here
   "altitude + decid_mixed + slope_dep_vs_time +", 
   "NO3 + TOTN_dep + coniferous +",
   "tmp + lake_water + wetland"
@@ -60,7 +60,7 @@ rmarkdown::render(
 # Remember to set that the parts should be joined using a comma (sep = ",") 
 #   (or let each part end with a comma)
 vars <- paste(
-  "no3_decline", 
+  "slope_no3_vs_time", 
   "catchment_area, TOC",     # change here
   "slope_dep_vs_time, NO3, TOTN_dep, latitude, longitude, altitude",
   "pre, tmp, slope_pre, slope_tmp, urban, cultivated, total_forest, total_shrub_herbaceous",
@@ -69,7 +69,7 @@ vars <- paste(
 
 # If long formula, split up the lines with a 'paste()'  
 form <- paste(
-  "no3_decline ~ catchment_area + TOC +",                # change here
+  "slope_no3_vs_time ~ catchment_area + TOC +",                # change here
   "altitude + total_forest + slope_dep_vs_time +", 
   "NO3 + TOTN_dep +",
   "tmp + lake_water + wetland"
@@ -101,7 +101,7 @@ rmarkdown::render(
 # Remember to set that the parts should be joined using a comma (sep = ",") 
 #   (or let each part end with a comma)
 vars <- paste(
-  "no3_decline", 
+  "slope_no3_vs_time", 
   "TOC",                                # change here
   "slope_dep_vs_time, NO3, TOTN_dep, latitude, longitude, altitude",
   "pre, tmp, slope_pre, slope_tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous",
@@ -113,7 +113,7 @@ vars
 # If long formula, split up the lines with a 'paste()'  
 #
 form <- paste(
-  "no3_decline ~ TOC*altitude +",                # change here
+  "slope_no3_vs_time ~ TOC*altitude +",                # change here
   "TOTN_dep*slope_dep_vs_time + NO3 +", 
   "decid_mixed + coniferous +",
   "tmp + lake_water + wetland"
@@ -145,7 +145,7 @@ rmarkdown::render(
 # Remember to set that the parts should be joined using a comma (sep = ",") 
 #   (or let each part end with a comma)
 vars <- paste(
-  "no3_decline", 
+  "slope_no3_vs_time", 
   "TOC",                                # change here
   "slope_dep_vs_time, NO3, TOTN_dep, latitude, longitude, altitude",
   "pre, tmp, slope_pre, slope_tmp, urban, cultivated, total_forest, total_shrub_herbaceous",
@@ -157,7 +157,7 @@ vars
 # If long formula, split up the lines with a 'paste()'  
 #
 form <- paste(
-  "no3_decline ~ TOC*altitude +",                # change here
+  "slope_no3_vs_time ~ TOC*altitude +",                # change here
   "TOTN_dep*slope_dep_vs_time + NO3 +", 
   "total_forest +",
   "tmp + lake_water + wetland"
@@ -189,7 +189,7 @@ rmarkdown::render(
 # Remember to set that the parts should be joined using a comma (sep = ",") 
 #   (or let each part end with a comma)
 vars <- paste(
-  "no3_decline", 
+  "slope_no3_vs_time", 
                                   # change here
   "slope_dep_vs_time, NO3, TOTN_dep, latitude, longitude, altitude",
   "pre, tmp, slope_pre, slope_tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous",
@@ -198,7 +198,7 @@ vars <- paste(
 
 # If long formula, split up the lines with a 'paste()'  
 form <- paste(
-  "no3_decline ~ ",                # change here
+  "slope_no3_vs_time ~ ",                # change here
   "altitude + decid_mixed + slope_dep_vs_time +", 
   "NO3 + TOTN_dep + coniferous +",
   "tmp + lake_water + wetland"
@@ -229,7 +229,7 @@ rmarkdown::render(
 # Remember to set that the parts should be joined using a comma (sep = ",") 
 #   (or let each part end with a comma)
 vars <- paste(
-  "no3_decline", 
+  "slope_no3_vs_time", 
   # change here
   "slope_dep_vs_time, NO3, TOTN_dep, latitude, longitude, altitude",
   "pre, tmp, slope_pre, slope_tmp, urban, cultivated, total_forest, total_shrub_herbaceous",
@@ -238,7 +238,7 @@ vars <- paste(
 
 # If long formula, split up the lines with a 'paste()'  
 form <- paste(
-  "no3_decline ~ ",                # change here
+  "slope_no3_vs_time ~ ",                # change here
   "altitude + total_forest + slope_dep_vs_time +", 
   "NO3 + TOTN_dep +",
   "tmp + lake_water + wetland"
@@ -270,7 +270,7 @@ rmarkdown::render(
 # Remember to set that the parts should be joined using a comma (sep = ",") 
 #   (or let each part end with a comma)
 vars <- paste(
-  "no3_decline", 
+  "slope_no3_vs_time", 
   "TOC",                                
   "slope_dep_vs_time, NO3, TOTN_dep, latitude, longitude",   # altitude removed
   "pre, tmp, slope_pre, slope_tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous",
@@ -281,7 +281,7 @@ vars
 # If long formula, split up the lines with a 'paste()'  
 #
 form <- paste(
-  "no3_decline ~ TOC +",                # change here
+  "slope_no3_vs_time ~ TOC +",                # change here
   "TOTN_dep*slope_dep_vs_time + NO3 +", 
   "decid_mixed + coniferous +",
   "tmp + lake_water + wetland"
@@ -315,7 +315,7 @@ rmarkdown::render(
 # Remember to set that the parts should be joined using a comma (sep = ",") 
 #   (or let each part end with a comma)
 vars <- paste(
-  "no3_decline", 
+  "slope_no3_vs_time", 
   "TOC",                                
   "slope_dep_vs_time, NO3, TOTN_dep, latitude, longitude",   # altitude removed
   "pre, tmp, slope_pre, slope_tmp, urban, cultivated, total_forest, total_shrub_herbaceous",
@@ -326,7 +326,7 @@ vars
 # If long formula, split up the lines with a 'paste()'  
 #
 form <- paste(
-  "no3_decline ~ TOC +",                # change here
+  "slope_no3_vs_time ~ TOC +",                # change here
   "TOTN_dep*slope_dep_vs_time + NO3 +", 
   "total_forest +",
   "tmp + lake_water + wetland"
