@@ -569,6 +569,9 @@ plot_multi_way_importance(importance, size_measure = "no_of_nodes", no_of_labels
 plot_multi_way_importance(importance, x_measure = "mse_increase", y_measure = "node_purity_increase",
                           size_measure = "p_value", no_of_labels = 6)
 
+importance %>%
+  arrange(desc(times_a_root))
+
 ```
 
 
