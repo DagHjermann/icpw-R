@@ -197,6 +197,13 @@ df3 <- reg_no3 %>%
   rename(NO3 = `NO3-N_µg/l N`, 
          TOC = `TOC_mg C/l`)
 
+# TOC trend
+df4 <- reg_no3 %>%
+  filter(variable %in% c("TOC_mg C/l")) %>%
+  select(station_id, variable, sen_slp) %>%
+  tidyr::pivot_wider(names_from = "variable", values_from = "sen_slp") %>%
+  rename(slope_toc_vs_time = `TOC_mg C/l`)
+
 cat("\n")
 cat("df1, n =", nrow(df1), "\n")
 cat("df2, n =", nrow(df2), "\n")
@@ -204,7 +211,8 @@ cat("df3, n =", nrow(df3), "\n")
 
 dat_1_all <- df1 %>%
   full_join(df2, by = "station_id") %>%
-  full_join(df3, by = "station_id")
+  full_join(df3, by = "station_id") %>%
+  left_join(df4, by = "station_id")
 
 cat("dat_1_all, n =", nrow(dat_1_all), " (may include series without slope_no3_vs_time)\n")
 
