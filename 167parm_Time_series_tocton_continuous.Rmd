@@ -9,7 +9,7 @@ output:
     keep_md: true
 params:
   document_title: 
-    value: '165x Analyse TON change - test run'
+    value: '167x Analyse TON change - test run'
   text_dataset: 
     value: 'Data with slope_ton_vs_time, catchment_area, TON, slope_pre, slope_tmp, slope_dep_vs_time, TOTN_dep, latitude, longitude, tmp, land cover'
   selected_vars: 
@@ -28,7 +28,7 @@ params:
 ```{r, echo = FALSE}  
 
 #
-# This file is designed to be run using '165parm_run_markdown.R'  
+# This file is designed to be run using '167parm_run_markdown.R'  
 # The scripts in that file renders 3 result html file: 19\60a, b and c (different variable sets and data)  
 #
 
@@ -52,7 +52,7 @@ params:
     - pre, tmp: mean precipitation + temp   
     - Land cover 
   
-Technical details: This html file was rendered with `165parm_run_markdown.R` which runs the script `165parm_Time_series_results_James.Rmd` with different inputs, resulting in html files 165a, 165b and 165c.    
+Technical details: This html file was rendered with `167parm_run_markdown.R` which runs the script `167parm_Time_series_results_James.Rmd` with different inputs, resulting in html files 167a, 167b and 167c.    
 
 ## 1. Libraries  
 ```{r, results='hide', message=FALSE, warning=FALSE}
@@ -710,8 +710,8 @@ for (i in 1:length(plotdata)){
 #   na.action = "na.fail")
 # 
 # dd1b <- dredge(fm)                       # only once
-# saveRDS(dd1b, "Data/165_all_dd1b.rds")    # save it as it takes a couple of minutes
-# # dd1b <- readRDS("Data/165_all_dd1b.rds")
+# saveRDS(dd1b, "Data/167_all_dd1b.rds")    # save it as it takes a couple of minutes
+# # dd1b <- readRDS("Data/167_all_dd1b.rds")
 # 
 # # subset(dd1b, delta < 1)
 # subset(dd1b, delta < 2)
