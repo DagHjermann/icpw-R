@@ -9,19 +9,19 @@ output:
     keep_md: true
 params:
   document_title: 
-    value: '167x Analyse TON change - test run'
+    value: '167x Analyse TOC/TON change - test run'
   text_dataset: 
-    value: 'Data with slope_ton_vs_time, catchment_area, TON, slope_pre, slope_tmp, slope_dep_vs_time, TOTN_dep, latitude, longitude, tmp, land cover'
+    value: 'Data with slope_tocton_vs_time, catchment_area, TON, slope_pre, slope_tmp, slope_dep_vs_time, TOTN_dep, latitude, longitude, tmp, land cover'
   selected_vars: 
-    value: 'slope_ton_vs_time, catchment_area, TON, slope_pre, slope_tmp, slope_dep_vs_time, TOTN_dep, latitude, longitude, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse'
+    value: 'slope_tocton_vs_time, catchment_area, TON, slope_pre, slope_tmp, slope_dep_vs_time, TOTN_dep, latitude, longitude, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse'
   extra_pairwise_plots:
     value: 'TON,slope_pre'
   pairwise_plots_same_scale:
     value: 'FALSE'
   response_variable: 
-    value: 'slope_ton_vs_time'
+    value: 'slope_tocton_vs_time'
   regression_formula: 
-    value: 'slope_ton_vs_time ~ TON'
+    value: 'slope_tocton_vs_time ~ TON'
 
 ---
 
@@ -139,33 +139,35 @@ if (FALSE){
 With slope regression data  
 * Make one line per station    
 
-
 ```{r}
 
 # table(dat_start$variable)
 
 # Slope 
 df1 <- dat_start %>%
-  filter(variable %in% c("TON_µg/l N", "TOC_mg C/l")) %>%
+  filter(variable %in% c("TON_µg/l N", "TOC_mg C/l", "TOC/TON")) %>%
   select(station_id, variable, sen_slp) %>%
   tidyr::pivot_wider(names_from = "variable", values_from = "sen_slp") %>%
-  rename(slope_ton_vs_time = `TON_µg/l N`, 
+  rename(slope_tocton_vs_time = `TOC/TON`,
+         slope_ton_vs_time = `TON_µg/l N`, 
          slope_toc_vs_time = `TOC_mg C/l`)
   
 # Slope p-value
 df2 <- dat_start %>%
-  filter(variable %in% c("TON_µg/l N", "TOC_mg C/l")) %>%
+  filter(variable %in% c("TON_µg/l N", "TOC_mg C/l", "TOC/TON")) %>%
   select(station_id, variable, mk_p_val) %>%
   tidyr::pivot_wider(names_from = "variable", values_from = "mk_p_val") %>%
-  rename(p_ton_vs_time = `TON_µg/l N`, 
+  rename(p_tocton_vs_time = `TOC/TON`,
+         p_ton_vs_time = `TON_µg/l N`, 
          p_toc_vs_time = `TOC_mg C/l`)
 
 # Medians
 df3 <- dat_start %>%
-  filter(variable %in% c("TON_µg/l N", "TOC_mg C/l")) %>%
+  filter(variable %in% c("TON_µg/l N", "TOC_mg C/l", "TOC/TON")) %>%
   select(station_id, variable, median) %>%
   tidyr::pivot_wider(names_from = "variable", values_from = "median") %>%
-  rename(TON = `TON_µg/l N`, 
+  rename(TOCTON = `TOC/TON`,
+         TON = `TON_µg/l N`, 
          TOC = `TOC_mg C/l`)
 
 cat("\n")
@@ -180,7 +182,7 @@ dat_1_all <- df1 %>%
 cat("dat_1_all, n =", nrow(dat_1_all), " \n")
 
 dat_1 <- dat_1_all %>%
-  filter(!is.na(slope_ton_vs_time) & !is.na(slope_toc_vs_time))
+  filter(!is.na(slope_tocton_vs_time))
 
 cat("dat_1, n =", nrow(dat_1), " \n")
 
@@ -328,7 +330,7 @@ dat <- dat_5
 
 ```{r, fig.width=9, fig.height=7}
 
-ggplot(dat, aes(slope_dep_vs_time, slope_ton_vs_time)) + 
+ggplot(dat, aes(slope_dep_vs_time, slope_tocton_vs_time)) + 
   geom_point(data = dat %>% filter(p_ton_vs_time < 0.05), size = rel(2)) +
   geom_point(aes(color = country)) +
   geom_hline(yintercept = 0, linetype = 2) + 
