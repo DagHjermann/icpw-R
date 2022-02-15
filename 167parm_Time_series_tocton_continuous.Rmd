@@ -13,7 +13,7 @@ params:
   text_dataset: 
     value: 'Data with slope_tocton_vs_time, catchment_area, TON, slope_pre, slope_tmp, slope_dep_vs_time, TOTN_dep, latitude, longitude, tmp, land cover'
   selected_vars: 
-    value: 'slope_tocton_vs_time, catchment_area, TON, slope_pre, slope_tmp, slope_dep_vs_time, TOTN_dep, latitude, longitude, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse'
+    value: 'slope_tocton_vs_time, catchment_area, TON, slope_pre, slope_tmp, slope_dep_vs_time, TOTN_dep, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse'
   extra_pairwise_plots:
     value: 'TON,slope_pre'
   pairwise_plots_same_scale:
@@ -346,7 +346,6 @@ ggplot(dat, aes(slope_dep_vs_time, slope_tocton_vs_time)) +
 * Saves data both before and after rows with removing missing predictors are removed
 ```{r}  
 
-
 add_flag_variable <- function(data, variable_string){
   variable_string <- gsub(" ", "", variable_string)
   variables <- strsplit(variable_string, split = ",")[[1]]
@@ -396,17 +395,17 @@ cat("Number of complete observations by country: \n")
 xtabs(~country + Row_excluded, df_analysis_allrows)
 
 # Keep only complete cases
-df_analysis <- df_analysis_allrows %>%
+df_analysis_rowsexcluded <- df_analysis_allrows %>%
   filter(!Row_excluded)
 
 # Save to excel
 fn <- paste0(
   stringr::str_extract(params$document_title, "[^[[:blank:]]]+"),
   "_data.xlsx")
-writexl::write_xlsx(df_analysis, paste0("Data_analysed/", fn))
+writexl::write_xlsx(df_analysis_rowsexcluded, paste0("Data_analysed/", fn))
 
 # Remove variables that will note be used
-df_analysis <- delete_unused_variables(df_analysis, params$selected_vars)
+df_analysis <- delete_unused_variables(df_analysis_rowsexcluded, params$selected_vars)
 
 cat("\n\n")
 cat("Data before removing PL05: n =", nrow(dat_5), "\n")
@@ -557,7 +556,7 @@ summary(lm(Observed ~ Predicted, data = df_plot))$r.sq
 
 full_set <- df_analysis %>% 
   # mutate(no3_decline_f = factor(no3_decline)) %>% 
-  # select(-no3_decline, -longitude, - latitude) %>%
+  # select( -longitude, - latitude) %>%
   as.data.frame()
 
 model1 <- randomForest(as.formula(tree_formula), 
@@ -608,7 +607,8 @@ if (FALSE){
                             size_measure = "p_value", no_of_labels = 6)
 }
 
-importance
+importance %>%
+  arrange(desc(times_a_root))
 
 ```
 
