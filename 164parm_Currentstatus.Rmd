@@ -174,34 +174,6 @@ cat("Trends used as predictor variable:", sQuote(file), ",n =", nrow(df_trends),
 
 ```
 
-#### Use other dataset for slope_toc_vs_time    
-
-* 'relax_italy' data  
-* for slope_toc_vs_time as predictor variable  
-
-```{r}
-
-folder <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/trends_1992-2016_toc_totn_no3_relax_italy"
-file <- "trends_1992-2016_toc_totn_no3_relax_italy_results.csv"
-fn <- paste0(folder, "/", file)
-dat_relaxitaly <- read.csv(fn, encoding = "UTF-8")
-cat("Data source:", sQuote(file), ",n =", nrow(dat_relaxitaly), "\n\n")
-
-# table(dat_relaxitaly$variable)
-sum(dat_relaxitaly$variable == "TOC_mg C/l")
-# 293
-
-df_toctrend <- dat_relaxitaly %>%
-  filter(variable == "TOC_mg C/l") %>%
-  select(station_id, sen_slp) %>%
-  rename(slope_toc_vs_time = sen_slp)
-
-check <- table(df_toctrend$station_id)
-if (sum(check>1) > 0)
-  stop("station_id must be unique")
-
-  
-```
 
 
 ### Start 'dat'  
@@ -233,11 +205,7 @@ df2 <- df_trends %>% # table()
   tidyr::pivot_wider(names_from = "variable", values_from = "median") %>% # str()
   rename(trend_NO3 = `NO3-N_µg/l N`,
          trend_TOTN = `TOTN_µg/l N`,
-         trend_TOC = `TOC_mg C/l`)
-
-# Remove this TOC trend - we will use TOC trend from the 'relax_italy' dataset, see above  
-df2 <- df2 %>%
-  select(-trend_TOC)
+         slope_toc_vs_time = `TOC_mg C/l`)
 
 cat("\n")
 cat("df1, n =", nrow(df1), "\n")
@@ -265,21 +233,6 @@ cat("dat_1, n =", nrow(dat_1),
 
 sum(is.na(dat_1$log_median_no3))
 sum(is.na(dat_1$log_median_tocton))
-
-```
-
-### Add TOC trend  
-```{r}
-
-n1 <- nrow(dat_1)
-
-dat_1 <- dat_1 %>%
-  left_join(df_toctrend)
-
-n2 <- nrow(dat_1)
-
-if (n1 != n2)
-  stop("Number of rows changed - check join")
 
 ```
 
