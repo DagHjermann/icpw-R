@@ -14,6 +14,8 @@ params:
     value: 'Data with slope_dep_vs_time, NO3, and TOTN_dep'
   selected_vars: 
     value: 'tocton_decrease,catchment_area, TOC, TON, TOCTON, slope_toc_vs_time, slope_ton_vs_time, slope_dep_vs_time, TOTN_dep, latitude, longitude, altitude,pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse'
+  response_variable: 
+    value: 'tocton_decrease_f'
   extra_pairwise_plots:
     value: 'TOC,NO3; slope_dep_vs_time,TOTN_dep; altitude,decid_mixed'
   pairwise_plots_same_scale:
@@ -353,7 +355,12 @@ dat_5 <- dat_4 %>%
 ### Data set used  
 
 ```r
-dat <- dat_5
+dat <- dat_5 %>%
+  mutate(
+    tocton_decrease = case_when(
+      slope_tocton_vs_time < 0 & p_tocton_vs_time <= 0.05 ~ 1,
+      TRUE ~ 0)
+  )
 ```
 
 
@@ -554,6 +561,128 @@ cat("Data after removing missing predictors: n =", nrow(df_analysis), "\n")
 ## Data after removing missing predictors: n = 214
 ```
 
+### a. Selection of variables  
+* Select variables to use, and thereby also cases  
+* Saves data both before and after rows with removing missing predictors are removed
+
+```r
+add_flag_variable <- function(data, variable_string){
+  variable_string <- gsub(" ", "", variable_string)
+  variables <- strsplit(variable_string, split = ",")[[1]]
+  # Check if all variables are there
+  found <- variables %in% names(data)
+  if (sum(!found) > 0)
+    stop("Not all variables found in data:", 
+      paste(variables[!found], collapse = " ,"), 
+      "\n")
+  # Data for analyses
+  complete <- complete.cases(data[variables])
+  data$Row_excluded <- !complete
+  variables %>% 
+    purrr::map_dfr(~data.frame(Var = .x, Missing = sum(is.na(data[[.x]])))) %>%
+    print()
+  data
+}
+
+delete_unused_variables <- function(data, variable_string){
+  variable_string <- gsub(" ", "", variable_string)
+  variables <- strsplit(variable_string, split = ",")[[1]]
+  data[variables]
+}
+
+cat("-------------------------------------------------------------\n")
+cat("Variables: \n")
+cat(params$selected_vars)
+cat("\n-------------------------------------------------------------\n")
+
+dat <- dat %>%
+  filter2(!station_code %in% "PL05", text = "station PL05 (has dubious NO3 data)")
+
+# debugonce(add_flag_variable)
+# df_analysis <- add_flag_variable(dat, vars)  
+df_analysis_allrows <- add_flag_variable(dat, params$selected_vars)  
+
+# Save to excel
+fn <- paste0(substr(params$document_title, 1, 3), "_", params$response_variable, "_data.xlsx")
+writexl::write_xlsx(df_analysis_allrows, paste0("Data_analysed/", fn))
+cat("\nDataset after removing urban, cultivated, PL05 saved as", sQuote(fn), "\n\n")
+
+cat("Number of rows that will be excluded: \n")
+table(df_analysis_allrows$Row_excluded)
+
+cat("\n\n")
+cat("Number of complete observations by country: \n")
+xtabs(~country + Row_excluded, df_analysis_allrows)
+
+# Keep only complete cases
+df_analysis <- df_analysis_allrows %>%
+  filter(!Row_excluded)
+
+# Save to excel
+fn <- paste0(
+  stringr::str_extract(params$document_title, "[^[[:blank:]]]+"),
+  "_data.xlsx")
+writexl::write_xlsx(df_analysis, paste0("Data_analysed/", fn))
+
+# Remove variables that will note be used
+df_analysis <- delete_unused_variables(df_analysis, params$selected_vars)
+
+cat("\n\n")
+cat("Data before removing PL05: n =", nrow(dat_5), "\n")
+cat("Data after removing PL05: n =", nrow(df_analysis_allrows), "\n")
+cat("Data after removing missing predictors: n =", nrow(df_analysis), "\n")
+```
+
+```
+## -------------------------------------------------------------
+## Variables: 
+## tocton_decrease,catchment_area, TOCTON,slope_pre, slope_tmp,slope_dep_vs_time, TOTN_dep, latitude, longitude, altitude,pre, tmp, urban, cultivated, total_forest, total_shrub_herbaceous,wetland, lake_water, bare_sparse
+## -------------------------------------------------------------
+## Removed 0 rows (station PL05 (has dubious NO3 data))
+##                       Var Missing
+## 1         tocton_decrease       0
+## 2          catchment_area       0
+## 3                  TOCTON       0
+## 4               slope_pre       0
+## 5               slope_tmp       0
+## 6       slope_dep_vs_time       0
+## 7                TOTN_dep       0
+## 8                latitude       0
+## 9               longitude       0
+## 10               altitude       0
+## 11                    pre       0
+## 12                    tmp       0
+## 13                  urban       0
+## 14             cultivated       0
+## 15           total_forest       0
+## 16 total_shrub_herbaceous       0
+## 17                wetland       0
+## 18             lake_water       0
+## 19            bare_sparse       0
+## 
+## Dataset after removing urban, cultivated, PL05 saved as '161_tocton_decrease_f_data.xlsx' 
+## 
+## Number of rows that will be excluded: 
+## 
+## FALSE 
+##   269 
+## 
+## 
+## Number of complete observations by country: 
+##                 Row_excluded
+## country          FALSE
+##   Canada            62
+##   Finland           24
+##   Germany            1
+##   Norway            80
+##   Sweden            81
+##   United Kingdom    21
+## 
+## 
+## Data before removing PL05: n = 269 
+## Data after removing PL05: n = 269 
+## Data after removing missing predictors: n = 269
+```
 
 
 ### b. Correlations   
@@ -572,7 +701,7 @@ gg + coord_cartesian(x = c(-2, 20), y = c(-2,22))
 ## Coordinate system already present. Adding new coordinate system, which will replace the existing one.
 ```
 
-![](161d2_Time_series_tocton_wo_slopes_files/figure-html/unnamed-chunk-15-1.png)<!-- -->
+![](161d2_Time_series_tocton_wo_slopes_files/figure-html/unnamed-chunk-16-1.png)<!-- -->
 
 
 
@@ -605,7 +734,7 @@ valid_set <- df_analysis[!train,] %>%
 plot(ct, main="Conditional Inference Tree")
 ```
 
-![](161d2_Time_series_tocton_wo_slopes_files/figure-html/unnamed-chunk-17-1.png)<!-- -->
+![](161d2_Time_series_tocton_wo_slopes_files/figure-html/unnamed-chunk-18-1.png)<!-- -->
 
 ```r
 cat("\n\n")
@@ -629,23 +758,28 @@ table(tr.pred[,"P1"] > 0.5, valid_set$tocton_decrease_f)
 ##     lake_water + bare_sparse
 ## 
 ## Fitted party:
-## [1] root: 0 (n = 195, err = 4.1%) 
+## [1] root
+## |   [2] TOCTON <= 41.56103: 0 (n = 192, err = 6.8%)
+## |   [3] TOCTON > 41.56103
+## |   |   [4] pre <= 1286.09998: 0 (n = 12, err = 50.0%)
+## |   |   [5] pre > 1286.09998: 1 (n = 39, err = 0.0%)
 ## 
-## Number of inner nodes:    0
-## Number of terminal nodes: 1
+## Number of inner nodes:    2
+## Number of terminal nodes: 3
 ## 
 ## 
 ## Table of prediction errors 
 ##    
 ##       0   1
-##   0 187   8
-##   1   0   0
+##   0 185  19
+##   1   0  39
 ## 
 ## 
 ## Classification of training set 
 ##        
 ##          0  1
-##   FALSE 17  2
+##   FALSE 21  3
+##   TRUE   0  2
 ```
 
 ### b. Evtree (Evolutionary Learning)   
@@ -656,7 +790,7 @@ ev.raw = evtree(tocton_decrease_f ~ ., data = train_set)
 plot(ev.raw)
 ```
 
-![](161d2_Time_series_tocton_wo_slopes_files/figure-html/unnamed-chunk-18-1.png)<!-- -->
+![](161d2_Time_series_tocton_wo_slopes_files/figure-html/unnamed-chunk-19-1.png)<!-- -->
 
 ```r
 cat("Predicted in training data: \n")
@@ -670,12 +804,12 @@ cat("\n\nPrediction errors in training data: \n")
 ## Predicted in training data: 
 ##    
 ##       0   1
-##   0 184   4
-##   1   3   4
+##   0 184   9
+##   1   1  49
 ## 
 ## 
 ## Prediction errors in training data: 
-## [1] 0.03589744
+## [1] 0.04115226
 ```
 
 
@@ -700,11 +834,11 @@ model1
 ##                      Number of trees: 500
 ## No. of variables tried at each split: 5
 ## 
-##         OOB estimate of  error rate: 3.08%
+##         OOB estimate of  error rate: 4.94%
 ## Confusion matrix:
-##     0 1 class.error
-## 0 187 0        0.00
-## 1   6 2        0.75
+##     0  1 class.error
+## 0 183  2  0.01081081
+## 1  10 48  0.17241379
 ```
 
 
@@ -720,8 +854,8 @@ table(pred_valid, valid_set$tocton_decrease_f)
 ```
 ##           
 ## pred_valid  0  1
-##          0 17  2
-##          1  0  0
+##          0 21  1
+##          1  0  4
 ```
 
 
@@ -733,19 +867,95 @@ full_set <- df_analysis  %>%
   select(-tocton_decrease, -longitude, - latitude) %>%
   as.data.frame()
 
+model1 <- randomForest(tocton_decrease_f ~ ., 
+                       data = full_set, 
+                       mtry = 5,
+                       importance = TRUE)
+
+model1
 
 # Predicting on full set
-pred_valid <- predict(model1, valid_set, type = "class")
+pred_full <- predict(model1, full_set, type = "class")
 
 # Checking classification accuracy
-table(pred_valid, valid_set$tocton_decrease_f)  
+table(pred_full, full_set$tocton_decrease_f)  
 ```
 
 ```
-##           
-## pred_valid  0  1
-##          0 17  2
-##          1  0  0
+## 
+## Call:
+##  randomForest(formula = tocton_decrease_f ~ ., data = full_set,      mtry = 5, importance = TRUE) 
+##                Type of random forest: classification
+##                      Number of trees: 500
+## No. of variables tried at each split: 5
+## 
+##         OOB estimate of  error rate: 4.46%
+## Confusion matrix:
+##     0  1 class.error
+## 0 204  2 0.009708738
+## 1  10 53 0.158730159
+##          
+## pred_full   0   1
+##         0 206   0
+##         1   0  63
+```
+
+
+#### c1c. Quasi R-squared  
+
+- Proportion of deviance explained  
+
+
+```r
+pred_prob <- predict(model1, type = "prob")
+
+# Make data frame with P (modelled probability of no3_decline), Obs (observed no3_decline, 0 or 1),
+#   and log-likelihood of data given the model
+df_prob <- tibble(
+  P = pred_prob[,2], 
+  Obs = as.numeric(full_set$tocton_decrease_f) - 1
+) %>%
+  mutate(
+    Lik = P*Obs + (1-P)*(1-Obs),
+    Loglik = log(P*Obs + (1-P)*(1-Obs))
+  )
+
+# Null model (same probability for all observations)
+df_prob$P_null <- mean(df_prob$Obs)
+
+# Null probability   
+df_prob <- df_prob %>%
+  mutate(
+    Loglik_null = log(P_null*Obs + (1-P_null)*(1-Obs))
+    )
+    
+#
+# Summary statistics
+#
+dev_model <- -2*sum(df_prob$Loglik)
+dev_null <- -2*sum(df_prob$Loglik_null)
+cat("Deviance of random forest model:", dev_model, "\n")
+cat("Deviance of null model:", dev_null, "\n")
+
+Quasi_R2 <- (dev_null - dev_model)/dev_null
+cat("Proportion of deviance explained by model (quasi R.squared):", Quasi_R2, "\n")
+
+#
+# Plot
+#
+ggplot(df_prob, aes(P, Obs)) + 
+  geom_jitter(width = 0, height = 0.05) +
+  labs(x = "Probability of observing '1' according to model",
+       y = "Actual observation"
+  )
+```
+
+![](161d2_Time_series_tocton_wo_slopes_files/figure-html/unnamed-chunk-23-1.png)<!-- -->
+
+```
+## Deviance of random forest model: 85.38784 
+## Deviance of null model: 292.8348 
+## Proportion of deviance explained by model (quasi R.squared): 0.7084095
 ```
 
 
@@ -760,17 +970,60 @@ importance <- measure_importance(model1)
 
 
 ```r
-plot_multi_way_importance(importance, size_measure = "no_of_nodes", no_of_labels = 12)  
+plot_multi_way_importance(importance, size_measure = "no_of_nodes", no_of_labels = 6)  
 ```
 
-![](161d2_Time_series_tocton_wo_slopes_files/figure-html/unnamed-chunk-22-1.png)<!-- -->
+![](161d2_Time_series_tocton_wo_slopes_files/figure-html/unnamed-chunk-24-1.png)<!-- -->
 
 ```r
 plot_multi_way_importance(importance, x_measure = "accuracy_decrease", y_measure = "gini_decrease", 
-                          size_measure = "p_value", no_of_labels = 12)
+                          size_measure = "p_value", no_of_labels = 6)
 ```
 
-![](161d2_Time_series_tocton_wo_slopes_files/figure-html/unnamed-chunk-22-2.png)<!-- -->
+![](161d2_Time_series_tocton_wo_slopes_files/figure-html/unnamed-chunk-24-2.png)<!-- -->
+
+```r
+# Plot immportance table as well
+importance %>% 
+  arrange(times_a_root)
+```
+
+```
+##                  variable mean_min_depth no_of_nodes accuracy_decrease gini_decrease
+## 1              cultivated       6.147175          48      -0.000028916     0.1736639
+## 2            total_forest       4.560302         361       0.006100687     2.3559927
+## 3  total_shrub_herbaceous       4.819965         352       0.003345571     1.9665734
+## 4                   urban       6.227973          40       0.000943553     0.1804199
+## 5                 wetland       4.988710         310       0.002764999     1.3327807
+## 6          catchment_area       4.564018         432       0.002967366     2.0182891
+## 7              lake_water       4.396497         437       0.001515445     2.3074395
+## 8             bare_sparse       4.671894         331       0.007800777     2.0833981
+## 9                altitude       4.412479         381       0.008085233     3.1090293
+## 10                    tmp       3.581295         459       0.029908798     6.3662924
+## 11               TOTN_dep       3.367228         575       0.016925782     5.1441523
+## 12              slope_tmp       3.648062         475       0.035027354     7.0317239
+## 13                    pre       3.013960         571       0.040799885     9.0626776
+## 14      slope_dep_vs_time       1.966741         837       0.066627646    12.4107583
+## 15              slope_pre       2.565588         690       0.045531614    13.7875715
+## 16                 TOCTON       1.609978         740       0.075816995    27.5011778
+##    no_of_trees times_a_root      p_value
+## 1           47            0 1.000000e+00
+## 2          267            0 9.999713e-01
+## 3          260            0 9.999965e-01
+## 4           37            0 1.000000e+00
+## 5          244            0 1.000000e+00
+## 6          288            3 6.589149e-01
+## 7          296            3 5.644556e-01
+## 8          255            9 1.000000e+00
+## 9          264           13 9.985805e-01
+## 10         320           15 1.800299e-01
+## 11         346           33 1.058889e-10
+## 12         322           48 4.562832e-02
+## 13         367           55 3.389656e-10
+## 14         451           74 6.392806e-69
+## 15         381           95 1.838401e-30
+## 16         426          152 5.459047e-42
+```
 
 
 #### c3. Random forest, show partial effects  
@@ -831,6 +1084,15 @@ for (i in 1:length(plotdata)){
 
   }
   
+  # Save gg object for later plotting / changes
+  # Saved in Figures/Partial_plots' with name e.g. "gg_164a1_7.rds" for plot number 7
+  fn <- paste0(
+    "Figures/Partial_plots/gg_",
+    stringr::str_extract(params$document_title, "([^[[:blank:]]]+)"),   # extract e.g. "164a1"
+    "_", i, ".rds")
+  saveRDS(gg, fn)
+  
+  
 }
 ```
 
@@ -877,28 +1139,20 @@ subset(dredged_models, delta < 2)
 ##     data = df_analysis, na.action = "na.fail")
 ## ---
 ## Model selection table 
-##        (Int)   ctc_are lak_wtr slp_dep_vs_tim slp_pre     tmp      TOC  TOT_dep     wtl df
-## 1609 -1.9480                           0.1865         -0.5881          0.007690 -0.2049  5
-## 1625 -1.8020                           0.2147 -0.1375 -0.6009          0.008611 -0.2143  6
-## 1611 -1.6600 -0.008281                 0.1799         -0.6753          0.007809 -0.2112  6
-## 713  -0.7259                           0.2158         -0.4054 -0.10020 0.007670          5
-## 1737 -0.8765                           0.2073         -0.4697 -0.06814 0.007632 -0.1560  6
-## 1627 -1.4250 -0.009963                 0.2160 -0.1695 -0.7106          0.009022 -0.2246  7
-## 1753 -0.3151                           0.2505 -0.1600 -0.4406 -0.09244 0.008737 -0.1578  7
-## 729  -0.1904                           0.2531 -0.1489 -0.3768 -0.12360 0.008631          6
-## 585  -2.5630                           0.1984         -0.5616          0.008116          4
-## 1613 -2.3860           0.02098         0.1837         -0.5852          0.007771 -0.1940  6
-##       logLik AICc delta weight
-## 1609 -27.807 65.9  0.00  0.173
-## 1625 -27.160 66.7  0.82  0.115
-## 1611 -27.192 66.8  0.89  0.111
-## 713  -28.359 67.0  1.10  0.100
-## 1737 -27.323 67.1  1.15  0.098
-## 1627 -26.288 67.1  1.22  0.094
-## 1753 -26.402 67.3  1.44  0.084
-## 729  -27.518 67.4  1.54  0.080
-## 585  -29.712 67.6  1.71  0.074
-## 1613 -27.648 67.7  1.80  0.071
+##       (Int)      alt lak_wtr slp_dep_vs_tim slp_pre slp_tmp    TOC  TOT_dep      wtl df
+## 1709 -8.315          0.06866         0.2695           41.65 0.1339 0.006447 -0.10870  7
+## 1677 -6.330          0.08999         0.2556                 0.1387 0.004886 -0.07556  6
+## 653  -6.723          0.09497         0.2615                 0.1330 0.005390           5
+## 685  -7.881          0.08384         0.2670           23.33 0.1281 0.006310           6
+## 1710 -8.983 0.000826 0.06694         0.2671           47.57 0.1377 0.006650 -0.11190  8
+## 1725 -8.158          0.06789         0.2684 0.02214   40.24 0.1325 0.006246 -0.10610  8
+##       logLik  AICc delta weight
+## 1709 -51.349 117.1  0.00  0.264
+## 1677 -52.543 117.4  0.28  0.230
+## 653  -53.726 117.7  0.55  0.200
+## 685  -53.292 118.9  1.78  0.109
+## 1710 -51.261 119.1  1.95  0.100
+## 1725 -51.284 119.1  1.99  0.097
 ## Models ranked by AICc(x)
 ```
 
@@ -929,7 +1183,7 @@ if (length(modelvars$additive_vars) > 0){
 }
 ```
 
-![](161d2_Time_series_tocton_wo_slopes_files/figure-html/unnamed-chunk-24-1.png)<!-- -->
+![](161d2_Time_series_tocton_wo_slopes_files/figure-html/unnamed-chunk-26-1.png)<!-- -->
 
 
 
