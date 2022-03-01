@@ -378,6 +378,9 @@ cat("\n-------------------------------------------------------------\n")
 dat <- dat %>%
   filter2(!station_code %in% "PL05", text = "station PL05 (has dubious NO3 data)")
 
+dat <- dat %>%
+  filter2(region != "AtlCan" & country != "Italy", text = "Remove AtlCan and Italy")  
+
 # debugonce(add_flag_variable)
 # df_analysis <- add_flag_variable(dat, vars)  
 df_analysis_allrows <- add_flag_variable(dat, params$selected_vars)  
