@@ -22,7 +22,7 @@
 #   (or let each part end with a comma)
 vars <- paste(
   "slope_tocton_vs_time", 
-  "catchment_area, slope_pre, slope_tmp, slope_dep_vs_time, TOTN_dep, tmp", 
+  "catchment_area, slope_pre, slope_tmp, slope_dep_vs_time, TOCTON, TOTN_dep, pre, tmp", 
   "urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous",
   "wetland, lake_water, bare_sparse",
   sep = ",")    # remember this
@@ -30,7 +30,7 @@ vars <- paste(
 # If long formula, split up the lines with a 'paste()'  
 form <- paste(
   "slope_tocton_vs_time ~ catchment_area+",                # change here
-  "slope_pre + slope_tmp + slope_dep_vs_time + TOTN_dep + tmp +", 
+  "slope_pre + slope_tmp + slope_dep_vs_time + TOCTON + TOTN_dep+ pre + tmp +", 
   "urban + cultivated + coniferous + decid_mixed + total_shrub_herbaceous +",
   "wetland + lake_water + bare_sparse"
 )
@@ -62,7 +62,7 @@ rmarkdown::render(
 #   (or let each part end with a comma)
 vars <- paste(
   "slope_tocton_vs_time", 
-  "catchment_area, slope_pre, slope_tmp, slope_dep_vs_time, TOTN_dep, tmp", 
+  "catchment_area, slope_pre, slope_tmp, slope_dep_vs_time, TOCTON, TOTN_dep, pre, tmp", 
   "urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous",
   "wetland, lake_water, bare_sparse, TOC, TON",
   sep = ",")    # remember this
@@ -70,7 +70,7 @@ vars <- paste(
 # If long formula, split up the lines with a 'paste()'  
 form <- paste(
   "slope_tocton_vs_time ~ catchment_area+",                # change here
-  "slope_pre + slope_tmp + slope_dep_vs_time + TOTN_dep + tmp +", 
+  "slope_pre + slope_tmp + slope_dep_vs_time + TOCTON + TOTN_dep+ pre + tmp +", 
   "urban + cultivated + coniferous + decid_mixed + total_shrub_herbaceous +",
   "wetland + lake_water + bare_sparse + TOC + TON"
 )
@@ -102,7 +102,7 @@ rmarkdown::render(
 #   (or let each part end with a comma)
 vars <- paste(
   "slope_tocton_vs_time", 
-  "catchment_area, slope_pre, slope_tmp, slope_dep_vs_time, TOTN_dep, tmp", 
+  "catchment_area, slope_pre, slope_tmp, slope_dep_vs_time, TOCTON, TOTN_dep, pre, tmp", 
   "urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous",
   "wetland, lake_water, bare_sparse, slope_toc_vs_time, slope_ton_vs_time",
   sep = ",")    # remember this
@@ -110,7 +110,7 @@ vars <- paste(
 # If long formula, split up the lines with a 'paste()'  
 form <- paste(
   "slope_tocton_vs_time ~ catchment_area+",                # change here
-  "slope_pre + slope_tmp + slope_dep_vs_time + TOTN_dep + tmp +", 
+  "slope_pre + slope_tmp + slope_dep_vs_time + TOCTON + TOTN_dep+ pre + tmp +", 
   "urban + cultivated + coniferous + decid_mixed + total_shrub_herbaceous +",
   "wetland + lake_water + bare_sparse + slope_toc_vs_time + slope_ton_vs_time"
 )
@@ -134,6 +134,8 @@ rmarkdown::render(
 #
 # 167d1 - Plus TOC + TON medians and slopes (coniferous + decid_mixed separately) ----
 #
+# Note: wetland, lake_water and urban deleted from 'regression_formula'   
+#
 #o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
 
 
@@ -142,7 +144,7 @@ rmarkdown::render(
 #   (or let each part end with a comma)
 vars <- paste(
   "slope_tocton_vs_time", 
-  "catchment_area, slope_pre, slope_tmp, slope_dep_vs_time, TOTN_dep, tmp", 
+  "catchment_area, slope_pre, slope_tmp, slope_dep_vs_time, TOCTON, TOTN_dep, pre, tmp", 
   "urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous",
   "wetland, lake_water, bare_sparse, TOC, TON, slope_toc_vs_time, slope_ton_vs_time",
   sep = ",")    # remember this
@@ -150,9 +152,9 @@ vars <- paste(
 # If long formula, split up the lines with a 'paste()'  
 form <- paste(
   "slope_tocton_vs_time ~ catchment_area+",                # change here
-  "slope_pre + slope_tmp + slope_dep_vs_time + TOTN_dep + tmp +", 
-  "urban + cultivated + coniferous + decid_mixed + total_shrub_herbaceous +",
-  "wetland + lake_water + bare_sparse + TOC + TON + slope_toc_vs_time + slope_ton_vs_time"
+  "slope_pre + slope_tmp + slope_dep_vs_time + TOCTON + TOTN_dep+ pre + tmp +", 
+  "cultivated + coniferous + decid_mixed +",
+  "bare_sparse + TOC + TON + slope_toc_vs_time + slope_ton_vs_time"
 )
 
 # To find file names used:
@@ -186,7 +188,7 @@ rmarkdown::render(
 #   (or let each part end with a comma)
 vars <- paste(
   "slope_tocton_vs_time", 
-  "catchment_area, slope_pre, slope_tmp, slope_dep_vs_time, TOTN_dep, tmp", 
+  "catchment_area, slope_pre, slope_tmp, slope_dep_vs_time, TOCTON, TOTN_dep, pre, tmp", 
   "urban, cultivated, total_forest, total_shrub_herbaceous",
   "wetland, lake_water, bare_sparse",
   sep = ",")    # remember this
@@ -194,7 +196,7 @@ vars <- paste(
 # If long formula, split up the lines with a 'paste()'  
 form <- paste(
   "slope_tocton_vs_time ~ catchment_area+",                # change here
-  "slope_pre + slope_tmp + slope_dep_vs_time + TOTN_dep + tmp +", 
+  "slope_pre + slope_tmp + slope_dep_vs_time + TOCTON + TOTN_dep+ pre + tmp +", 
   "urban + cultivated + total_forest + total_shrub_herbaceous +",
   "wetland + lake_water + bare_sparse"
 )
@@ -205,9 +207,9 @@ form <- paste(
 # Render HTML and .md files  
 rmarkdown::render(
   input = '167parm_Time_series_tocton_continuous.Rmd',          
-  output_file = '167a1_Time_series_tocton_continuous.html',                   # change here
+  output_file = '167a2_Time_series_tocton_continuous.html',                   # change here
   params = list(
-    document_title = "167a1 Analyse TOC/TON change",                      # change here
+    document_title = "167a2 Analyse TOC/TON change",                      # change here
     text_dataset = "Dataset: basis",  # change here
     selected_vars = vars,
     regression_formula = form)
@@ -226,7 +228,7 @@ rmarkdown::render(
 #   (or let each part end with a comma)
 vars <- paste(
   "slope_tocton_vs_time", 
-  "catchment_area, slope_pre, slope_tmp, slope_dep_vs_time, TOTN_dep, tmp", 
+  "catchment_area, slope_pre, slope_tmp, slope_dep_vs_time, TOCTON, TOTN_dep, pre, tmp", 
   "urban, cultivated, total_forest, total_shrub_herbaceous",
   "wetland, lake_water, bare_sparse, TOC, TON",
   sep = ",")    # remember this
@@ -234,7 +236,7 @@ vars <- paste(
 # If long formula, split up the lines with a 'paste()'  
 form <- paste(
   "slope_tocton_vs_time ~ catchment_area+",                # change here
-  "slope_pre + slope_tmp + slope_dep_vs_time + TOTN_dep + tmp +", 
+  "slope_pre + slope_tmp + slope_dep_vs_time + TOCTON + TOTN_dep+ pre + tmp +", 
   "urban + cultivated + total_forest + total_shrub_herbaceous +",
   "wetland + lake_water + bare_sparse + TOC + TON"
 )
@@ -245,9 +247,9 @@ form <- paste(
 # Render HTML and .md files  
 rmarkdown::render(
   input = '167parm_Time_series_tocton_continuous.Rmd',          
-  output_file = '167b1_Time_series_tocton_continuous.html',                   # change here
+  output_file = '167b2_Time_series_tocton_continuous.html',                   # change here
   params = list(
-    document_title = "167b1 Analyse TOC/TON change",                 # change here
+    document_title = "167b2 Analyse TOC/TON change",                 # change here
     text_dataset = "Basis + TOC + TON medians",  # change here
     selected_vars = vars,
     regression_formula = form)
@@ -266,7 +268,7 @@ rmarkdown::render(
 #   (or let each part end with a comma)
 vars <- paste(
   "slope_tocton_vs_time", 
-  "catchment_area, slope_pre, slope_tmp, slope_dep_vs_time, TOTN_dep, tmp", 
+  "catchment_area, slope_pre, slope_tmp, slope_dep_vs_time, TOCTON, TOTN_dep, pre, tmp", 
   "urban, cultivated, total_forest, total_shrub_herbaceous",
   "wetland, lake_water, bare_sparse, slope_toc_vs_time, slope_ton_vs_time",
   sep = ",")    # remember this
@@ -274,7 +276,7 @@ vars <- paste(
 # If long formula, split up the lines with a 'paste()'  
 form <- paste(
   "slope_tocton_vs_time ~ catchment_area+",                # change here
-  "slope_pre + slope_tmp + slope_dep_vs_time + TOTN_dep + tmp +", 
+  "slope_pre + slope_tmp + slope_dep_vs_time + TOCTON + TOTN_dep+ pre + tmp +", 
   "urban + cultivated + total_forest + total_shrub_herbaceous +",
   "wetland + lake_water + bare_sparse + slope_toc_vs_time + slope_ton_vs_time"
 )
@@ -285,9 +287,9 @@ form <- paste(
 # Render HTML and .md files  
 rmarkdown::render(
   input = '167parm_Time_series_tocton_continuous.Rmd',          
-  output_file = '167c1_Time_series_tocton_continuous.html',                   # change here
+  output_file = '167c2_Time_series_tocton_continuous.html',                   # change here
   params = list(
-    document_title = "167c1 Analyse TOC/TON change",                 # change here
+    document_title = "167c2 Analyse TOC/TON change",                 # change here
     text_dataset = "Dataset: Basis + TOC + TON slopes",  # change here
     selected_vars = vars,
     regression_formula = form)
@@ -298,6 +300,8 @@ rmarkdown::render(
 #
 # 167d2 - Plus TOC + TON medians and slopes (total_forest) ----
 #
+# Note: wetland, lake_water and urban deleted from 'regression_formula'   
+#
 #o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
 
 
@@ -306,7 +310,7 @@ rmarkdown::render(
 #   (or let each part end with a comma)
 vars <- paste(
   "slope_tocton_vs_time", 
-  "catchment_area, slope_pre, slope_tmp, slope_dep_vs_time, TOTN_dep, tmp", 
+  "catchment_area, slope_pre, slope_tmp, slope_dep_vs_time, TOCTON, TOTN_dep, pre, tmp", 
   "urban, cultivated, total_forest, total_shrub_herbaceous",
   "wetland, lake_water, bare_sparse, TOC, TON, slope_toc_vs_time, slope_ton_vs_time",
   sep = ",")    # remember this
@@ -314,9 +318,9 @@ vars <- paste(
 # If long formula, split up the lines with a 'paste()'  
 form <- paste(
   "slope_tocton_vs_time ~ catchment_area+",                # change here
-  "slope_pre + slope_tmp + slope_dep_vs_time + TOTN_dep + tmp +", 
-  "urban + cultivated + total_forest + total_shrub_herbaceous +",
-  "wetland + lake_water + bare_sparse + TOC + TON + slope_toc_vs_time + slope_ton_vs_time"
+  "slope_pre + slope_tmp + slope_dep_vs_time + TOCTON + TOTN_dep+ pre + tmp +", 
+  "cultivated + total_forest + total_shrub_herbaceous +",
+  "bare_sparse + TOC + TON + slope_toc_vs_time + slope_ton_vs_time"
 )
 
 # To find file names used:
@@ -325,9 +329,9 @@ form <- paste(
 # Render HTML and .md files  
 rmarkdown::render(
   input = '167parm_Time_series_tocton_continuous.Rmd',          
-  output_file = '167d1_Time_series_tocton_continuous.html',                   # change here
+  output_file = '167d2_Time_series_tocton_continuous.html',                   # change here
   params = list(
-    document_title = "167d1 Analyse TOC/TON change",                 # change here
+    document_title = "167d2 Analyse TOC/TON change",                 # change here
     text_dataset = "Dataset: Basis + TOC + TON medians and slopes",  # change here
     selected_vars = vars,
     regression_formula = form)
