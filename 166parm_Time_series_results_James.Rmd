@@ -167,6 +167,7 @@ if (FALSE){
 
 ```
 
+
 ### Start 'dat'  
 
 With slope regression data  
@@ -177,11 +178,12 @@ With slope regression data
 
 # Slope 
 df1 <- reg_no3 %>%
-  filter(variable %in% c("NO3-N_µg/l N", "TOC/TON")) %>%
+  filter(variable %in% c("NO3-N_µg/l N", "TOC/TON", "TOC_mg C/l")) %>%
   select(station_id, variable, sen_slp) %>%
   tidyr::pivot_wider(names_from = "variable", values_from = "sen_slp") %>%
   rename(slope_no3_vs_time = `NO3-N_µg/l N`, 
-         slope_tocton_vs_time = `TOC/TON`)
+         slope_tocton_vs_time = `TOC/TON`,
+         slope_toc_vs_time = `TOC_mg C/l`)
   
 # Slope p-value
 df2 <- reg_no3 %>%
