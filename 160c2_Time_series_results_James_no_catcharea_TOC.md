@@ -55,7 +55,7 @@ library(lubridate)
 library(ggplot2)
 
 # Too many packages, not all are used
-library(mapview)
+# library(mapview)
 library(visreg)     # visreg
 library(rkt)        # Theil -Sen Regression
 
@@ -432,7 +432,12 @@ dat_5 <- dat_4 %>%
 ### Data set used  
 
 ```r
-dat <- dat_5
+dat <- dat_5 %>%
+  mutate(
+    no3_decline = case_when(
+      slope_no3_vs_time < 0 & p_no3_vs_time <= 0.05 ~ 1,
+      TRUE ~ 0)
+  )
 ```
 
 
@@ -484,21 +489,28 @@ dat %>%
 * Saves data both before and after rows with removing missing predictors are removed
 
 ```r
-# Variables that will be included in excel output (removed afterwards)
-vars_for_excel <- c("slope_no3_vs_time", "station_id", "station_code", 
-                    "station_name", "country", "region", "continent")
-
-get_df_no3_decline <- function(data, variable_string){
+add_flag_variable <- function(data, variable_string){
   variable_string <- gsub(" ", "", variable_string)
   variables <- strsplit(variable_string, split = ",")[[1]]
+  # Check if all variables are there
+  found <- variables %in% names(data)
+  if (sum(!found) > 0)
+    stop("Not all variables found in data:", 
+      paste(variables[!found], collapse = " ,"), 
+      "\n")
   # Data for analyses
-  df <- data %>%
-    mutate(
-      no3_decline = case_when(
-        slope_no3_vs_time < 0 & p_no3_vs_time <= 0.05 ~ 1,
-        TRUE ~ 0)
-    )
-  df[c(vars_for_excel, variables)]
+  complete <- complete.cases(data[variables])
+  data$Row_excluded <- !complete
+  variables %>% 
+    purrr::map_dfr(~data.frame(Var = .x, Missing = sum(is.na(data[[.x]])))) %>%
+    print()
+  data
+}
+
+delete_unused_variables <- function(data, variable_string){
+  variable_string <- gsub(" ", "", variable_string)
+  variables <- strsplit(variable_string, split = ",")[[1]]
+  data[variables]
 }
 
 cat("-------------------------------------------------------------\n")
@@ -506,47 +518,41 @@ cat("Variables: \n")
 cat(params$selected_vars)
 cat("\n-------------------------------------------------------------\n")
 
-df_analysis_allrows <- get_df_no3_decline(dat, params$selected_vars)  
+dat <- dat %>%
+  filter2(!station_code %in% "PL05", text = "station PL05 (has dubious NO3 data)")
+
+# debugonce(add_flag_variable)
+# df_analysis <- add_flag_variable(dat, vars)  
+df_analysis_allrows <- add_flag_variable(dat, params$selected_vars)  
 
 # Save to excel
-fn <- paste0(substr(params$document_title, 1, 3), "_data.xlsx")
+fn <- paste0(substr(params$document_title, 1, 3), "_", params$response_variable, "_data.xlsx")
 writexl::write_xlsx(df_analysis_allrows, paste0("Data_analysed/", fn))
-cat("\nDataset after removing urban and cultivated saved as", sQuote(fn), "\n\n")
+cat("\nDataset after removing urban, cultivated, PL05 saved as", sQuote(fn), "\n\n")
 
-# names(dat) %>% paste(collapse = ", ")
-
-cat("Number of missing values per variable: \n")
-apply(is.na(df_analysis_allrows), 2, sum) 
-cat("\n")
-
-# What is missing? (long output)
-if (FALSE){
-dat %>% 
-  split(.$country) %>%
-  purrr::map(~apply(is.na(.), 2, mean))
-}
-
-cat("Number of complete observations: \n")
-complete <- complete.cases(df_analysis_allrows)
-table(complete)
+cat("Number of rows that will be excluded: \n")
+table(df_analysis_allrows$Row_excluded)
 
 cat("\n\n")
 cat("Number of complete observations by country: \n")
-table(dat$country, complete)
+xtabs(~country + Row_excluded, df_analysis_allrows)
 
 # Keep only complete cases
-df_analysis <- df_analysis_allrows[complete.cases(df_analysis_allrows),]
+df_analysis <- df_analysis_allrows %>%
+  filter(!Row_excluded)
 
 # Save to excel
-fn <- paste0(substr(params$document_title, 1, 5), "_data.xlsx")
+fn <- paste0(
+  stringr::str_extract(params$document_title, "[^[[:blank:]]]+"),
+  "_data.xlsx")
 writexl::write_xlsx(df_analysis, paste0("Data_analysed/", fn))
 
-# Remove variables defined as 'vars_for_excel' in function above
-sel <- names(df_analysis) %in% vars_for_excel
-df_analysis <- df_analysis[!sel]
+# Remove variables that will note be used
+df_analysis <- delete_unused_variables(df_analysis, params$selected_vars)
 
 cat("\n\n")
-cat("Data before removing missing predictors: n =", nrow(df_analysis_allrows), "\n")
+cat("Data before removing PL05: n =", nrow(dat_5), "\n")
+cat("Data after removing PL05: n =", nrow(df_analysis_allrows), "\n")
 cat("Data after removing missing predictors: n =", nrow(df_analysis), "\n")
 ```
 
@@ -555,52 +561,57 @@ cat("Data after removing missing predictors: n =", nrow(df_analysis), "\n")
 ## Variables: 
 ## no3_decline,slope_dep_vs_time, NO3, TOTN_dep, latitude, longitude, altitude,pre, tmp, slope_pre, slope_tmp, urban, cultivated, total_forest, total_shrub_herbaceous,wetland, lake_water, bare_sparse
 ## -------------------------------------------------------------
+## Removed 0 rows (station PL05 (has dubious NO3 data))
+##                       Var Missing
+## 1             no3_decline       0
+## 2       slope_dep_vs_time       0
+## 3                     NO3       0
+## 4                TOTN_dep       0
+## 5                latitude       0
+## 6               longitude       0
+## 7                altitude       0
+## 8                     pre       0
+## 9                     tmp       0
+## 10              slope_pre       0
+## 11              slope_tmp       0
+## 12                  urban       0
+## 13             cultivated       0
+## 14           total_forest       0
+## 15 total_shrub_herbaceous       0
+## 16                wetland       0
+## 17             lake_water       0
+## 18            bare_sparse       0
 ## 
-## Dataset after removing urban and cultivated saved as '160_data.xlsx' 
+## Dataset after removing urban, cultivated, PL05 saved as '160__data.xlsx' 
 ## 
-## Number of missing values per variable: 
-##      slope_no3_vs_time             station_id           station_code           station_name 
-##                      0                      0                      0                      0 
-##                country                 region              continent            no3_decline 
-##                      0                      0                      0                      0 
-##      slope_dep_vs_time                    NO3               TOTN_dep               latitude 
-##                      0                      0                      0                      0 
-##              longitude               altitude                    pre                    tmp 
-##                      0                      0                      0                      0 
-##              slope_pre              slope_tmp                  urban             cultivated 
-##                      0                      0                      0                      0 
-##           total_forest total_shrub_herbaceous                wetland             lake_water 
-##                      0                      0                      0                      0 
-##            bare_sparse 
-##                      0 
+## Number of rows that will be excluded: 
 ## 
-## Number of complete observations: 
-## complete
-## TRUE 
-##  453 
+## FALSE 
+##   453 
 ## 
 ## 
 ## Number of complete observations by country: 
-##                 complete
-##                  TRUE
-##   Canada          106
-##   Czech Republic    8
-##   Finland          24
-##   Germany          19
-##   Ireland           3
-##   Italy             5
-##   Latvia            1
-##   Netherlands       3
-##   Norway           80
-##   Poland            5
-##   Slovakia         12
-##   Sweden           87
-##   Switzerland       6
-##   United Kingdom   21
-##   United States    73
+##                 Row_excluded
+## country          FALSE
+##   Canada           106
+##   Czech Republic     8
+##   Finland           24
+##   Germany           19
+##   Ireland            3
+##   Italy              5
+##   Latvia             1
+##   Netherlands        3
+##   Norway            80
+##   Poland             5
+##   Slovakia          12
+##   Sweden            87
+##   Switzerland        6
+##   United Kingdom    21
+##   United States     73
 ## 
 ## 
-## Data before removing missing predictors: n = 453 
+## Data before removing PL05: n = 453 
+## Data after removing PL05: n = 453 
 ## Data after removing missing predictors: n = 453
 ```
 
@@ -796,6 +807,64 @@ cat("Error rate for training data:", round(error_fraction*100, 1), "%\n")
 ## Error rate for training data: 0 %
 ```
 
+#### c1c. Quasi R-squared  
+
+- Proportion of deviance explained  
+
+
+```r
+pred_prob <- predict(model1, type = "prob")
+
+# Make data frame with P (modelled probability of no3_decline), Obs (observed no3_decline, 0 or 1),
+#   and log-likelihood of data given the model
+df_prob <- tibble(
+  P = pred_prob[,2], 
+  Obs = as.numeric(full_set$no3_decline) - 1
+) %>%
+  mutate(
+    Lik = P*Obs + (1-P)*(1-Obs),
+    Loglik = log(P*Obs + (1-P)*(1-Obs))
+  )
+
+# Null model (same probability for all observations)
+df_prob$P_null <- mean(df_prob$Obs)
+
+# Null probability   
+df_prob <- df_prob %>%
+  mutate(
+    Loglik_null = log(P_null*Obs + (1-P_null)*(1-Obs))
+    )
+    
+#
+# Summary statistics
+#
+dev_model <- -2*sum(df_prob$Loglik)
+dev_null <- -2*sum(df_prob$Loglik_null)
+cat("Deviance of random forest model:", dev_model, "\n")
+cat("Deviance of null model:", dev_null, "\n")
+
+Quasi_R2 <- (dev_null - dev_model)/dev_null
+cat("Proportion of deviance explained by model (quasi R.squared):", Quasi_R2, "\n")
+
+#
+# Plot
+#
+ggplot(df_prob, aes(P, Obs)) + 
+  geom_jitter(width = 0, height = 0.05) +
+  labs(x = "Probability of observing '1' according to model",
+       y = "Actual observation"
+  )
+```
+
+![](160c2_Time_series_results_James_no_catcharea_TOC_files/figure-html/unnamed-chunk-22-1.png)<!-- -->
+
+```
+## Deviance of random forest model: 439.7856 
+## Deviance of null model: 612.6976 
+## Proportion of deviance explained by model (quasi R.squared): 0.2822142
+```
+
+
 #### c2. Importance of variables
 
 ```r
@@ -807,19 +876,60 @@ importance <- measure_importance(model1)
 
 
 ```r
-plot_multi_way_importance(importance, size_measure = "no_of_nodes", no_of_labels = 12)  
+plot_multi_way_importance(importance, size_measure = "no_of_nodes", no_of_labels = 6)  
 ```
 
-![](160c2_Time_series_results_James_no_catcharea_TOC_files/figure-html/unnamed-chunk-22-1.png)<!-- -->
+![](160c2_Time_series_results_James_no_catcharea_TOC_files/figure-html/unnamed-chunk-23-1.png)<!-- -->
 
 ```r
 plot_multi_way_importance(importance, 
                           x_measure = "accuracy_decrease", 
                           y_measure = "gini_decrease", 
-                          size_measure = "p_value", no_of_labels = 12)
+                          size_measure = "p_value", no_of_labels = 6)
 ```
 
-![](160c2_Time_series_results_James_no_catcharea_TOC_files/figure-html/unnamed-chunk-22-2.png)<!-- -->
+![](160c2_Time_series_results_James_no_catcharea_TOC_files/figure-html/unnamed-chunk-23-2.png)<!-- -->
+
+```r
+# Plot immportance table as well
+importance %>% 
+  arrange(times_a_root)
+```
+
+```
+##                  variable mean_min_depth no_of_nodes accuracy_decrease gini_decrease
+## 1              lake_water       3.747296        2556       0.011192139     13.525327
+## 2                 wetland       3.674648        2258       0.008415000     12.883762
+## 3              cultivated       6.670688         433       0.001690359      2.060929
+## 4               slope_tmp       3.654972        2161       0.010017972     11.241015
+## 5                     tmp       3.122000        2428       0.016819969     15.805363
+## 6                     NO3       3.130648        2697       0.024798177     15.209420
+## 7  total_shrub_herbaceous       3.332592        2042       0.012085797     12.656262
+## 8               slope_pre       3.669620        2133       0.010960164     11.677580
+## 9                     pre       3.211296        2312       0.019635640     14.220130
+## 10               TOTN_dep       2.598000        2947       0.034147638     20.729727
+## 11                  urban       4.761484         744       0.013866535      6.723105
+## 12      slope_dep_vs_time       2.308000        3208       0.041097054     22.165467
+## 13            bare_sparse       2.986044        1121       0.022727224     13.361724
+## 14           total_forest       2.506324        2428       0.031314459     20.718408
+## 15               altitude       1.982324        3068       0.048146378     25.643219
+##    no_of_trees times_a_root       p_value
+## 1          496            0  2.851561e-17
+## 2          498            0  2.520662e-02
+## 3          288            2  1.000000e+00
+## 4          497            3  5.742870e-01
+## 5          500            8  8.211446e-09
+## 6          498           11  4.960287e-30
+## 7          492           11  9.978712e-01
+## 8          495           12  7.914938e-01
+## 9          496           19  8.520549e-04
+## 10         500           31  4.509024e-61
+## 11         409           34  1.000000e+00
+## 12         500           37 3.075317e-104
+## 13         469           94  1.000000e+00
+## 14         499          113  8.211446e-09
+## 15         499          125  9.112148e-80
+```
 
 
 
@@ -904,6 +1014,14 @@ for (i in 1:length(plotdata)){
     print(gg)
 
   }
+  
+  # Save gg object for later plotting / changes
+  # Saved in Figures/Partial_plots' with name e.g. "gg_164a1_7.rds" for plot number 7
+  fn <- paste0(
+    "Figures/Partial_plots/gg_",
+    stringr::str_extract(params$document_title, "([^[[:blank:]]]+)"),   # extract e.g. "164a1"
+    "_", i, ".rds")
+  saveRDS(gg, fn)
   
 }
 ```
@@ -1012,7 +1130,7 @@ if (length(modelvars$additive_vars) > 0){
 }
 ```
 
-![](160c2_Time_series_results_James_no_catcharea_TOC_files/figure-html/unnamed-chunk-26-1.png)<!-- -->
+![](160c2_Time_series_results_James_no_catcharea_TOC_files/figure-html/unnamed-chunk-27-1.png)<!-- -->
 
 ```
 ## Percentage of deviance explained: 84.5 %
