@@ -168,7 +168,9 @@ rmarkdown::render(
     document_title = "167d1 Analyse TOC/TON change",                 # change here
     text_dataset = "Dataset: Basis + TOC + TON medians and slopes",  # change here
     selected_vars = vars,
-    regression_formula = form)
+    regression_formula = form,
+    extra_pairwise_plots = 'TON,slope_pre;slope_pre,slope_tmp;slope_tmp,slope_pre'  # added
+    )
 )
 
 
