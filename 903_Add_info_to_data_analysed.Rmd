@@ -1,0 +1,220 @@
+---
+title: "903_Add_info_to_data_analysed"
+output: html_document
+---
+
+* The saved excel files in folder 'Data_analysed' lacked some columns (sen_slp, sen_incpt, sen_trend).  
+* This scripts adds those data (using left join) and makes new excel files in folder 'Data_analysed2'  
+
+## 1. Packages
+```{r}
+
+library(readxl)
+library(writexl)
+library(dplyr)
+
+# dir.create("Data_analysed2")
+
+```
+
+
+## 2. Fix files in 'Data_analysed'     
+
+- Read files in 'Data_analysed' (made using scripts 160parm, 161parm, 162parm)  
+- Add sen_slp, sen_incpt, sen_trend  
+- Write to 'Data_analysed2'  
+
+### a. Output from script 160parm  
+
+#### James' trends and medians     
+- Code from original script  
+```{r}
+
+#
+# Regression results
+#
+folder <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/trends_1992-2016_no3"
+file <- "trends_1992-2016_no3_results.csv"
+fn <- paste0(folder, "/", file)
+
+reg_no3 <- read.csv(fn, encoding = "UTF-8")
+cat("Regression results:", sQuote(file), ",n =", nrow(reg_no3), "\n\n")
+
+
+```
+#### Fix files   
+- Read files in 'Data_analysed'   
+- Add sen_slp, sen_incpt, sen_trend  
+- Write to 'Data_analysed2'  
+```{r}
+
+# names(reg_no3)
+
+dat_to_add <- reg_no3 %>%
+  filter(variable == 'NO3-N_µg/l N') %>%
+  select(station_id, sen_slp, sen_incpt, sen_trend, mk_p_val)
+
+# check
+# dat_to_add %>% count(station_id) %>% xtabs(~n, .)
+
+filenames <- dir("Data_analysed", pattern = "160.*")
+
+for (filename in filenames){
+  # filename <- filenames[1]    # for testing
+  dat <- read_excel(paste0("Data_analysed/", filename))
+  dat_updated <- dat %>%
+    left_join(dat_to_add, by = "station_id") %>%
+    select(station_id, sen_slp, sen_incpt, sen_trend, mk_p_val, no3_decline, everything())
+  write_xlsx(dat_updated, paste0("Data_analysed2/", filename))
+}
+
+
+```
+
+
+### b. Output from script 161parm  
+
+#### James' trends and medians     
+- Code from original script  
+```{r}
+
+#
+# Regression results
+#
+folder <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/trends_1992-2016_toc_totn_no3_relax_italy"
+file <- "trends_1992-2016_toc_totn_no3_relax_italy_results.csv"
+fn <- paste0(folder, "/", file)
+
+reg_ratio <- read.csv(fn, encoding = "UTF-8")
+cat("Regression slopes and medians from:", sQuote(file), ",n =", nrow(reg_ratio), "\n\n")
+
+
+```
+
+
+#### Fix files   
+```{r}
+
+# names(reg_no3)
+
+dat_to_add <- reg_ratio %>%                                       # changed compared to a
+  filter(variable == 'TOC/TON') %>%                               # changed compared to a
+  select(station_id, sen_slp, sen_incpt, sen_trend, mk_p_val)
+
+# check
+# dat_to_add %>% count(station_id) %>% xtabs(~n, .)
+
+filenames <- dir("Data_analysed", pattern = "161.*")              # changed compared to a
+
+for (filename in filenames){
+  # filename <- filenames[1]    # for testing
+  dat <- read_excel(paste0("Data_analysed/", filename))
+  dat_updated <- dat %>%
+    left_join(dat_to_add, by = "station_id") %>%
+     # changed compared to a: 'tocton_decrease':   
+    select(station_id, sen_slp, sen_incpt, sen_trend, mk_p_val, tocton_decrease, everything())  
+  write_xlsx(dat_updated, paste0("Data_analysed2/", filename))
+}
+
+
+```
+
+
+### c. Output from script 162parm a + b 
+
+#### James' trends and medians     
+- Code from original script    
+```{r}
+
+medians_filename <- "medians_2012-2016_no3.csv"   # for a and b files - see 162parm_run_markdown.R
+
+#
+# Median results 2012-2016  
+#
+folder <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/medians_2012-2016"
+file <- medians_filename
+fn <- paste0(folder, "/", file)
+df_medians <- read.csv(fn, encoding = "UTF-8")
+cat("Medians results:", sQuote(file), ",n =", nrow(df_medians), "\n\n")  
+cat("Number of values per variable: \n")
+apply(!is.na(df_medians), 2, sum)
+cat("\n")
+
+```
+#### Fix files (162a, 162b)    
+```{r}
+
+# names(reg_no3)
+
+dat_to_add <- df_medians %>%                                       # changed compared to a
+                                                                   # changed compared to a
+  select(station_id, `NO3.N_µg.l.N`)                               # changed compared to a
+
+# check
+# dat_to_add %>% count(station_id) %>% xtabs(~n, .)
+
+filenames <- dir("Data_analysed", pattern = "162[ab].*")              # changed compared to a
+
+for (filename in filenames){
+  # filename <- filenames[1]    # for testing
+  dat <- read_excel(paste0("Data_analysed/", filename))
+  dat_updated <- dat %>%
+    left_join(dat_to_add, by = "station_id") %>%
+     # changed compared to a: 'NO3.N_µg.l.N':   
+    select(station_id, `NO3.N_µg.l.N`, everything())  
+  write_xlsx(dat_updated, paste0("Data_analysed2/", filename))
+}
+
+
+```
+
+
+
+### d. Output from script 162parm c + d 
+
+#### James' trends and medians     
+- Code from original script    
+```{r}
+
+medians_filename <- "medians_2012-2016_no3.csv"            # for a and b files - see 162parm_run_markdown.R
+medians_filename <- "medians_2012-2016_toc_totn_no3.csv"   # for c and d files - see 162parm_run_markdown.R
+
+#
+# Median results 2012-2016  
+#
+folder <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/medians_2012-2016"
+file <- medians_filename
+fn <- paste0(folder, "/", file)
+df_medians <- read.csv(fn, encoding = "UTF-8")
+cat("Medians results:", sQuote(file), ",n =", nrow(df_medians), "\n\n")  
+cat("Number of values per variable: \n")
+apply(!is.na(df_medians), 2, sum)
+cat("\n")
+
+```
+#### Fix files (162c, 162d)    
+```{r}
+
+# names(reg_no3)
+
+dat_to_add <- df_medians %>%                                       # changed compared to a
+                                                                   # changed compared to a
+  select(station_id, `TOC_mg.C.l`, `TOTN_µg.l.N`, `TOC.TON`)                               # changed compared to a
+
+# check
+# dat_to_add %>% count(station_id) %>% xtabs(~n, .)
+
+filenames <- dir("Data_analysed", pattern = "162[cd].*")              # changed compared to a
+
+for (filename in filenames){
+  # filename <- filenames[1]    # for testing
+  dat <- read_excel(paste0("Data_analysed/", filename))
+  dat_updated <- dat %>%
+    left_join(dat_to_add, by = "station_id") %>%
+     # changed compared to a: 'NO3.N_µg.l.N':   
+    select(station_id, `TOC_mg.C.l`, `TOTN_µg.l.N`, `TOC.TON`, everything())  
+  write_xlsx(dat_updated, paste0("Data_analysed2/", filename))
+}
+
+
+```
