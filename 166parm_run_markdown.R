@@ -304,7 +304,9 @@ rmarkdown::render(
     document_title = "166d1 Analyse NO3 decline - excl. altitude and catchment_area",                 # change here
     text_dataset = "Dataset: all variables except altitude and catchment area (but including TOC)",  # change here
     selected_vars = vars,
-    logistic_formula = form)
+    logistic_formula = form,
+    extra_pairwise_plots = 'TOC,NO3; slope_dep_vs_time,TOTN_dep; altitude,decid_mixed; TOTN_dep,NO3; coniferous,TOC')
+    # in each pair, the order is x,y
 )
 
 
