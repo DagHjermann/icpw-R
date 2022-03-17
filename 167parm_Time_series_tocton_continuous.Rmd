@@ -427,7 +427,7 @@ gg <- GGally::ggcorr(
   method = c("complete.obs", "kendall"), 
   label = TRUE,
   hjust = 0.9, angle = -30) # +                    # slanted labels
-gg + coord_cartesian(x = c(-2, 21), y = c(-2,22))  # fix margins
+gg + coord_cartesian(x = c(-2, 23), y = c(-2,22))  # fix margins
 
 
 ```  

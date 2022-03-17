@@ -9,19 +9,19 @@ output:
     keep_md: true
 params:
   document_title: 
-    value: '167x Analyse TOC/TON change - test run'
+    value: '167d1 Analyse TOC/TON change'
   text_dataset: 
-    value: 'Data with slope_tocton_vs_time, catchment_area, TON, slope_pre, slope_tmp, slope_dep_vs_time, TOTN_dep, latitude, longitude, tmp, land cover'
+    value: 'Dataset: Basis + TOC + TON medians and slopes'
   selected_vars: 
-    value: 'slope_tocton_vs_time, catchment_area, TON, slope_pre, slope_tmp, slope_dep_vs_time, TOTN_dep, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse'
+    value: 'slope_tocton_vs_time,catchment_area, slope_pre, slope_tmp, slope_dep_vs_time, TOCTON, TOTN_dep, pre, tmp,urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse, TOC, TON, slope_toc_vs_time, slope_ton_vs_time'
   extra_pairwise_plots:
-    value: 'TON,slope_pre'
+    value: 'TON,slope_pre;slope_pre,slope_tmp;slope_tmp,slope_pre'
   pairwise_plots_same_scale:
     value: 'FALSE'
   response_variable: 
     value: 'slope_tocton_vs_time'
   regression_formula: 
-    value: 'slope_tocton_vs_time ~ TON'
+    value: 'slope_tocton_vs_time ~ catchment_area+ slope_pre + slope_tmp + slope_dep_vs_time + TOCTON + TOTN_dep+ pre + tmp + cultivated + coniferous + decid_mixed + bare_sparse + TOC + TON + slope_toc_vs_time + slope_ton_vs_time'
 
 ---
 
@@ -554,7 +554,7 @@ gg <- GGally::ggcorr(
   method = c("complete.obs", "kendall"), 
   label = TRUE,
   hjust = 0.9, angle = -30) # +                    # slanted labels
-gg + coord_cartesian(x = c(-2, 20), y = c(-2,22))  # fix margins
+gg + coord_cartesian(x = c(-2, 23), y = c(-2,22))  # fix margins
 ```
 
 ```
