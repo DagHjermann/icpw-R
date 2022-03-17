@@ -156,6 +156,8 @@ cat("Trends used as predictor variable:", sQuote(file), ",n =", nrow(df_trends),
 ## Trends used as predictor variable: 'trends_1992-2016_no3_results.csv' ,n = 3176
 ```
 
+
+
 ### Start 'dat'  
 Using medians    
 * Make one line per station   
@@ -185,7 +187,7 @@ df2 <- df_trends %>% # table()
   tidyr::pivot_wider(names_from = "variable", values_from = "median") %>% # str()
   rename(trend_NO3 = `NO3-N_µg/l N`,
          trend_TOTN = `TOTN_µg/l N`,
-         trend_TOC = `TOC_mg C/l`)
+         slope_toc_vs_time = `TOC_mg C/l`)
 
 cat("\n")
 cat("df1, n =", nrow(df1), "\n")
@@ -226,6 +228,7 @@ sum(is.na(dat_1$log_median_tocton))
 ## [1] 0
 ```
 
+
 ### Deposition trends and median 1992-2006     
 
 ```r
@@ -258,7 +261,7 @@ dat_2 <- dat_1 %>%
 
 ```
 ## Variables before join: 
-## 'station_id', 'median_no3', 'median_ton', 'median_toc', 'median_tocton', 'log_median_no3', 'log_median_ton', 'log_median_toc', 'log_median_tocton', 'trend_NO3', 'trend_TOC', 'trend_TOTN'
+## 'station_id', 'median_no3', 'median_ton', 'median_toc', 'median_tocton', 'log_median_no3', 'log_median_ton', 'log_median_toc', 'log_median_tocton', 'trend_NO3', 'slope_toc_vs_time', 'trend_TOTN'
 ## 
 ## Variables used to join: 
 ## 'station_id'
@@ -298,16 +301,10 @@ df_climate_mean <- read_csv(fn) %>%
 
 ```
 ## Rows: 1112 Columns: 8
-```
-
-```
 ## ── Column specification ───────────────────────────────────────────────────────────────────────
 ## Delimiter: ","
 ## chr (3): variable, mk_trend, sen_trend
 ## dbl (5): station_id, median, mk_p_val, sen_slp, sen_incpt
-```
-
-```
 ## 
 ## ℹ Use `spec()` to retrieve the full column specification for this data.
 ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
@@ -324,16 +321,10 @@ df_climate_slope <- read_csv(fn) %>%
 
 ```
 ## Rows: 1112 Columns: 8
-```
-
-```
 ## ── Column specification ───────────────────────────────────────────────────────────────────────
 ## Delimiter: ","
 ## chr (3): variable, mk_trend, sen_trend
 ## dbl (5): station_id, median, mk_p_val, sen_slp, sen_incpt
-```
-
-```
 ## 
 ## ℹ Use `spec()` to retrieve the full column specification for this data.
 ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
@@ -349,7 +340,7 @@ dat_3 <- dat_2 %>%
 ```
 ## 
 ## Variables before join: 
-## 'station_id', 'median_no3', 'median_ton', 'median_toc', 'median_tocton', 'log_median_no3', 'log_median_ton', 'log_median_toc', 'log_median_tocton', 'trend_NO3', 'trend_TOC', 'trend_TOTN', 'TOTN_dep', 'slope_dep_vs_time', 'p_dep_vs_time'
+## 'station_id', 'median_no3', 'median_ton', 'median_toc', 'median_tocton', 'log_median_no3', 'log_median_ton', 'log_median_toc', 'log_median_tocton', 'trend_NO3', 'slope_toc_vs_time', 'trend_TOTN', 'TOTN_dep', 'slope_dep_vs_time', 'p_dep_vs_time'
 ## 
 ## Variables used to join: 
 ## 'station_id'
@@ -357,7 +348,7 @@ dat_3 <- dat_2 %>%
 ## Variables added: 
 ## 'pre', 'tmp'
 ## Variables before join: 
-## 'station_id', 'median_no3', 'median_ton', 'median_toc', 'median_tocton', 'log_median_no3', 'log_median_ton', 'log_median_toc', 'log_median_tocton', 'trend_NO3', 'trend_TOC', 'trend_TOTN', 'TOTN_dep', 'slope_dep_vs_time', 'p_dep_vs_time', 'pre', 'tmp'
+## 'station_id', 'median_no3', 'median_ton', 'median_toc', 'median_tocton', 'log_median_no3', 'log_median_ton', 'log_median_toc', 'log_median_tocton', 'trend_NO3', 'slope_toc_vs_time', 'trend_TOTN', 'TOTN_dep', 'slope_dep_vs_time', 'p_dep_vs_time', 'pre', 'tmp'
 ## 
 ## Variables used to join: 
 ## 'station_id'
@@ -397,7 +388,7 @@ dat_4 <- left_join2(dat_3,
 
 ```
 ## Variables before join: 
-## 'station_id', 'median_no3', 'median_ton', 'median_toc', 'median_tocton', 'log_median_no3', 'log_median_ton', 'log_median_toc', 'log_median_tocton', 'trend_NO3', 'trend_TOC', 'trend_TOTN', 'TOTN_dep', 'slope_dep_vs_time', 'p_dep_vs_time', 'pre', 'tmp', 'slope_pre', 'slope_tmp'
+## 'station_id', 'median_no3', 'median_ton', 'median_toc', 'median_tocton', 'log_median_no3', 'log_median_ton', 'log_median_toc', 'log_median_tocton', 'trend_NO3', 'slope_toc_vs_time', 'trend_TOTN', 'TOTN_dep', 'slope_dep_vs_time', 'p_dep_vs_time', 'pre', 'tmp', 'slope_pre', 'slope_tmp'
 ## 
 ## Variables used to join: 
 ## 'station_id'
@@ -840,11 +831,11 @@ ranges <- plotdata %>% purrr::map_dfc(~range(.$yhat))
 
 ```
 ## New names:
-## * NA -> ...1
-## * NA -> ...2
-## * NA -> ...3
-## * NA -> ...4
-## * NA -> ...5
+## * `` -> ...1
+## * `` -> ...2
+## * `` -> ...3
+## * `` -> ...4
+## * `` -> ...5
 ## * ...
 ```
 
@@ -875,7 +866,7 @@ for (i in 1:length(plotdata)){
 }
 ```
 
-![](164d1_Currentstatus_TOCTON_no_TOC_TON_files/figure-html/5c3_plot_partial_effects2-1.png)<!-- -->![](164d1_Currentstatus_TOCTON_no_TOC_TON_files/figure-html/5c3_plot_partial_effects2-2.png)<!-- -->![](164d1_Currentstatus_TOCTON_no_TOC_TON_files/figure-html/5c3_plot_partial_effects2-3.png)<!-- -->![](164d1_Currentstatus_TOCTON_no_TOC_TON_files/figure-html/5c3_plot_partial_effects2-4.png)<!-- -->![](164d1_Currentstatus_TOCTON_no_TOC_TON_files/figure-html/5c3_plot_partial_effects2-5.png)<!-- -->![](164d1_Currentstatus_TOCTON_no_TOC_TON_files/figure-html/5c3_plot_partial_effects2-6.png)<!-- -->![](164d1_Currentstatus_TOCTON_no_TOC_TON_files/figure-html/5c3_plot_partial_effects2-7.png)<!-- -->
+![](164d1_Currentstatus_TOCTON_no_TOC_TON_files/figure-html/5c3_plot_partial_effects2-1.png)<!-- -->![](164d1_Currentstatus_TOCTON_no_TOC_TON_files/figure-html/5c3_plot_partial_effects2-2.png)<!-- -->![](164d1_Currentstatus_TOCTON_no_TOC_TON_files/figure-html/5c3_plot_partial_effects2-3.png)<!-- -->![](164d1_Currentstatus_TOCTON_no_TOC_TON_files/figure-html/5c3_plot_partial_effects2-4.png)<!-- -->![](164d1_Currentstatus_TOCTON_no_TOC_TON_files/figure-html/5c3_plot_partial_effects2-5.png)<!-- -->![](164d1_Currentstatus_TOCTON_no_TOC_TON_files/figure-html/5c3_plot_partial_effects2-6.png)<!-- -->![](164d1_Currentstatus_TOCTON_no_TOC_TON_files/figure-html/5c3_plot_partial_effects2-7.png)<!-- -->![](164d1_Currentstatus_TOCTON_no_TOC_TON_files/figure-html/5c3_plot_partial_effects2-8.png)<!-- -->
 
 
 

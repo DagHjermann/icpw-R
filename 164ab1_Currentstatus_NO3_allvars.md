@@ -156,6 +156,8 @@ cat("Trends used as predictor variable:", sQuote(file), ",n =", nrow(df_trends),
 ## Trends used as predictor variable: 'trends_1992-2016_no3_results.csv' ,n = 3176
 ```
 
+
+
 ### Start 'dat'  
 Using medians    
 * Make one line per station   
@@ -185,7 +187,7 @@ df2 <- df_trends %>% # table()
   tidyr::pivot_wider(names_from = "variable", values_from = "median") %>% # str()
   rename(trend_NO3 = `NO3-N_µg/l N`,
          trend_TOTN = `TOTN_µg/l N`,
-         trend_TOC = `TOC_mg C/l`)
+         slope_toc_vs_time = `TOC_mg C/l`)
 
 cat("\n")
 cat("df1, n =", nrow(df1), "\n")
@@ -226,6 +228,7 @@ sum(is.na(dat_1$log_median_tocton))
 ## [1] 267
 ```
 
+
 ### Deposition trends and median 1992-2006     
 
 ```r
@@ -258,7 +261,7 @@ dat_2 <- dat_1 %>%
 
 ```
 ## Variables before join: 
-## 'station_id', 'median_no3', 'median_ton', 'median_toc', 'median_tocton', 'log_median_no3', 'log_median_ton', 'log_median_toc', 'log_median_tocton', 'trend_NO3', 'trend_TOC', 'trend_TOTN'
+## 'station_id', 'median_no3', 'median_ton', 'median_toc', 'median_tocton', 'log_median_no3', 'log_median_ton', 'log_median_toc', 'log_median_tocton', 'trend_NO3', 'slope_toc_vs_time', 'trend_TOTN'
 ## 
 ## Variables used to join: 
 ## 'station_id'
@@ -298,16 +301,10 @@ df_climate_mean <- read_csv(fn) %>%
 
 ```
 ## Rows: 1112 Columns: 8
-```
-
-```
 ## ── Column specification ───────────────────────────────────────────────────────────────────────
 ## Delimiter: ","
 ## chr (3): variable, mk_trend, sen_trend
 ## dbl (5): station_id, median, mk_p_val, sen_slp, sen_incpt
-```
-
-```
 ## 
 ## ℹ Use `spec()` to retrieve the full column specification for this data.
 ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
@@ -324,16 +321,10 @@ df_climate_slope <- read_csv(fn) %>%
 
 ```
 ## Rows: 1112 Columns: 8
-```
-
-```
 ## ── Column specification ───────────────────────────────────────────────────────────────────────
 ## Delimiter: ","
 ## chr (3): variable, mk_trend, sen_trend
 ## dbl (5): station_id, median, mk_p_val, sen_slp, sen_incpt
-```
-
-```
 ## 
 ## ℹ Use `spec()` to retrieve the full column specification for this data.
 ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
@@ -349,7 +340,7 @@ dat_3 <- dat_2 %>%
 ```
 ## 
 ## Variables before join: 
-## 'station_id', 'median_no3', 'median_ton', 'median_toc', 'median_tocton', 'log_median_no3', 'log_median_ton', 'log_median_toc', 'log_median_tocton', 'trend_NO3', 'trend_TOC', 'trend_TOTN', 'TOTN_dep', 'slope_dep_vs_time', 'p_dep_vs_time'
+## 'station_id', 'median_no3', 'median_ton', 'median_toc', 'median_tocton', 'log_median_no3', 'log_median_ton', 'log_median_toc', 'log_median_tocton', 'trend_NO3', 'slope_toc_vs_time', 'trend_TOTN', 'TOTN_dep', 'slope_dep_vs_time', 'p_dep_vs_time'
 ## 
 ## Variables used to join: 
 ## 'station_id'
@@ -357,7 +348,7 @@ dat_3 <- dat_2 %>%
 ## Variables added: 
 ## 'pre', 'tmp'
 ## Variables before join: 
-## 'station_id', 'median_no3', 'median_ton', 'median_toc', 'median_tocton', 'log_median_no3', 'log_median_ton', 'log_median_toc', 'log_median_tocton', 'trend_NO3', 'trend_TOC', 'trend_TOTN', 'TOTN_dep', 'slope_dep_vs_time', 'p_dep_vs_time', 'pre', 'tmp'
+## 'station_id', 'median_no3', 'median_ton', 'median_toc', 'median_tocton', 'log_median_no3', 'log_median_ton', 'log_median_toc', 'log_median_tocton', 'trend_NO3', 'slope_toc_vs_time', 'trend_TOTN', 'TOTN_dep', 'slope_dep_vs_time', 'p_dep_vs_time', 'pre', 'tmp'
 ## 
 ## Variables used to join: 
 ## 'station_id'
@@ -397,7 +388,7 @@ dat_4 <- left_join2(dat_3,
 
 ```
 ## Variables before join: 
-## 'station_id', 'median_no3', 'median_ton', 'median_toc', 'median_tocton', 'log_median_no3', 'log_median_ton', 'log_median_toc', 'log_median_tocton', 'trend_NO3', 'trend_TOC', 'trend_TOTN', 'TOTN_dep', 'slope_dep_vs_time', 'p_dep_vs_time', 'pre', 'tmp', 'slope_pre', 'slope_tmp'
+## 'station_id', 'median_no3', 'median_ton', 'median_toc', 'median_tocton', 'log_median_no3', 'log_median_ton', 'log_median_toc', 'log_median_tocton', 'trend_NO3', 'slope_toc_vs_time', 'trend_TOTN', 'TOTN_dep', 'slope_dep_vs_time', 'p_dep_vs_time', 'pre', 'tmp', 'slope_pre', 'slope_tmp'
 ## 
 ## Variables used to join: 
 ## 'station_id'
@@ -450,7 +441,7 @@ gg <- ggplot(dat, aes(TOTN_dep, median_no3)) +
 gg
 ```
 
-![](164ab1_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-15-1.png)<!-- -->
+![](164ab1_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-45-1.png)<!-- -->
 
 
 ## 4. Select data   
@@ -588,16 +579,19 @@ cat("Data after removing missing predictors: n =", nrow(df_analysis), "\n")
 ### b. Correlations   
 
 ```r
-gg <- GGally::ggcorr(df_analysis, method = c("complete.obs", "kendall"), label = TRUE) # +
-gg + theme(plot.margin = unit(c(.8, 2, .8, 2.5), "cm"))
+gg <- GGally::ggcorr(
+  df_analysis, 
+  method = c("complete.obs", "kendall"), 
+  label = TRUE,
+  hjust = 0.9, angle = -30) # +                    # slanted labels
+gg + coord_cartesian(x = c(-2, 20), y = c(-2,22))  # fix margins
 ```
 
-![](164ab1_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-17-1.png)<!-- -->
-
-```r
-# SHOULD also workaccording to ?element_rect (update ggplot2?)
-# gg + theme(plot.margin = margin(.6, .5, .6, 1.7, "cm"))
 ```
+## Coordinate system already present. Adding new coordinate system, which will replace the existing one.
+```
+
+![](164ab1_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-47-1.png)<!-- -->
 
 
 
@@ -642,7 +636,7 @@ full_set <- df_analysis  %>%
 plot(ct, main="Conditional Inference Tree")
 ```
 
-![](164ab1_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-19-1.png)<!-- -->
+![](164ab1_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-49-1.png)<!-- -->
 
 ```
 ## 
@@ -683,7 +677,7 @@ ev.raw = evtree(as.formula(params$tree_formula),
 plot(ev.raw)
 ```
 
-![](164ab1_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-20-1.png)<!-- -->
+![](164ab1_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-50-1.png)<!-- -->
 
 
 ### c. Random forest  
@@ -740,14 +734,14 @@ importance <- measure_importance(model1)
 plot_multi_way_importance(importance, size_measure = "no_of_nodes", no_of_labels = 6)  
 ```
 
-![](164ab1_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-22-1.png)<!-- -->
+![](164ab1_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-52-1.png)<!-- -->
 
 ```r
 plot_multi_way_importance(importance, x_measure = "mse_increase", y_measure = "node_purity_increase",
                           size_measure = "p_value", no_of_labels = 6)
 ```
 
-![](164ab1_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-22-2.png)<!-- -->
+![](164ab1_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-52-2.png)<!-- -->
 
 ```r
 importance %>%
@@ -844,11 +838,11 @@ ranges <- plotdata %>% purrr::map_dfc(~range(.$yhat))
 
 ```
 ## New names:
-## * NA -> ...1
-## * NA -> ...2
-## * NA -> ...3
-## * NA -> ...4
-## * NA -> ...5
+## * `` -> ...1
+## * `` -> ...2
+## * `` -> ...3
+## * `` -> ...4
+## * `` -> ...5
 ## * ...
 ```
 
@@ -951,7 +945,7 @@ if (length(modelvars$interaction_list) > 0){
 }
 ```
 
-![](164ab1_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-26-1.png)<!-- -->
+![](164ab1_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-56-1.png)<!-- -->
 
 ```r
 # Additive effects: 1D plot
@@ -962,7 +956,7 @@ if (length(modelvars$additive_vars) > 0){
 }
 ```
 
-![](164ab1_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-26-2.png)<!-- -->
+![](164ab1_Currentstatus_NO3_allvars_files/figure-html/unnamed-chunk-56-2.png)<!-- -->
 
 ```
 ## Conditions used in construction of plot
