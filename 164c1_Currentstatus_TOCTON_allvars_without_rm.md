@@ -1,5 +1,5 @@
 ---
-title: "`r params$document_title`"
+title: "164c1 Analyse TOC/TON medians 2012-2016 - all variables"
 author: "DHJ"
 date: "8 5 2020"
 output: 
@@ -29,20 +29,13 @@ params:
 
 ---
 
-```{r, echo = FALSE}  
-
-#
-# This file is designed to be run using '164parm_run_markdown.R'  
-# The scripts in that file renders 3 result html file: 164a-d (different variable sets and data)  
-#
-
-```
 
 
-**`r params$text_line1`**   
 
-**`r params$text_line2`**   
-**Name of dataset: `r params$medians_filename`**   
+**Analysis of TOC/TON medians (2012-2016)**   
+
+**Dataset: TOC/TON medians data set**   
+**Name of dataset: medians_2012-2016_toc_totn_no3.csv**   
 
 
 * Response variable: 'Current NO3 level' (locations with signif. *increase* are *not* excluded)  
@@ -60,8 +53,8 @@ params:
 Technical details: This html file was created was 
 
 ## 1. Libraries  
-```{r, results='hide', message=FALSE, warning=FALSE}
 
+```r
 # All of these packages cn be loaded at once using library(tidyverse). (I just like to be specific.)
 library(dplyr)
 library(tidyr)      # pivot_wider
@@ -98,7 +91,6 @@ knitr::opts_chunk$set(results = 'hold') # collect the results from a chunk
 knitr::opts_chunk$set(warning = FALSE)  
 
 options(width = 95)
-
 ```
 
 
@@ -107,40 +99,20 @@ options(width = 95)
 * The data part (part 2) is quite similar in scripts 160 - 165 
 
 ### Available files
-```{r, echo=FALSE, results='hold'}
 
-if (TRUE){   # in case we don't want this part
-  
-  # Code for comparing the two median files
-  
-  # Check medians file #1
-  folder <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/medians_2012-2016"
-  file <- "medians_2012-2016_no3.csv"
-  fn <- paste0(folder, "/", file)
-  df_medians <- read.csv(fn, encoding = "UTF-8")
-  cat("Medians results:", sQuote(file), ",n =", nrow(df_medians), "\n\n")  
-  cat("Number of values per variable: \n")
-  apply(!is.na(df_medians), 2, sum)
-  cat("\n")
-  
-  # Check medians file #2
-  folder <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/medians_2012-2016"
-  file <- "medians_2012-2016_toc_totn_no3.csv"
-  fn <- paste0(folder, "/", file)
-  df_medians <- read.csv(fn, encoding = "UTF-8")
-  cat("Medians results:", sQuote(file), ",n =", nrow(df_medians), "\n\n")  
-  cat("Number of values per variable: \n")
-  apply(!is.na(df_medians), 2, sum)
-  cat("\n")
-  
-}
-
-
+```
+## Medians results: 'medians_2012-2016_no3.csv' ,n = 494 
+## 
+## Number of values per variable: 
+## 
+## Medians results: 'medians_2012-2016_toc_totn_no3.csv' ,n = 310 
+## 
+## Number of values per variable:
 ```
 
 ### James' trends and medians     
-```{r}
 
+```r
 #
 # Median results 2012-2016  
 #
@@ -170,8 +142,18 @@ file <- "trends_1992-2016_no3_results.csv"
 fn <- paste0(folder, "/", file)
 df_trends <- read.csv(fn, encoding = "UTF-8")
 cat("Trends used as predictor variable:", sQuote(file), ",n =", nrow(df_trends), "\n\n")
+```
 
-
+```
+## Medians results: 'medians_2012-2016_toc_totn_no3.csv' ,n = 310 
+## 
+## Number of values per variable: 
+##   station_id NH4.N_µg.l.N NO3.N_µg.l.N   TOC_mg.C.l  TOTN_µg.l.N  TOTP_µg.l.P   TON_µg.l.N 
+##          310          225          310          310          310          229          310 
+##    TOTN.TOTP     NO3.TOTP      TOC.TON     TOC.TOTP 
+##          229          229          310          229 
+## 
+## Trends used as predictor variable: 'trends_1992-2016_no3_results.csv' ,n = 3176
 ```
 
 
@@ -180,8 +162,8 @@ cat("Trends used as predictor variable:", sQuote(file), ",n =", nrow(df_trends),
 Using medians    
 * Make one line per station   
 * Also including some trends for  
-```{r}
 
+```r
 # table(reg_no3$variable)
 
 # Medians 2012-2016  
@@ -225,34 +207,47 @@ dat_1 <- dat_1_allrows[sel,]
 
 cat("dat_1, n =", nrow(dat_1), 
     " (series where", response_var,  "has values)\n")
-
-
 ```
 
-```{r}
+```
+## 
+## df1, n = 310 
+## df2, n = 498 
+## dat_1_allrows, n = 310  (may include series where median_tocton = NA)
+## dat_1, n = 310  (series where median_tocton has values)
+```
 
+
+```r
 sum(is.na(dat_1$log_median_no3))
 sum(is.na(dat_1$log_median_tocton))
+```
 
+```
+## [1] 0
+## [1] 0
 ```
 
 
 ### Deposition trends and median 1992-2006     
-```{r}
 
+```r
 fn <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/deposition/totn_dep_trends_icpw_stns.csv"  
 
 df_deposition <- read.csv(fn) %>% 
   filter(variable == "totn_mgNpm2")  
 
 cat("n =", nrow(df_deposition), "\n")
+```
 
+```
+## n = 556
 ```
 
 
 ### Add deposition slope and medians to data  
-```{r}
 
+```r
 # debugonce(left_join2)
 dat_2 <- dat_1 %>% 
   left_join2(df_deposition %>% 
@@ -262,13 +257,23 @@ dat_2 <- dat_1 %>%
                      p_dep_vs_time = mk_p_val),
              by = "station_id",
              print_vars = TRUE)
+```
 
+```
+## Variables before join: 
+## 'station_id', 'median_no3', 'median_ton', 'median_toc', 'median_tocton', 'log_median_no3', 'log_median_ton', 'log_median_toc', 'log_median_tocton', 'trend_NO3', 'slope_toc_vs_time', 'trend_TOTN'
+## 
+## Variables used to join: 
+## 'station_id'
+## 
+## Variables added: 
+## 'TOTN_dep', 'slope_dep_vs_time', 'p_dep_vs_time'
 ```
 
 ### Add medians and station metadata   
 
-```{r}
 
+```r
 # dat_2 <- dat_2 %>%
 #   left_join(df_metadata, by = "station_id")
 
@@ -282,30 +287,74 @@ dat_2 <- dat_1 %>%
 
 # cat("\nVariable names: \n")
 # names(dat_2)
-
-
 ```
 
 ### Add climate and deposition medians and slopes  
-```{r}
 
+```r
 fn <- "https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/climate/cru_climate_trends_icpw_stns.csv"
 
 df_climate_mean <- read_csv(fn) %>% 
   select(station_id, variable, median) %>%
   pivot_wider(names_from = "variable", values_from = "median")
+```
+
+```
+## Rows: 1112 Columns: 8
+## ── Column specification ───────────────────────────────────────────────────────────────────────
+## Delimiter: ","
+## chr (3): variable, mk_trend, sen_trend
+## dbl (5): station_id, median, mk_p_val, sen_slp, sen_incpt
+## 
+## ℹ Use `spec()` to retrieve the full column specification for this data.
+## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+```
+
+```r
 cat("\n")
 # names(df_climate_mean)
 
 df_climate_slope <- read_csv(fn) %>%
   select(station_id, variable, sen_slp) %>%
   pivot_wider(names_from = "variable", values_from = "sen_slp", names_prefix = "slope_")
+```
 
+```
+## Rows: 1112 Columns: 8
+## ── Column specification ───────────────────────────────────────────────────────────────────────
+## Delimiter: ","
+## chr (3): variable, mk_trend, sen_trend
+## dbl (5): station_id, median, mk_p_val, sen_slp, sen_incpt
+## 
+## ℹ Use `spec()` to retrieve the full column specification for this data.
+## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+```
+
+```r
 # Add
 dat_3 <- dat_2 %>%
   left_join2(df_climate_mean, by = "station_id", print_vars = TRUE) %>%
   left_join2(df_climate_slope, by = "station_id", print_vars = TRUE)
+```
 
+```
+## 
+## Variables before join: 
+## 'station_id', 'median_no3', 'median_ton', 'median_toc', 'median_tocton', 'log_median_no3', 'log_median_ton', 'log_median_toc', 'log_median_tocton', 'trend_NO3', 'slope_toc_vs_time', 'trend_TOTN', 'TOTN_dep', 'slope_dep_vs_time', 'p_dep_vs_time'
+## 
+## Variables used to join: 
+## 'station_id'
+## 
+## Variables added: 
+## 'pre', 'tmp'
+## Variables before join: 
+## 'station_id', 'median_no3', 'median_ton', 'median_toc', 'median_tocton', 'log_median_no3', 'log_median_ton', 'log_median_toc', 'log_median_tocton', 'trend_NO3', 'slope_toc_vs_time', 'trend_TOTN', 'TOTN_dep', 'slope_dep_vs_time', 'p_dep_vs_time', 'pre', 'tmp'
+## 
+## Variables used to join: 
+## 'station_id'
+## 
+## Variables added: 
+## 'slope_pre', 'slope_tmp'
 ```
 
 ### Combine land cover types   
@@ -314,8 +363,8 @@ dat_3 <- dat_2 %>%
 * bare_sparse = bare_rock + sparsely_vegetated + glacier   
 * Select: coniferous, deciduous, lake, mixed_forest, wetland, bare_sparse   
 
-```{r}
 
+```r
 # df_landcover3_OLD <- readRDS("Data/159_df_landcover3.rds")
 df_landcover3 <- readRDS("Data/159_df_meta3.rds")
 
@@ -324,28 +373,36 @@ df_landcover3 <- df_landcover3 %>%
          decid_mixed = deciduous + mixed_forest,
          lake_water = lake + water_ex_lake) %>%
   select(-c(bare_rock, sparsely_vegetated, glacier, deciduous, mixed_forest, lake, water_ex_lake))
-
 ```
 
 
 ### Add land cover columns to main data    
-```{r}
 
+```r
 dat_4 <- left_join2(dat_3, 
                    df_landcover3, 
                    by = "station_id", 
                    print_vars = TRUE
 )
+```
 
-
+```
+## Variables before join: 
+## 'station_id', 'median_no3', 'median_ton', 'median_toc', 'median_tocton', 'log_median_no3', 'log_median_ton', 'log_median_toc', 'log_median_tocton', 'trend_NO3', 'slope_toc_vs_time', 'trend_TOTN', 'TOTN_dep', 'slope_dep_vs_time', 'p_dep_vs_time', 'pre', 'tmp', 'slope_pre', 'slope_tmp'
+## 
+## Variables used to join: 
+## 'station_id'
+## 
+## Variables added: 
+## 'station_code', 'station_name', 'latitude', 'longitude', 'altitude', 'continent', 'country', 'region', 'group', 'catchment_area', 'urban', 'cultivated', 'total_forest', 'coniferous', 'total_shrub_herbaceous', 'grasslands', 'heathlands', 'transitional_woodland_shrub', 'wetland', 'other', 'bare_sparse', 'decid_mixed', 'lake_water'
 ```
 
 
 
 ### Drop locations with >5% cultivated and >5% urban     
 - also excluding stations 23517, 38273    
-```{r}
 
+```r
 cultivated_threshold <- 5
 urban_threshold <- 5
 
@@ -355,31 +412,36 @@ dat_5 <- dat_4 %>%
           text = paste("Deleted stations with >", cultivated_threshold, "% cultivated")) %>%
   filter2(urban <= urban_threshold, 
           text = paste("Deleted stations with >", urban_threshold, "% urban"))
+```
 
+```
+## Removed 1 rows (Deleted stations 23517, 38273)
+## Removed 15 rows (Deleted stations with > 5 % cultivated)
+## Removed 6 rows (Deleted stations with > 5 % urban)
 ```
 
 
 
 ### Data set used  
-```{r}
 
+```r
 dat <- dat_5
-
 ```
 
 
 ## 3. Plot data      
 
-```{r, fig.width=9, fig.height=7}
 
+```r
 gg <- ggplot(dat, aes(TOTN_dep, median_no3)) + 
   geom_point(aes(color = country)) +
   geom_hline(yintercept = 0, linetype = 2) + 
   geom_vline(xintercept = 0, linetype = 2) 
   
 gg
-
 ```
+
+![](164c1_Currentstatus_TOCTON_allvars_without_rm_files/figure-html/unnamed-chunk-15-1.png)<!-- -->
 
 
 ## 4. Select data   
@@ -387,8 +449,8 @@ gg
 ### a. Selection of variables    
 * Select variables to use, and thereby also cases  
 * Also remove PL05, which has dubious values   
-```{r}
 
+```r
 add_flag_variable <- function(data, variable_string){
   variable_string <- gsub(" ", "", variable_string)
   variables <- strsplit(variable_string, split = ",")[[1]]
@@ -454,14 +516,65 @@ cat("\n\n")
 cat("Data before removing PL05: n =", nrow(dat_5), "\n")
 cat("Data after removing PL05: n =", nrow(df_analysis_allrows), "\n")
 cat("Data after removing missing predictors: n =", nrow(df_analysis), "\n")
+```
 
-
+```
+## -------------------------------------------------------------
+## Variables: 
+## median_tocton,catchment_area, median_ton, median_toc,slope_dep_vs_time, TOTN_dep,latitude, longitude,pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse
+## -------------------------------------------------------------
+## Removed 0 rows (station PL05 (has dubious NO3 data))
+##                       Var Missing
+## 1           median_tocton       0
+## 2          catchment_area       0
+## 3              median_ton       0
+## 4              median_toc       0
+## 5       slope_dep_vs_time       0
+## 6                TOTN_dep       0
+## 7                latitude       0
+## 8               longitude       0
+## 9                     pre       0
+## 10                    tmp       0
+## 11                  urban       0
+## 12             cultivated       0
+## 13             coniferous       3
+## 14            decid_mixed       3
+## 15 total_shrub_herbaceous       0
+## 16                wetland       0
+## 17             lake_water       0
+## 18            bare_sparse       0
+## 
+## Dataset after removing urban, cultivated, PL05 saved as '164_median_tocton_data.xlsx' 
+## 
+## Number of rows that will be excluded: 
+## 
+## FALSE  TRUE 
+##   285     3 
+## 
+## 
+## Number of complete observations by country: 
+##                 Row_excluded
+## country          FALSE TRUE
+##   Canada            67    3
+##   Czech Republic     2    0
+##   Finland           22    0
+##   Germany            1    0
+##   Italy              3    0
+##   Latvia             1    0
+##   Norway            80    0
+##   Sweden            87    0
+##   United Kingdom    22    0
+## 
+## 
+## Data before removing PL05: n = 288 
+## Data after removing PL05: n = 288 
+## Data after removing missing predictors: n = 285
 ```
 
 
 ### b. Correlations   
-```{r, fig.width=10, fig.height=10}
 
+```r
 df_correlationplot <- df_analysis %>% 
    select(-longitude, - latitude)
 
@@ -472,16 +585,24 @@ gg <- GGally::ggcorr(
   label_size = 3,
   hjust = 0.9, angle = -30) # +                    # slanted labels
 gg <- gg + 
-  coord_cartesian(x = c(-2, 20), y = c(-2,22))  # fix margins
+  coord_cartesian(x = c(-2, ncol(df_correlationplot)), 
+                  y = c(0, ncol(df_correlationplot) + 1))  # fix margins
+```
 
+```
+## Coordinate system already present. Adding new coordinate system, which will replace the existing one.
+```
+
+```r
 run_code <- stringr::str_extract(params$document_title, "([^[[:blank:]]]+)")   # extract e.g. "164a1"
 fn <- paste0("Figures/Correlation_matrices/", run_code,
              "_correlationplot.png")
 ggsave(fn, gg, width = 9, height = 9, dpi = 400)
 
 gg
-
 ```
+
+![](164c1_Currentstatus_TOCTON_allvars_without_rm_files/figure-html/unnamed-chunk-17-1.png)<!-- -->
 
 
 
@@ -489,8 +610,8 @@ gg
 
 
 ### Split into training and validation data
-```{r}
 
+```r
 set.seed(123)
 
 #
@@ -511,13 +632,12 @@ full_set <- df_analysis  %>%
   as.data.frame()
 
 # plot(full_set)
-
 ```
 
 
 ### a. Tree classification using 'party'   
-```{r, fig.width=10, fig.height=8}
 
+```r
 # train_set$X <- 10^train_set$median_no3
 # (ct = ctree(X ~ ., data = train_set))
 
@@ -525,253 +645,80 @@ full_set <- df_analysis  %>%
             data = full_set))
 
 plot(ct, main="Conditional Inference Tree")
+```
 
+![](164c1_Currentstatus_TOCTON_allvars_without_rm_files/figure-html/unnamed-chunk-19-1.png)<!-- -->
+
+```
+## 
+## Model formula:
+## median_tocton ~ catchment_area + median_ton + median_toc + slope_dep_vs_time + 
+##     TOTN_dep + pre + tmp + urban + cultivated + coniferous + 
+##     decid_mixed + total_shrub_herbaceous + wetland + lake_water + 
+##     bare_sparse
+## 
+## Fitted party:
+## [1] root
+## |   [2] median_toc <= 5.2
+## |   |   [3] median_toc <= 1.6
+## |   |   |   [4] total_shrub_herbaceous <= 20.292: 6.988 (n = 12, err = 68.4)
+## |   |   |   [5] total_shrub_herbaceous > 20.292: 12.810 (n = 23, err = 329.1)
+## |   |   [6] median_toc > 1.6
+## |   |   |   [7] median_ton <= 93: 29.875 (n = 10, err = 1067.6)
+## |   |   |   [8] median_ton > 93
+## |   |   |   |   [9] median_toc <= 2.8: 17.208 (n = 20, err = 226.8)
+## |   |   |   |   [10] median_toc > 2.8
+## |   |   |   |   |   [11] median_ton <= 151: 27.875 (n = 15, err = 209.8)
+## |   |   |   |   |   [12] median_ton > 151: 20.334 (n = 37, err = 366.9)
+## |   [13] median_toc > 5.2
+## |   |   [14] median_toc <= 8.8
+## |   |   |   [15] median_ton <= 250: 31.316 (n = 31, err = 353.8)
+## |   |   |   [16] median_ton > 250
+## |   |   |   |   [17] median_toc <= 7.1
+## |   |   |   |   |   [18] median_toc <= 6.4: 21.794 (n = 13, err = 28.0)
+## |   |   |   |   |   [19] median_toc > 6.4: 24.102 (n = 7, err = 4.7)
+## |   |   |   |   [20] median_toc > 7.1
+## |   |   |   |   |   [21] median_ton <= 310: 28.615 (n = 13, err = 88.4)
+## |   |   |   |   |   [22] median_ton > 310: 23.039 (n = 9, err = 66.9)
+## |   |   [23] median_toc > 8.8
+## |   |   |   [24] urban <= 2.0161
+## |   |   |   |   [25] median_toc <= 17.25
+## |   |   |   |   |   [26] median_ton <= 352.5
+## |   |   |   |   |   |   [27] median_toc <= 11.15
+## |   |   |   |   |   |   |   [28] median_ton <= 282: 37.800 (n = 17, err = 367.5)
+## |   |   |   |   |   |   |   [29] median_ton > 282: 32.876 (n = 8, err = 96.7)
+## |   |   |   |   |   |   [30] median_toc > 11.15: 42.302 (n = 16, err = 203.1)
+## |   |   |   |   |   [31] median_ton > 352.5: 31.100 (n = 19, err = 461.6)
+## |   |   |   |   [32] median_toc > 17.25: 45.232 (n = 8, err = 477.9)
+## |   |   |   [33] urban > 2.0161
+## |   |   |   |   [34] tmp <= 6.70833: 31.916 (n = 13, err = 134.4)
+## |   |   |   |   [35] tmp > 6.70833: 26.103 (n = 14, err = 343.6)
+## 
+## Number of inner nodes:    17
+## Number of terminal nodes: 18
 ```
 
 ### b. Evtree (Evolutionary Learning)   
-```{r, fig.width=11, fig.height=8}
 
+```r
 ev.raw = evtree(as.formula(params$tree_formula), 
                 data = full_set)
 
 plot(ev.raw)
+```
 
+![](164c1_Currentstatus_TOCTON_allvars_without_rm_files/figure-html/unnamed-chunk-20-1.png)<!-- -->
+
+```r
 # dir.create("Figures/Methods")
 
-png("Figures/Methods/Example_tree_164ab1.png", width = 16, height = 12, units = "in", res = 150)
+run_code <- stringr::str_extract(params$document_title, "([^[[:blank:]]]+)")   # extract e.g. "164a1"
+png(paste0("Figures/Methods/Example_tree_", run_code, ".png"), width = 16, height = 12, units = "in", res = 150)
 plot(ev.raw)
 dev.off()
-
-
 ```
 
-
-### c. Random forest  
-* Model called 'model1'
-```{r}
-
-model1 <- randomForest(as.formula(params$tree_formula), 
-                       data = full_set, 
-                       mtry = 5,
-                       importance = TRUE)
-
-model1
-
 ```
-
-
-#### c1. Predict on training data
-Not relevant here  
-
-#### c2. Importance of variables   
-* Classification forests result in   
-    - mean_min_depth   
-    - accuracy_decrease  
-    - gini_decrease  
-    - no_of_nodes   
-    - times_a_root      
-* Regression forests result in     
-    - mean_min_depth   
-    - mse_increase  
-    - node_purity_increase  
-    - no_of_nodes   
-    - times_a_root      
-```{r 5c2_calculate_importance}
-
-# Calculation
-importance <- measure_importance(model1)
-
+## png 
+##   2
 ```
-
-
-
-```{r}
-
-plot_multi_way_importance(importance, size_measure = "no_of_nodes", no_of_labels = 6)  
-plot_multi_way_importance(importance, x_measure = "mse_increase", y_measure = "node_purity_increase",
-                          size_measure = "p_value", no_of_labels = 6)
-
-importance %>%
-  arrange(desc(times_a_root))
-
-```
-
-
-
-#### c3. Random forest, show partial effects  
-
-```{r 5c3_calculate_partial_effects, warning=FALSE, message=FALSE, results='hide', cache = FALSE}
-
-# Which variables to include:
-variables_for_plot <- importance %>%
-  mutate(variable = levels(variable)[as.numeric(variable)]) %>%
-  arrange(desc(mse_increase)) %>%    # gini_decrease for classification trees
-  pull(variable) %>%
-  head(12)   # pick the first 12 variables (or less)
-
-# Calculation
-
-plotdata <- NULL  # will be list for storing results
-
-max_number_of_plots <- length(variables_for_plot)/2 %>% floor()
-
-for (i in 1:max_number_of_plots){
-  varno1 <- c(1,3,5,7,9,11)[i]
-  varno2 <- varno1 + 1
-  plotdata[[i]] <- model1 %>%
-    partial(pred.var = variables_for_plot[c(varno1, varno2)], chull = TRUE, progress = "text",
-            which.class = "1", prob = TRUE)
-}
-
-
-```
-
-
-```{r 5c3_calculate_partial_effects2, warning=FALSE, message=FALSE, results='hide'}
-
-### Extra plots
-
-plotpairs <- params$extra_pairwise_plots %>%
-  gsub(" ", "", ., fixed = TRUE) %>%
-  strsplit(split = ";") %>%
-  .[[1]] %>%
-  purrr::map(~strsplit(., split = ",")[[1]])
-
-for (plotvar in plotpairs){
-  # print(plotvar)
-  if (plotvar[1] %in% names(full_set) & plotvar[2] %in% names(full_set)){
-    i <- i + 1
-    plotdata[[i]] <- model1 %>%
-      partial(pred.var = c(plotvar[1], plotvar[2]), chull = TRUE, progress = "text",
-             which.class = "1", prob = TRUE)
-  }
-}
-
-
-```
-
-
-```{r 5c3_plot_partial_effects2}
-
-# Find range of predicted values for each graph
-ranges <- plotdata %>% purrr::map_dfc(~range(.$yhat))
-
-# use range of all the ranges
-for (i in 1:length(plotdata)){
-  
-  if (params$pairwise_plots_same_scale == "TRUE"){
-  
-    gg <- plot_pair_number(i, zrange = range(ranges))
-    print(gg)
-    
-  } else {
-    
-    gg <- plot_pair_number(i)
-    print(gg)
-
-  }
-  
-  # Save gg object for later plotting / changes
-  # Saved in Figures/Partial_plots' with name e.g. "gg_164a1_7.rds" for plot number 7
-  fn <- paste0(
-    "Figures/Partial_plots/gg_",
-    stringr::str_extract(params$document_title, "([^[[:blank:]]]+)"),   # extract e.g. "164a1"
-    "_", i, ".rds")
-  saveRDS(gg, fn)
-  
-}
-  
-
-```
-
-
-
-## 6. Linear regression      
-```{r, results  = "hold"}
-
-fm <- lm(
-  as.formula(params$logistic_formula),
-  data = df_analysis, 
-  na.action = "na.fail")
-
-dredged_models <- dredge(fm)                       # only once
-# saveRDS(dredged_models, "Data/164_all_dredged_models.rds")    # save it as it takes a couple of minutes
-# dredged_models <- readRDS("Data/164_all_dredged_models.rds")
-
-# cat("\n\nR2: \n")
-# mod1 <- get.models(dredged_models, 1)[[1]]  
-# summary(mod1)  
-
-```  
-
-### Best models  
-```{r}
-# subset(dredged_models, delta < 1)
-
-subset(dredged_models, delta < 2)
-
-# Alternative way of showing result (didn't become any better)
-# df <- subset(dredged_models, delta < 2)
-# select(as.data.frame(df) %>% round(6), -`(Intercept)`, -logLik, -AICc)
-
-```
-```{r, echo = FALSE}
-
-#
-# Function to get interactions and effects 
-#
-get_model_variables <- function(model){  
-  all_terms <- names(model$coefficients)
-  # Remove '(Intercept)'
-  all_terms <- all_terms[!all_terms %in% "(Intercept)"]
-  sel_interactions <- grepl(":", all_terms, fixed = TRUE)
-  # Removing interaction terms leaves us with the variables:
-  all_variables <- all_terms[!sel_interactions]
-  # Get interactions in a list
-  interaction_terms <- all_terms[sel_interactions]
-  interaction_list <- interaction_terms %>% strsplit(split = ":")
-  # Get additive variables
-  interaction_vars <- interaction_list %>% unlist()
-  additive_vars <- all_variables[!all_variables %in% interaction_vars]
-  list(
-    interaction_list = interaction_list,
-    additive_vars = additive_vars)
-}
-
-# Test
-# fit <- lm(sr ~ pop15*dpi + pop75*dpi + ddpi, data = LifeCycleSavings)
-# get_model_variables(fit)  
-
-```
-
-### Plots  
-```{r, message=FALSE}
-
-# Pick model with lowest AICc
-mod1 <- get.models(dredged_models, 1)[[1]]  
-
-modelvars <- get_model_variables(mod1)
-
-# Interactions: 2D plot 
-if (length(modelvars$interaction_list) > 0){
-  modelvars$interaction_list %>% purrr::walk(
-    ~visreg(mod1, .x[1], by = .x[2], scale = "response")
-  )
-}
-
-# Additive effects: 1D plot
-if (length(modelvars$additive_vars) > 0){
-  par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
-  for (var in modelvars$additive_vars)
-    visreg(mod1, var, scale = "response")  
-}
-
-```
-
-
-
-
-
-
-
-

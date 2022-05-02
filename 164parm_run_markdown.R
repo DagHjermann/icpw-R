@@ -9,6 +9,27 @@
 
 #o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
 #
+# USED in report: 
+# (see README)
+#
+# 3.1.2 Spatial variability of median NO3 concentrations 2012-2016
+#   Figures 164ab1 (median NO3)
+#   Fig. 11: plot no. 7
+#   Fig. 12: plot no. 1
+#
+# 3.2.2 Spatial variability of TOC/TON median concentration ratios 2012-2016
+# Script 164c1
+#   Fig. 26: plot no. 8
+#   Fig. 27: plot no. 9
+#   Fig. 29: plot no. 7
+#
+#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
+
+
+
+
+#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
+#
 # 1. USING coniferous + decid_mixed ----
 #
 # All the results marked "1": 164a1, 164b1, 164c1, 164d1
@@ -634,4 +655,129 @@ rmarkdown::render(
     tree_formula = 'median_tocton ~ .'  ,                                     # change here
     logistic_formula = form)
 )
+
+
+
+#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
+#
+# 3. For correlations and sample classification tree ----
+#
+# Using as 'input' the script '164parm_Currentstatus_without_randomforest.Rmd'
+# - Output files end in "without_rm"
+# - vars: changed order (slope before mean, e.g. slope_dep_vs_time before TOTN_dep)
+#   Because in the plot, the latter will be above the former
+#
+# Main results in
+#   Figures/Correlation_matrices
+#   Figures/Methods
+#
+#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
+
+
+#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
+#
+# 164ab1 - median_no3 ~ incl. TOC but not catchment_area ----
+#
+# Using dataset for NO3: 'medians_2012-2016_no3.csv'  
+#
+#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
+
+
+# If many parameters, split up the lines with a 'paste()'  
+# Remember to set that the parts should be joined using a comma (sep = ",") 
+#   (or let each part end with a comma)
+vars <- paste(
+  "median_no3", 
+  "median_toc", 
+  "slope_dep_vs_time, TOTN_dep", 
+  "latitude, longitude", 
+  "pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous, wetland, lake_water, bare_sparse",
+  sep = ",")    # remember this
+vars
+# If long formula, split up the lines with a 'paste()'  
+# Remember to end each line with '+', or use sep = "+"  
+form <- paste(
+  "median_no3 ~ TOTN_dep +", 
+  "slope_dep_vs_time + TOTN_dep:slope_dep_vs_time +",
+  "median_toc + TOTN_dep:median_toc +",
+  "tmp + pre  +",
+  "coniferous + decid_mixed + bare_sparse +",
+  "lake_water + total_shrub_herbaceous"
+)
+
+# form
+
+# To find file names used:
+# dir(pattern = "164*")
+
+# Render HTML and .md files  
+rmarkdown::render(
+  input = '164parm_Currentstatus_without_randomforest.Rmd',                                        # always the same         
+  output_file = '164ab1_Currentstatus_NO3_allvars_without_rm.html',                        # change here
+  params = list(
+    document_title = "164ab1 Analyse NO3 medians 2012-2016 - not area",       # change here
+    text_line1 = "Analysis of NO3 medians (2012-2016)",                       # change here
+    text_line2 = "Dataset: NO3 medians data set incl. TOC",                   # change here
+    medians_filename = "medians_2012-2016_no3.csv",
+    selected_vars = vars,
+    tree_formula = 'median_no3 ~ .'  ,                                     # change here
+    logistic_formula = form)
+)
+
+
+
+
+#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
+#
+# 164c1 - median_tocton ~ all variables ----
+#
+# Using dataset for TOC/TON: 'medians_2012-2016_toc_totn_no3.csv'  
+#
+#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o#o
+
+
+# If many parameters, split up the lines with a 'paste()'  
+# Remember to set that the parts should be joined using a comma (sep = ",") 
+#   (or let each part end with a comma)
+vars <- paste(
+  "median_tocton", 
+  "catchment_area, median_ton, median_toc",     # change here
+  "slope_dep_vs_time, TOTN_dep", 
+  "latitude, longitude",
+  "pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous",
+  "wetland, lake_water, bare_sparse",
+  sep = ",")    # remember this
+
+# If long formula, split up the lines with a 'paste()'  
+# Remember to end each line with '+', or use sep = "+"  
+form <- paste(
+  "median_tocton ~ median_ton + median_toc +", 
+  "median_ton:median_toc +",
+  "tmp + pre +",                          # change here
+  "bare_sparse + coniferous +",
+  "lake_water + decid_mixed +", 
+  "urban + catchment_area"
+)
+# form
+
+# To find file names used:
+# dir(pattern = "164*")
+
+# Render HTML and .md files  
+rmarkdown::render(
+  input = '164parm_Currentstatus_without_randomforest.Rmd',                                          # always the same         
+  output_file = '164c1_Currentstatus_TOCTON_allvars_without_rm.html',                            # change here
+  params = list(
+    document_title = "164c1 Analyse TOC/TON medians 2012-2016 - all variables",  # change here
+    text_line1 = "Analysis of TOC/TON medians (2012-2016)",                     # change here
+    text_line2 = "Dataset: TOC/TON medians data set",                             # change here
+    medians_filename = "medians_2012-2016_toc_totn_no3.csv",
+    selected_vars = vars,
+    tree_formula = 'median_tocton ~ .'  ,                                     # change here
+    logistic_formula = form,
+    extra_pairwise_plots = 'TOTN_dep,slope_dep_vs_time; median_toc, median_ton; coniferous,lake_water'  # added
+  )
+)
+
+
 
