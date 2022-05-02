@@ -44,7 +44,7 @@ Fixing figures
 per_sqm <- "m\u207B\u00B2"
 per_year <- "yr\u207B\u00B9"
 per_yearsquared <- "yr\u207B\u00B2"   # for Sen slope of deposition
-per_litre <- "L\u207B\u00B9"
+per_litre <- "l\u207B\u00B9"
 microgram <- "\u03BCg"
 no3 <- "NO\u2083"
 degrees_celcius <- "C\u00B0"
@@ -75,6 +75,8 @@ library(glue)
 name <- "Fred"
 age <- 50
 anniversary <- as.Date("1991-10-12")
+
+cat("- Test glue() -\n")
 glue('My name is {name},',
   ' my age next year is {age + 1},',
   ' my anniversary is {format(anniversary, "%A, %B %d, %Y")}.')
@@ -85,6 +87,7 @@ glue('My name is {name},',
 
 ## 3.1.2	Spatial variability of median NO3 concentrations 2012-2016  
 
+* *Important: run this chunk before the next chunks*      
 * Figures 164ab1 (median NO3)   
     * Fig. 11: plot no. 7  
     * Fig. 12: plot no. 1
@@ -160,6 +163,7 @@ gg_new
 
 ## 3.1.3	Statistical analysis of NO3 trends 1992-2016  
 
+* *Important: run this chunk before the next chunks*      
 * Script 166d1x   
     * Fig. 15: plot no. 1  
     * Fig. 16: plot no. 2  
@@ -203,9 +207,9 @@ gg <- readRDS(fn)
 gg
 
 gg_new <- gg +
-  labs(x = "Median NO\u2083 concentration 1992-2016 (\u03BCg/L)",
+  labs(x = glue("Median NO\u2083 concentration 1992-2016 (\u03BCg N {per_litre})"),
        y = "Coniferous land cover (%)") +
-  scale_fill_viridis_c("NO\u2083 trend\n(Sen slope, \u03BCg L\u207B\u00B9 yr\u207B\u00B9)")
+  scale_fill_viridis_c("NO\u2083 trend\n(Sen slope, \u03BCg N l\u207B\u00B9 yr\u207B\u00B9)")
 
 fn_new <- paste0(fig_folder_new, "/", fn_core, i,"_fixed.png")
 ggsave(fn_new, gg_new, width = 6, height = 4, dpi = 200)
@@ -229,7 +233,7 @@ gg_new <- gg +
     x = glue("Sen slope N deposition 1992-2016 (mg N {per_sqm} {per_yearsquared})"),
     y = glue("Median N deposition 1992-2016 (mg N {per_sqm} {per_year})")
   ) +
-  scale_fill_viridis_c("NO\u2083 trend\n(Sen slope, \u03BCg L\u207B\u00B9 yr\u207B\u00B9)")
+  scale_fill_viridis_c("NO\u2083 trend\n(Sen slope, \u03BCg N l\u207B\u00B9 yr\u207B\u00B9)")
 
 fn_new <- paste0(fig_folder_new, "/", fn_core, i,"_fixed.png")
 ggsave(fn_new, gg_new, width = 6, height = 4, dpi = 200)
@@ -253,10 +257,10 @@ gg <- readRDS(fn)
 
 gg_new <- gg +
   labs(
-    x = glue("Median TOC concentration 1992-2016 (mg {per_litre})"),
-    y = glue("Median {no3} concentration 1992-2016 ({microgram} {per_litre})")
+    x = glue("Median TOC concentration 1992-2016 (mg C {per_litre})"),
+    y = glue("Median {no3} concentration 1992-2016 ({microgram} N {per_litre})")
     ) +
-  scale_fill_viridis_c("NO\u2083 trend\n(Sen slope, \u03BCg L\u207B\u00B9 yr\u207B\u00B9)")
+  scale_fill_viridis_c("NO\u2083 trend\n(Sen slope, \u03BCg N l\u207B\u00B9 yr\u207B\u00B9)")
 
 fn_new <- paste0(fig_folder_new, "/", fn_core, i,"_fixed.png")
 ggsave(fn_new, gg_new, width = 6, height = 4, dpi = 200)
@@ -269,11 +273,12 @@ gg_new
 
 ## 3.2.2	Spatial variability of TOC/TON median concentration ratios 2012-2016   
 
+* *Important: run this chunk before the next chunks*      
 * Script 164c1   
 
-    * Fig. 26: plot no. 8  
-    * Fig. 27: plot no. 2  
-    * Fig. 29: plot no. 7  
+    * Fig. 27: plot no. 8  
+    * Fig. 28: plot no. 2  
+    * Fig. 30: plot no. 7  
     
 ```{r}
 
@@ -292,7 +297,7 @@ for (i in 1:length(fns)){
 
 ```
 
-### Fig. 26: plot no. 8  
+### Fig. 27: plot no. 8  
 
 ```{r}
 
@@ -310,8 +315,8 @@ gg <- readRDS(fn)
 
 gg_new <- gg +
   labs(
-    x = glue("Median TOC concentration 1992-2016 (mg {per_litre})"),
-    y = glue("Median TON concentration 1992-2016 ({microgram} {per_litre})")
+    x = glue("Median TOC concentration 1992-2016 (mg C {per_litre})"),
+    y = glue("Median TON concentration 1992-2016 ({microgram} N {per_litre})")
     ) +
   scale_fill_viridis_c("TOC/TON ratio\n(unitless)")
 
@@ -323,7 +328,7 @@ gg_new
 
 ```
 
-### Fig. 27: plot no. 9  
+### Fig. 28: plot no. 9  
 
 ```{r}
 
@@ -353,7 +358,7 @@ gg_new
 ```
 
 
-### Fig. 29: plot no. 7  
+### Fig. 30: plot no. 7  
 
 ```{r}
 
@@ -387,10 +392,11 @@ gg_new
 
 ## 3.2.3 TOC/TON trends 1992-2016  
 
+* *Important: run this chunk before the next chunks*      
 * Script 167d1     
 
-    * Fig. 32: plot no. 1  
-    * Fig. 33: plot no. 2    
+    * Fig. 33: plot no. 1  
+    * Fig. 34: plot no. 2    
     
 ```{r}
 
@@ -409,7 +415,7 @@ for (i in 1:length(fns)){
 
 ```
 
-### Fig. 32: plot no. 1    
+### Fig. 33: plot no. 1    
 
 ```{r}
 
@@ -432,7 +438,7 @@ gg_new
 
 ```
 
-### Fig. 33: plot no. 2    
+### Fig. 34: plot no. 2    
 
 ```{r}
 
@@ -444,8 +450,8 @@ gg <- readRDS(fn)
 
 gg_new <- gg +
   labs(
-    x = glue("Median TOC concentration 1992-2016 (mg {per_litre})"),
-    y = glue("Sen slope TOC concentration (mg {per_litre} {per_year})")
+    x = glue("Median TOC concentration 1992-2016 (mg C {per_litre})"),
+    y = glue("Sen slope TOC concentration (mg C {per_litre} {per_year})")
     ) +
   scale_fill_viridis_c(glue("TOC/TON trend\n(Sen slope, ratio {per_year})"))
 
