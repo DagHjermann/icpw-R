@@ -13,7 +13,7 @@ params:
   text_dataset: 
     value: 'Dataset: Basis + TOC + TON medians and slopes'
   selected_vars: 
-    value: 'slope_tocton_vs_time,catchment_area, slope_pre, slope_tmp, slope_dep_vs_time, TOCTON, TOTN_dep, pre, tmp,urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse, TOC, TON, slope_toc_vs_time, slope_ton_vs_time'
+    value: 'catchment_area, slope_dep_vs_time, TOTN_dep, slope_tocton_vs_time, TOCTON, slope_pre, pre, slope_tmp, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse, slope_toc_vs_time, TOC, slope_ton_vs_time, TON'
   extra_pairwise_plots:
     value: 'TON,slope_pre;slope_pre,slope_tmp;slope_tmp,slope_pre'
   pairwise_plots_same_scale:
@@ -420,17 +420,31 @@ cat("Data after removing missing predictors: n =", nrow(df_analysis), "\n")
 
 
 ### b. Correlations   
+
 ```{r, fig.width=10, fig.height=10}
 
+df_correlationplot <- df_analysis # %>% 
+#    select(-longitude, - latitude)
+
 gg <- GGally::ggcorr(
-  df_analysis, 
+  df_correlationplot, 
   method = c("complete.obs", "kendall"), 
   label = TRUE,
+  label_size = 3,
   hjust = 0.9, angle = -30) # +                    # slanted labels
-gg + coord_cartesian(x = c(-2, 23), y = c(-2,22))  # fix margins
+gg <- gg + 
+  coord_cartesian(x = c(-2, ncol(df_correlationplot)), 
+                  y = c(0, ncol(df_correlationplot) + 1))  # fix margins
 
+run_code <- stringr::str_extract(params$document_title, "([^[[:blank:]]]+)")   # extract e.g. "164a1"
+fn <- paste0("Figures/Correlation_matrices/", run_code,
+             "_correlationplot.png")
+ggsave(fn, gg, width = 9, height = 9, dpi = 400)
 
-```  
+gg
+
+```
+  
 
 
 
