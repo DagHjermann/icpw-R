@@ -469,6 +469,7 @@ gg <- GGally::ggcorr(
   df_correlationplot, 
   method = c("complete.obs", "kendall"), 
   label = TRUE,
+  label_size = 3,
   hjust = 0.9, angle = -30) # +                    # slanted labels
 gg <- gg + 
   coord_cartesian(x = c(-2, 20), y = c(-2,22))  # fix margins
@@ -527,12 +528,19 @@ plot(ct, main="Conditional Inference Tree")
 ```
 
 ### b. Evtree (Evolutionary Learning)   
-```{r, fig.width=10, fig.height=8}
+```{r, fig.width=11, fig.height=8}
 
 ev.raw = evtree(as.formula(params$tree_formula), 
                 data = full_set)
 
 plot(ev.raw)
+
+# dir.create("Figures/Methods")
+
+png("Figures/Methods/Example_tree_164ab1.png", width = 16, height = 12, units = "in", res = 150)
+plot(ev.raw)
+dev.off()
+
 
 ```
 
@@ -674,7 +682,6 @@ for (i in 1:length(plotdata)){
   
 
 ```
-
 
 
 
