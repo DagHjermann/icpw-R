@@ -4,29 +4,37 @@ R code for the ICP waters nitrogen report (autumn 2021-March 2022)
 
 ## Scripts used in final analysis   
 
-* Also see [script 180](180_fix_partial_plots.Rmd) used to add proper axis/legend titles to the final plots.  
+* Also see [script 180](180_fix_partial_plots.Rmd) used to add proper axis/legend titles to the final plots. (If you 
+just want to fix things like axis and legend texts, use this!)    
 
 ### 3.1.2	Spatial variability of median NO3 concentrations 2012-2016  
 * Figures 164ab1 (median NO3)   
     * Fig. 11: plot no. 7  
     * Fig. 12: plot no. 1  
+    * Fig. 9: correlation plot (Figures/Correlation_matrices) 
+    * In addition: Fig. 1 in the paper (example of classification tree, Figures/Methods/Example_tree_164ab1.png)   
+    * Note; Fig. 1 and 9 were created using '164parm_Currentstatus_without_randomforest.Rmd'  
 
 ### 3.1.3	Statistical analysis of NO3 trends 1992-2016  
 * Script 166d1x   
     * Fig. 15: plot no. 1  
     * Fig. 16: plot no. 2  
     * Fig. 17: plot no. 7  
+    * Fig. 13: correlation plot (Figures/Correlation_matrices) 
 
 ### 3.2.2	Spatial variability of TOC/TON median concentration ratios 2012-2016   
 * Script 164c1   
-    * Fig. 26: plot no. 8  
-    * Fig. 27: plot no. 9  
-    * Fig. 29: plot no. 7    
+    * Fig. 27: plot no. 8  
+    * Fig. 28: plot no. 9  
+    * Fig. 30: plot no. 7    
+    * Fig. 25: correlation plot (Figures/Correlation_matrices) 
+    * Note; Fig. 25 was created using '164parm_Currentstatus_without_randomforest.Rmd'  
 
 ### 3.2.3 TOC/TON trends 1992-2016  
 * Script 167d1     
-    * Fig. 32: plot no. 1  
-    * Fig. 33: plot no. 2    
+    * Fig. 33: plot no. 1  
+    * Fig. 34: plot no. 2    
+    * Fig. 31: correlation plot (Figures/Correlation_matrices) 
 
 **In addition:** correlation plots (one per chapter)   
 
