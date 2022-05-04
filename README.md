@@ -8,7 +8,7 @@ R code for the ICP waters nitrogen report (autumn 2021-March 2022)
 just want to fix things like axis and legend texts, use this!)    
 
 ### 3.1.2	Spatial variability of median NO3 concentrations 2012-2016  
-* Figures 164ab1 (median NO3)   
+* Run part **164ab1** in script `164parm_run_markdown.R` (this script runs `164parm_Currentstatus.Rmd`)      
     * Fig. 11: plot no. 7  
     * Fig. 12: plot no. 1  
     * Fig. 9: correlation plot (Figures/Correlation_matrices) 
@@ -16,27 +16,25 @@ just want to fix things like axis and legend texts, use this!)
     * Note; Fig. 1 and 9 were created using '164parm_Currentstatus_without_randomforest.Rmd'  
 
 ### 3.1.3	Statistical analysis of NO3 trends 1992-2016  
-* Script 166d1x   
+* Run part **166d1x** in script `166parm_run_markdown.R` (this script runs `166parm_Time_series_results_James.Rmd`)         
     * Fig. 15: plot no. 1  
     * Fig. 16: plot no. 2  
     * Fig. 17: plot no. 7  
     * Fig. 13: correlation plot (Figures/Correlation_matrices) 
 
 ### 3.2.2	Spatial variability of TOC/TON median concentration ratios 2012-2016   
-* Script 164c1   
+* Run part **164c1** in script `164parm_run_markdown.R` (this script runs `164parm_Currentstatus.Rmd`)      
     * Fig. 27: plot no. 8  
     * Fig. 28: plot no. 9  
     * Fig. 30: plot no. 7    
-    * Fig. 25: correlation plot (Figures/Correlation_matrices) 
+    * Fig. 25: correlation plot (Figures/Correlation_matrices)   
     * Note; Fig. 25 was created using '164parm_Currentstatus_without_randomforest.Rmd'  
 
 ### 3.2.3 TOC/TON trends 1992-2016  
-* Script 167d1     
+* Run part **167d1** in script `167parm_run_markdown.R` (this script runs `167parm_Time_series_tocton_continuous.Rmd`)      
     * Fig. 33: plot no. 1  
     * Fig. 34: plot no. 2    
     * Fig. 31: correlation plot (Figures/Correlation_matrices) 
-
-**In addition:** correlation plots (one per chapter)   
 
 ## Overview of results  
 [010_Methods_results.md](010_Methods_results.md) was made 'midway' in the project and doesn't contain final analyses   

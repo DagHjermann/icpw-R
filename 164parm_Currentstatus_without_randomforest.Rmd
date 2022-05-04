@@ -31,6 +31,8 @@ params:
 
 ```{r, echo = FALSE}  
 
+# NOTE: THIS SCRIPT IS THE 'ORDINARY' 164parm SCRIPT WITH THE LAST PART DELETED.
+# - made in order to recreate correlation plots (fig. 9 + 57) + Fig. 1 i paper 
 #
 # This file is designed to be run using '164parm_run_markdown.R'  
 # The scripts in that file renders 3 result html file: 164a-d (different variable sets and data)  
@@ -459,7 +461,10 @@ cat("Data after removing missing predictors: n =", nrow(df_analysis), "\n")
 ```
 
 
-### b. Correlations   
+### b. Correlations    
+
+* **NOTE: used for Fig. 9 + 57 in report**
+
 ```{r, fig.width=10, fig.height=10}
 
 df_correlationplot <- df_analysis %>% 
@@ -516,7 +521,10 @@ full_set <- df_analysis  %>%
 ```
 
 
-### a. Tree classification using 'party'   
+### a. Tree classification using 'party'    
+
+* **NOTE: used for Fig. 1 in paper!**  
+
 ```{r, fig.width=10, fig.height=8}
 
 # train_set$X <- 10^train_set$median_no3
