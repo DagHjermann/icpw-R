@@ -315,8 +315,8 @@ gg <- readRDS(fn)
 
 gg_new <- gg +
   labs(
-    x = glue("Median TOC concentration 1992-2016 (mg C {per_litre})"),
-    y = glue("Median TON concentration 1992-2016 ({microgram} N {per_litre})")
+    x = glue("Median TOC concentration 2012-2016 (mg C {per_litre})"),
+    y = glue("Median TON concentration 2012-2016 ({microgram} N {per_litre})")
     ) +
   scale_fill_viridis_c("TOC/TON ratio\n(unitless)")
 
