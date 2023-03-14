@@ -13,6 +13,7 @@ library(dplyr)
 library(ggplot2)
 library(forcats)
 library(purrr)
+library(glue)        # easier than paste0
 library(tictoc)      # tic() and toc() for timing   
 
 country_borders <- readRDS("Input_data_2023/country_borders.rda")
@@ -504,7 +505,15 @@ ggplot(data_single_site, aes(year, log_no3_res)) +
 
 add_resid_est <- function(data){
   sel <- !is.na(data$log_no3_res)
-  model_resid <- gam(log_no3_res ~ s(year, k = 4), data = data[sel,])
+  if (sum(sel) >= 9){
+    model_resid <- gam(log_no3_res ~ s(year, k = 4), data = data[sel,])
+  } else if (sum(sel) >= 7){
+    model_resid <- gam(log_no3_res ~ s(year, k = 3), data = data[sel,])
+  } else if (sum(sel) >= 5){
+    model_resid <- lm(log_no3_res ~ year, data = data[sel,])
+  } else if (sum(sel) <= 4){
+    model_resid <- lm(log_no3_res ~ 1, data = data[sel,])
+  }
   predicted <- predict(model_resid, newdata = data, se.fit = TRUE)
   # data$log_no3_res_est <- NA
   # data$log_no3_res_se <- NA
@@ -542,6 +551,7 @@ pdata_sites2 <- pdata_sites %>%
     log_no3_se2 = sqrt(log_no3_se1^2 + log_no3_res_se^2)
   )
 
+# Plot version 1
 ggplot(pdata_sites2, aes(year, log_no3_obs)) +
   geom_pointrange(aes(y = log_no3_pred2,
                       ymin = log_no3_pred2 - 2*log_no3_se2,
@@ -549,6 +559,7 @@ ggplot(pdata_sites2, aes(year, log_no3_obs)) +
   geom_point(color = "red2") +
   facet_wrap(vars(site))
 
+# Plot version 2
 ggplot(pdata_sites2, aes(year, log_no3_obs)) +
   geom_ribbon(
     aes(ymin = log_no3_pred2 - 2*log_no3_se2,
@@ -561,39 +572,83 @@ ggplot(pdata_sites2, aes(year, log_no3_obs)) +
 
 ```
 
+### Test 'direct' gam (just one step)  
+```{r}
+
+for (set_k in 4:5){
+  
+  model_list <- sites %>%
+    set_names() %>%
+    map(~gam(log_no3 ~ s(year, k = set_k), data = dat2 %>% filter(site == .x)))  
+  predicted_list <- model_list %>% 
+    map(~predict(.x, newdata = data.frame(year = 1992:2020), se.fit = TRUE))  
+  pdata_direct <- predicted_list %>% 
+    map_dfr(
+      ~data.frame(
+        year = 1992:2020, 
+        log_no3_pred= .x$fit,
+        log_no3_se = .x$se.fit), .id = "site")
+  
+  gg <- ggplot(pdata_direct, aes(year)) +
+    geom_ribbon(
+      aes(ymin = log_no3_pred - 2*log_no3_se,
+          ymax = log_no3_pred + 2*log_no3_se), fill = "lightblue") +
+    geom_line(aes(y = log_no3_pred)) +
+    geom_point(data = dat2 %>% filter(site %in% sites), aes(y = log_no3), color = "red2") +
+    facet_wrap(vars(site)) +
+    labs(title = glue("log_no3 ~ s(year, k = {set_k})"))
+  
+  print(gg)
+  
+}
+
+
+```
+
+
 ### For all sites   
 
-#### Get predictions  
+#### Get predictions    
+
 ```{r}
+
+# Note:
+#   We have separated pdata_sites into pdata_sites1 and pdata_sites2  
+#   and the 'old' pdata_sites2 ihas been renamed 'pdata_sites3'    
 
 #
 # Pick sites and start prediction data series
 #
 data_sites <- dat2
-pdata_sites <- data_sites %>%
-  count(countryCode, site, x, y)
-nrow(pdata_sites)
-# 2695 rows
+pdata_sites1 <- data_sites %>%
+  count(countryCode, site, x, y) %>%
+  filter(n >= 2)  
+  # For testing with just 16 sites  
+  # head(16)
+nrow(pdata_sites1)
+# 1926 rows
+
+table(pdata_sites1$n)
 
 #
 # Predict no3 for all years using spatial model    
 # - log_no3_pred1 and log_no3_se1
 #
-pdata_sites <- 1992:2020 %>% map_dfr(~mutate(pdata_sites, year = .)) 
-nrow(pdata_sites)  
-# 78155 rows
-2695*(2020-1992+1)
+pdata_sites2 <- 1992:2020 %>% map_dfr(~mutate(pdata_sites1, year = .)) 
+nrow(pdata_sites2)  
+# 55854 rows
+1926*(2020-1992+1)
 
-if (FALSE){
+if (T){
   tic()
-  predicted <- predict(mod_fr_1, pdata_sites, type = "response", se.fit = TRUE)
+  predicted <- predict(mod_fr_1, pdata_sites2, type = "response", se.fit = TRUE)
   toc()  # 203 seconds for 78000 rows   
   saveRDS(predicted, "302_mod_fr_1_pred1.rds")
 }
 
 predicted <- readRDS("302_mod_fr_1_pred1.rds")  
 
-pdata_sites <- transform(pdata_sites, 
+pdata_sites2 <- transform(pdata_sites2, 
                          log_no3_pred1 = predicted$fit, 
                          log_no3_se1 = predicted$se.fit)
 
@@ -607,7 +662,7 @@ pdata_sites <- transform(pdata_sites,
 # - log_no3_pred1 and log_no3_se1
 # 
 tic()
-pdata_sites2 <- pdata_sites %>% 
+pdata_sites3 <- pdata_sites2 %>% 
   left_join(data_sites %>% select(site, year, log_no3) %>% rename(log_no3_obs = log_no3)) %>%
   mutate(log_no3_res = log_no3_obs - log_no3_pred1) %>%
   split(.$site) %>%
@@ -617,8 +672,17 @@ pdata_sites2 <- pdata_sites %>%
     log_no3_se2 = sqrt(log_no3_se1^2 + log_no3_res_se^2)
   )
 toc()  # 203 seconds for 78000 rows   
-saveRDS(pdata_sites2, "302_mod_fr_1_pred2.rds")
+saveRDS(pdata_sites3, "302_mod_fr_1_pred2.rds")
 
+# Plot version 2
+ggplot(pdata_sites3, aes(year, log_no3_obs)) +
+  geom_ribbon(
+    aes(ymin = log_no3_pred2 - 2*log_no3_se2,
+        ymax = log_no3_pred2 + 2*log_no3_se2), fill = "lightblue") +
+  geom_line(aes(y = log_no3_pred2)) +
+  geom_line(aes(y = log_no3_pred1), color = "green3") +
+  geom_point(color = "red2") +
+  facet_wrap(vars(site))
 
 
 ```
