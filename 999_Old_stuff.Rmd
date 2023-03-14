@@ -1,0 +1,214 @@
+---
+title: "Untitled"
+author: "DHJ"
+date: "9 5 2020"
+output: html_document
+---
+## 99. OLD STUFF
+
+## Extract p-values  
+```{r}
+
+
+# ts_model_list$result[[1]] %>% str(2)
+# ts_model_list$result[[1]][[1]] %>% str(1)
+# summary(ts_model_list$result[[1]][[3]]$gam)$s.table
+# x <- summary(ts_model_list$result[[1]][[3]]$gam)$s.table
+# str(x)
+# x[,4]
+
+get_p <- function(model_list){
+  tab1 <- summary(model_list[[1]]$gam)$s.table
+  tab2 <- summary(model_list[[2]]$gam)$s.table
+  tab3 <- summary(model_list[[3]]$gam)$s.table
+  data.frame(year_m1 = tab1[1,4],
+             totn_m2 = tab2[1,4],
+             year_m3 = tab3[2,4],
+             totn_m3 = tab3[1,4])
+}
+# get_p(ts_model_list$result[[1]])
+
+p_values <- ts_model_list$result[model_ok] %>% map_df(get_p, .id = "station_id")
+
+```
+
+
+```{r}
+
+summary(ts_model_list$result[[1]][[2]]$gam)
+plot(ts_model_list$result[[1]][[2]]$gam)
+
+```
+
+
+#### Extract predictions of time model  
+```{r}
+
+# predict(ts_model_list$result[[1]][[1]]$gam, data.frame(year = 1992:2020))
+# ts_model_list$result[[1]]$years
+
+get_predictions_time <- function(model_list){
+  years <- seq(
+    min(model_list$years),
+    max(model_list$years)
+  )
+  pred <- predict(model_list[[1]]$gam, data.frame(year = years))
+  data.frame(year = years, log_NO3_pred = pred)
+}
+
+# Test
+# get_predictions_time(ts_model_list$result[[1]])
+
+get_increase <- function(model_list){
+  df_pred <- get_predictions_time(model_list)
+  value1 <- df_pred %>%
+    filter(year %in% 1992:1994) %>%
+    pull(log_NO3_pred) %>%
+    mean()
+  value2 <- df_pred %>%
+    filter(year %in% 2014:2016) %>%
+    pull(log_NO3_pred) %>%
+    mean()
+  data.frame(increase = value2 - value1)
+  }
+# test
+# get_increase(ts_model_list$result[[1]])
+
+increase <- ts_model_list$result[model_ok] %>% map_df(get_increase, .id = "station_id")
+
+
+```
+
+
+
+
+### Add AIC and p_values to dat_annual
+
+```{r}
+
+dat_annual2 <- dat_annual_sel_TOC %>%
+  left_join(aic, by = "station_id") %>%
+  left_join(p_values, by = "station_id") %>%
+  left_join(increase, by = "station_id")
+  
+
+```
+
+
+## 4. Results  
+
+### Change over time
+```{r}
+
+ggplot(dat_annual2, aes(longitude, latitude, color = increase)) +
+  geom_point() +
+  scale_color_gradient2("Change", midpoint = 0) +
+  labs(title = "Change over time (log10 scale)")
+
+ggplot(dat_annual2, aes(latitude, increase, color = factor(year_m1 <= 0.05))) +
+  geom_point() +
+  scale_color_manual("P < 0.05", values = c("grey20", "red2")) +
+  labs(title = "Change over time (log10 scale)")
+
+ggplot(dat_annual2, aes(altitude, increase, color = factor(year_m1 <= 0.05))) +
+  geom_point() +
+  scale_color_manual("P < 0.05", values = c("grey20", "red2")) +
+  labs(title = "Change over time (log10 scale)")
+
+ggplot(dat_annual2, aes(coniferous, increase, color = factor(year_m1 <= 0.05))) +
+  geom_point() +
+  scale_color_manual("P < 0.05", values = c("grey20", "red2")) +
+  labs(title = "Change over time (log10 scale)")
+
+ggplot(dat_annual2, aes(deciduous, increase, color = factor(year_m1 <= 0.05))) +
+  geom_point() +
+  scale_color_manual("P < 0.05", values = c("grey20", "red2")) +
+  labs(title = "Change over time (log10 scale)")
+
+
+```
+
+### Change over time
+```{r}
+
+ggplot(dat_annual2, aes(longitude, latitude, color = increase)) +
+  geom_point() +
+  scale_color_gradient2("Change", midpoint = 0) +
+  labs(title = "Change over time (log10 scale)")
+
+ggplot(dat_annual2, aes(latitude, increase, color = factor(totn_m2 <= 0.05))) +
+  geom_point() +
+  scale_color_manual("P < 0.05", values = c("grey20", "red2")) +
+  labs(title = "Change over time (log10 scale)")
+
+ggplot(dat_annual2, aes(altitude, increase, color = factor(totn_m2 <= 0.05))) +
+  geom_point() +
+  scale_color_manual("P < 0.05", values = c("grey20", "red2")) +
+  labs(title = "Change over time (log10 scale)")
+
+ggplot(dat_annual2, aes(coniferous, increase, color = factor(totn_m2 <= 0.05))) +
+  geom_point() +
+  scale_color_manual("P < 0.05", values = c("grey20", "red2")) +
+  labs(title = "Change over time (log10 scale)")
+
+ggplot(dat_annual2, aes(deciduous, increase, color = factor(totn_m2 <= 0.05))) +
+  geom_point() +
+  scale_color_manual("P < 0.05", values = c("grey20", "red2")) +
+  labs(title = "Change over time (log10 scale)")
+
+```
+
+### Effect of totN_deposition in addition to year  
+Model 3 vs model 1  
+Higher is better
+```{r}
+
+dat_annual2 %>%
+  mutate(Effect_deposition = AIC_1 - AIC_3) %>%
+  ggplot(aes(latitude, Effect_deposition)) +
+  geom_point() +
+  geom_hline(yintercept = 0) + geom_hline(yintercept = 2, linetype = 2) + 
+  labs(title = "Effect of deposition after time trends have been substracted (> 2 is a substantial effect)")
+
+dat_annual2 %>%
+  mutate(Effect_deposition = AIC_1 - AIC_3) %>%
+  ggplot(aes(altitude, Effect_deposition)) +
+  geom_point() +
+  geom_hline(yintercept = 0) + geom_hline(yintercept = 2, linetype = 2) + 
+  labs(title = "Effect of deposition after time trends have been substracted (> 2 is a substantial effect)")
+
+dat_annual2 %>%
+  mutate(Effect_deposition = AIC_1 - AIC_3) %>%
+  ggplot(aes(coniferous, Effect_deposition)) +
+  geom_point() +
+  geom_hline(yintercept = 0) + geom_hline(yintercept = 2, linetype = 2) + 
+  labs(title = "Effect of deposition after time trends have been substracted (> 2 is a substantial effect)")
+
+
+```
+
+### Effect of TOC in addition to year and totN_deposition   
+Model 7 vs model 6  
+Higher is better
+```{r}
+
+df <- dat_annual2 %>%
+  mutate(Effect_TOC = AIC_6 - AIC_7)
+
+ggplot(df, aes(latitude, Effect_TOC)) +
+  geom_point() +
+  geom_hline(yintercept = 0) + geom_hline(yintercept = 2, linetype = 2) + 
+  labs(title = "Effect of TOC after time trends + deposition have been adjusted for", subtitle = "(> 2 is a substantial effect)")
+
+ggplot(df, aes(altitude, Effect_TOC)) +
+  geom_point() +
+  geom_hline(yintercept = 0) + geom_hline(yintercept = 2, linetype = 2) + 
+  labs(title = "Effect of TOC after time trends + deposition have been adjusted for", subtitle = "(> 2 is a substantial effect)")
+
+ggplot(df, aes(coniferous, Effect_TOC)) +
+  geom_point() +
+  geom_hline(yintercept = 0) + geom_hline(yintercept = 2, linetype = 2) + 
+  labs(title = "Effect of TOC after time trends + deposition have been adjusted for", subtitle = "(> 2 is a substantial effect)")
+
+
+```
