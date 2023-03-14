@@ -1,0 +1,466 @@
+---
+title: "180_fix_partial_plots"
+output: html_document
+---
+
+Fixing figures  
+
+## Chapters, figure numbers and model runs used for each    
+
+### 3.1.2	Spatial variability of median NO3 concentrations 2012-2016  
+* Figures 164ab1 (median NO3)   
+    * Fig. 11: plot no. 7  
+    * Fig. 12: plot no. 1  
+
+### 3.1.3	Statistical analysis of NO3 trends 1992-2016  
+* Script 166d1x   
+    * Fig. 15: plot no. 1  
+    * Fig. 16: plot no. 2  
+    * Fig. 17: plot no. 7  
+
+### 3.2.2	Spatial variability of TOC/TON median concentration ratios 2012-2016   
+* Script 164c1   
+    * Fig. 26: plot no. 8  
+    * Fig. 27: plot no. 9  
+    * Fig. 29: plot no. 7    
+
+### 3.2.3 TOC/TON trends 1992-2016  
+* Script 167d1     
+    * Fig. 32: plot no. 1  
+    * Fig. 33: plot no. 2    
+    
+
+
+## Units  
+* N deposition: mgN m(-2)
+* N deposition change:  mgN m(-2) yr(-2)
+* NO3 concentration median: ug l(-1)
+* NO3 concentration change: ug l(-1) yr(-2)  
+* TOC concentration median: mg l(-1)  
+
+### Define units/terms including unicode characters  
+```{r}
+
+per_sqm <- "m\u207B\u00B2"
+per_year <- "yr\u207B\u00B9"
+per_yearsquared <- "yr\u207B\u00B2"   # for Sen slope of deposition
+per_litre <- "l\u207B\u00B9"
+microgram <- "\u03BCg"
+no3 <- "NO\u2083"
+degrees_celcius <- "C\u00B0"
+
+per_sqm
+per_year
+per_yearsquared
+per_litre
+microgram
+no3
+degrees_celcius
+
+```
+
+
+## Packages  
+```{r}
+
+# library(dplyr)
+library(ggplot2)
+library(glue)
+
+```
+
+### Defining special characters  
+```{r}
+
+name <- "Fred"
+age <- 50
+anniversary <- as.Date("1991-10-12")
+
+cat("- Test glue() -\n")
+glue('My name is {name},',
+  ' my age next year is {age + 1},',
+  ' my anniversary is {format(anniversary, "%A, %B %d, %Y")}.')
+
+
+```
+
+
+## 3.1.2	Spatial variability of median NO3 concentrations 2012-2016  
+
+* *Important: run this chunk before the next chunks*      
+* Figures 164ab1 (median NO3)   
+    * Fig. 11: plot no. 7  
+    * Fig. 12: plot no. 1
+    
+```{r}
+
+fig_folder <- "Figures/Partial_plots"               # rds files
+fig_folder_new <- "Figures/Partial_plots_fixed"     # png files
+fn_core <- "gg_164ab1_"
+fns <- dir(fig_folder, pattern = fn_core)
+
+# Show all plots
+for (i in 1:length(fns)){
+  fn <- paste0(fig_folder, "/", fn_core, i,".rds")
+  gg <- readRDS(fn)
+  # uncomment to show all plots:
+  print(gg)
+  }
+
+```
+
+### Fig. 11 - plot no. 7   
+
+```{r}
+
+# dir.create("Figures/Partial_plots_fixed")
+
+i <- 7
+fn <- paste0(fig_folder, "/", fn_core, i,".rds")
+gg <- readRDS(fn)
+gg
+
+# legend: Median NO3 concentration (µg N L-1)
+# x-akse: mg N m-2 yr-1
+# y-akse: mg N m-2 yr-1
+
+gg_new <- gg +
+  labs(x = glue("Median N deposition 1992-2016 (mg N {per_sqm} {per_year})"),
+       y = glue("Sen slope N deposition (mg N  {per_sqm} {per_year})")) +
+  scale_fill_viridis_c(glue("Median {no3} concentration\n({microgram} N {per_litre})"))
+
+fn_new <- paste0(fig_folder_new, "/", fn_core, i,"_fixed.png")
+ggsave(fn_new, gg_new, width = 6, height = 4, dpi = 200)
+
+gg_new
+
+```
+
+
+### Fig. 12 - plot no. 1
+
+```{r}
+
+# dir.create("Figures/Partial_plots_fixed")
+
+i <- 1
+fn <- paste0(fig_folder, "/", fn_core, i,".rds")
+gg <- readRDS(fn)
+gg
+
+gg_new <- gg +
+  labs(x = glue("Median N deposition 1992-2016 (mg N {per_sqm} {per_year})"),
+       y = glue("Air temperature ({degrees_celcius})")) +
+  scale_fill_viridis_c(glue("Median {no3} concentration\n({microgram} N {per_litre})"))
+
+fn_new <- paste0(fig_folder_new, "/", fn_core, i,"_fixed.png")
+ggsave(fn_new, gg_new, width = 6, height = 4, dpi = 200)
+
+gg_new
+
+```
+
+
+## 3.1.3	Statistical analysis of NO3 trends 1992-2016  
+
+* *Important: run this chunk before the next chunks*      
+* Script 166d1x   
+    * Fig. 15: plot no. 1  
+    * Fig. 16: plot no. 2  
+    * Fig. 17: plot no. 7  
+    
+```{r}
+
+fig_folder <- "Figures/Partial_plots"               # rds files
+fig_folder_new <- "Figures/Partial_plots_fixed"     # png files
+fn_core <- "gg_166d1x_"
+fns <- dir(fig_folder, pattern = fn_core)
+
+# Show all plots
+for (i in 1:length(fns)){
+  fn <- paste0(fig_folder, "/", fn_core, i,".rds")
+  gg <- readRDS(fn)
+  # uncomment to show all plots:
+  print(gg)
+  }
+
+```
+
+### Fig. 15: plot no. 1   
+Text in paper says that the x axis is 2012-2016 medians, not 1992-2016. 1992-2016 seems to be correct.
+
+    * 
+
+```{r}
+
+# From the code of script 166:
+# Source of 'reg_no3' is (line 111):     
+#    https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/trends_1992-2016_no3    
+#    file: "trends_1992-2016_no3_results.csv   
+# Variable NO3 is comes from 'reg_no3' (line 201) 
+    
+# dir.create("Figures/Partial_plots_fixed")
+
+i <- 1
+fn <- paste0(fig_folder, "/", fn_core, i,".rds")
+gg <- readRDS(fn)
+gg
+
+gg_new <- gg +
+  labs(x = glue("Median NO\u2083 concentration 1992-2016 (\u03BCg N {per_litre})"),
+       y = "Coniferous land cover (%)") +
+  scale_fill_viridis_c("NO\u2083 trend\n(Sen slope, \u03BCg N l\u207B\u00B9 yr\u207B\u00B9)")
+
+fn_new <- paste0(fig_folder_new, "/", fn_core, i,"_fixed.png")
+ggsave(fn_new, gg_new, width = 6, height = 4, dpi = 200)
+
+gg_new
+
+```
+
+
+### Fig. 16: plot no. 2
+```{r}
+
+# dir.create("Figures/Partial_plots_fixed")
+
+i <- 2
+fn <- paste0(fig_folder, "/", fn_core, i,".rds")
+gg <- readRDS(fn)
+
+gg_new <- gg +
+  labs(
+    x = glue("Sen slope N deposition 1992-2016 (mg N {per_sqm} {per_yearsquared})"),
+    y = glue("Median N deposition 1992-2016 (mg N {per_sqm} {per_year})")
+  ) +
+  scale_fill_viridis_c("NO\u2083 trend\n(Sen slope, \u03BCg N l\u207B\u00B9 yr\u207B\u00B9)")
+
+fn_new <- paste0(fig_folder_new, "/", fn_core, i,"_fixed.png")
+ggsave(fn_new, gg_new, width = 6, height = 4, dpi = 200)
+
+gg
+gg_new
+
+
+```
+
+
+### Fig. 17: plot no. 7
+
+```{r}
+
+# dir.create("Figures/Partial_plots_fixed")
+
+i <- 7
+fn <- paste0(fig_folder, "/", fn_core, i,".rds")
+gg <- readRDS(fn)
+
+gg_new <- gg +
+  labs(
+    x = glue("Median TOC concentration 1992-2016 (mg C {per_litre})"),
+    y = glue("Median {no3} concentration 1992-2016 ({microgram} N {per_litre})")
+    ) +
+  scale_fill_viridis_c("NO\u2083 trend\n(Sen slope, \u03BCg N l\u207B\u00B9 yr\u207B\u00B9)")
+
+fn_new <- paste0(fig_folder_new, "/", fn_core, i,"_fixed.png")
+ggsave(fn_new, gg_new, width = 6, height = 4, dpi = 200)
+
+gg
+gg_new
+
+```
+
+
+## 3.2.2	Spatial variability of TOC/TON median concentration ratios 2012-2016   
+
+* *Important: run this chunk before the next chunks*      
+* Script 164c1   
+
+    * Fig. 27: plot no. 8  
+    * Fig. 28: plot no. 2  
+    * Fig. 30: plot no. 7  
+    
+```{r}
+
+fig_folder <- "Figures/Partial_plots"               # rds files
+fig_folder_new <- "Figures/Partial_plots_fixed"     # png files
+fn_core <- "gg_164c1_"
+fns <- dir(fig_folder, pattern = fn_core)
+
+# Show all plots
+for (i in 1:length(fns)){
+  fn <- paste0(fig_folder, "/", fn_core, i,".rds")
+  gg <- readRDS(fn)
+  # uncomment to show all plots:
+  print(gg)
+  }
+
+```
+
+### Fig. 27: plot no. 8  
+
+```{r}
+
+# From the code of script 166:
+# Source of 'reg_no3' is (line 111):     
+#    https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/trends_1992-2016_no3    
+#    file: "trends_1992-2016_no3_results.csv   
+# Variable NO3 is comes from 'reg_no3' (line 201) 
+    
+# dir.create("Figures/Partial_plots_fixed")
+
+i <- 8
+fn <- paste0(fig_folder, "/", fn_core, i,".rds")
+gg <- readRDS(fn)
+
+gg_new <- gg +
+  labs(
+    x = glue("Median TOC concentration 2012-2016 (mg C {per_litre})"),
+    y = glue("Median TON concentration 2012-2016 ({microgram} N {per_litre})")
+    ) +
+  scale_fill_viridis_c("TOC/TON ratio\n(unitless)")
+
+fn_new <- paste0(fig_folder_new, "/", fn_core, i,"_fixed.png")
+ggsave(fn_new, gg_new, width = 6, height = 4, dpi = 200)
+
+gg
+gg_new
+
+```
+
+### Fig. 28: plot no. 9  
+
+```{r}
+
+# From the code of script 166:
+# Source of 'reg_no3' is (line 111):     
+#    https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/trends_1992-2016_no3    
+#    file: "trends_1992-2016_no3_results.csv   
+# Variable NO3 is comes from 'reg_no3' (line 201) 
+    
+# dir.create("Figures/Partial_plots_fixed")
+
+i <- 9
+fn <- paste0(fig_folder, "/", fn_core, i,".rds")
+gg <- readRDS(fn)
+
+gg_new <- gg +
+  labs(x = "Coniferous land cover (%)",
+       y = "Lake/water land cover (%)") +
+  scale_fill_viridis_c("TOC/TON ratio\n(unitless)")
+
+fn_new <- paste0(fig_folder_new, "/", fn_core, i,"_fixed.png")
+ggsave(fn_new, gg_new, width = 6, height = 4, dpi = 200)
+
+gg
+gg_new
+
+```
+
+
+### Fig. 30: plot no. 7  
+
+```{r}
+
+# From the code of script 166:
+# Source of 'reg_no3' is (line 111):     
+#    https://github.com/JamesSample/icpw2/raw/master/thematic_report_2020/results/trends_1992-2016_no3    
+#    file: "trends_1992-2016_no3_results.csv   
+# Variable NO3 is comes from 'reg_no3' (line 201) 
+    
+# dir.create("Figures/Partial_plots_fixed")
+
+i <- 7
+fn <- paste0(fig_folder, "/", fn_core, i,".rds")
+gg <- readRDS(fn)
+
+gg_new <- gg +
+  labs(
+    x = glue("Median N deposition 1992-2016 (mg N {per_sqm} {per_year})"),
+    y = glue("Sen slope N deposition 1992-2016 (mg N {per_sqm} {per_yearsquared})")
+    ) +
+  scale_fill_viridis_c("TOC/TON ratio\n(unitless)")
+
+fn_new <- paste0(fig_folder_new, "/", fn_core, i,"_fixed.png")
+ggsave(fn_new, gg_new, width = 6, height = 4, dpi = 200)
+
+gg
+gg_new
+
+```
+
+
+## 3.2.3 TOC/TON trends 1992-2016  
+
+* *Important: run this chunk before the next chunks*      
+* Script 167d1     
+
+    * Fig. 33: plot no. 1  
+    * Fig. 34: plot no. 2    
+    
+```{r}
+
+fig_folder <- "Figures/Partial_plots"               # rds files
+fig_folder_new <- "Figures/Partial_plots_fixed"     # png files
+fn_core <- "gg_167d1_"
+fns <- dir(fig_folder, pattern = fn_core)
+
+# Show all plots
+for (i in 1:length(fns)){
+  fn <- paste0(fig_folder, "/", fn_core, i,".rds")
+  gg <- readRDS(fn)
+  # uncomment to show all plots:
+  print(gg)
+  }
+
+```
+
+### Fig. 33: plot no. 1    
+
+```{r}
+
+i <- 1
+fn <- paste0(fig_folder, "/", fn_core, i,".rds")
+gg <- readRDS(fn)
+
+gg_new <- gg +
+  labs(
+    x = glue("Sen slope TON concentration ({microgram} N {per_litre} {per_year})"),
+    y = "Coniferous land cover (%)"
+    ) +
+  scale_fill_viridis_c(glue("TOC/TON trend\n(Sen slope, ratio {per_year})"))
+
+fn_new <- paste0(fig_folder_new, "/", fn_core, i,"_fixed.png")
+ggsave(fn_new, gg_new, width = 6, height = 4, dpi = 200)
+
+gg
+gg_new
+
+```
+
+### Fig. 34: plot no. 2    
+
+```{r}
+
+i <- 2
+fn <- paste0(fig_folder, "/", fn_core, i,".rds")
+gg <- readRDS(fn)
+
+#     x = glue("Median TOC concentration 1992-2016 (mg {per_litre})"),
+
+gg_new <- gg +
+  labs(
+    x = glue("Median TOC concentration 1992-2016 (mg C {per_litre})"),
+    y = glue("Sen slope TOC concentration (mg C {per_litre} {per_year})")
+    ) +
+  scale_fill_viridis_c(glue("TOC/TON trend\n(Sen slope, ratio {per_year})"))
+
+fn_new <- paste0(fig_folder_new, "/", fn_core, i,"_fixed.png")
+ggsave(fn_new, gg_new, width = 6, height = 4, dpi = 200)
+
+gg
+gg_new
+
+```
+
+

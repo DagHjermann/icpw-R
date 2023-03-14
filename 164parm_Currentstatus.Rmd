@@ -9,15 +9,15 @@ output:
     keep_md: true
 params:
   document_title: 
-    value: '164x Analyse NO3 status - test run'
+    value: '164ab1 Analyse NO3 medians 2012-2016 - not area'
   text_line1: 
     value: 'Analysis of NO3 medians (2012-2016)'
   text_line2: 
-    value: 'Data with NO3, TOTN_dep, slope_dep_vs_time, TOC, tmp (temperature), pre (precipitation)'
+    value: 'Dataset: NO3 medians data set incl. TOC'
   medians_filename:
     value: 'medians_2012-2016_no3.csv'        
   selected_vars: 
-    value: 'median_no3,catchment_area, median_toc,slope_dep_vs_time, TOTN_dep, latitude, longitude, pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse'
+    value: 'median_no3,median_toc,slope_dep_vs_time, TOTN_dep, latitude, longitude,pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse'
   tree_formula:
     value: 'median_no3 ~ .'
   extra_pairwise_plots:
@@ -25,7 +25,7 @@ params:
   pairwise_plots_same_scale:
     value: 'FALSE'
   logistic_formula: 
-    value: 'median_no3 ~ TOTN_dep + slope_dep_vs_time + TOTN_dep:slope_dep_vs_time + median_toc + TOTN_dep:median_toc + tmp + pre + decid_mixed + bare_sparse + coniferous + catchment_area + lake_water + total_shrub_herbaceous'
+    value: 'median_no3 ~ TOTN_dep + slope_dep_vs_time + TOTN_dep:slope_dep_vs_time + median_toc + TOTN_dep:median_toc + tmp + pre  + coniferous + decid_mixed + bare_sparse + lake_water + total_shrub_herbaceous'
 
 ---
 
@@ -174,6 +174,8 @@ cat("Trends used as predictor variable:", sQuote(file), ",n =", nrow(df_trends),
 
 ```
 
+
+
 ### Start 'dat'  
 Using medians    
 * Make one line per station   
@@ -203,7 +205,7 @@ df2 <- df_trends %>% # table()
   tidyr::pivot_wider(names_from = "variable", values_from = "median") %>% # str()
   rename(trend_NO3 = `NO3-N_µg/l N`,
          trend_TOTN = `TOTN_µg/l N`,
-         trend_TOC = `TOC_mg C/l`)
+         slope_toc_vs_time = `TOC_mg C/l`)
 
 cat("\n")
 cat("df1, n =", nrow(df1), "\n")
@@ -233,6 +235,7 @@ sum(is.na(dat_1$log_median_no3))
 sum(is.na(dat_1$log_median_tocton))
 
 ```
+
 
 ### Deposition trends and median 1992-2006     
 ```{r}
@@ -459,12 +462,24 @@ cat("Data after removing missing predictors: n =", nrow(df_analysis), "\n")
 ### b. Correlations   
 ```{r, fig.width=10, fig.height=10}
 
-gg <- GGally::ggcorr(df_analysis, method = c("complete.obs", "kendall"), label = TRUE) # +
-gg + theme(plot.margin = unit(c(.8, 2, .8, 2.5), "cm"))
+df_correlationplot <- df_analysis %>% 
+   select(-longitude, - latitude)
 
-# SHOULD also workaccording to ?element_rect (update ggplot2?)
-# gg + theme(plot.margin = margin(.6, .5, .6, 1.7, "cm"))
+gg <- GGally::ggcorr(
+  df_correlationplot, 
+  method = c("complete.obs", "kendall"), 
+  label = TRUE,
+  label_size = 3,
+  hjust = 0.9, angle = -30) # +                    # slanted labels
+gg <- gg + 
+  coord_cartesian(x = c(-2, 20), y = c(-2,22))  # fix margins
 
+run_code <- stringr::str_extract(params$document_title, "([^[[:blank:]]]+)")   # extract e.g. "164a1"
+fn <- paste0("Figures/Correlation_matrices/", run_code,
+             "_correlationplot.png")
+ggsave(fn, gg, width = 9, height = 9, dpi = 400)
+
+gg
 
 ```
 
@@ -514,12 +529,19 @@ plot(ct, main="Conditional Inference Tree")
 ```
 
 ### b. Evtree (Evolutionary Learning)   
-```{r, fig.width=10, fig.height=8}
+```{r, fig.width=11, fig.height=8}
 
 ev.raw = evtree(as.formula(params$tree_formula), 
                 data = full_set)
 
 plot(ev.raw)
+
+# dir.create("Figures/Methods")
+
+png("Figures/Methods/Example_tree_164ab1.png", width = 16, height = 12, units = "in", res = 150)
+plot(ev.raw)
+dev.off()
+
 
 ```
 
@@ -568,6 +590,9 @@ importance <- measure_importance(model1)
 plot_multi_way_importance(importance, size_measure = "no_of_nodes", no_of_labels = 6)  
 plot_multi_way_importance(importance, x_measure = "mse_increase", y_measure = "node_purity_increase",
                           size_measure = "p_value", no_of_labels = 6)
+
+importance %>%
+  arrange(desc(times_a_root))
 
 ```
 
@@ -658,7 +683,6 @@ for (i in 1:length(plotdata)){
   
 
 ```
-
 
 
 

@@ -210,7 +210,9 @@ rmarkdown::render(
     medians_filename = "medians_2012-2016_toc_totn_no3.csv",
     selected_vars = vars,
     tree_formula = 'log_median_tocton ~ .'  ,                                     # change here
-    logistic_formula = form)
+    logistic_formula = form,
+    extra_pairwise_plots = 'TOTN_dep,slope_dep_vs_time; log_median_toc, log_median_ton; coniferous,lake_water'  # added
+    )
 )
 
 
@@ -259,7 +261,8 @@ rmarkdown::render(
     medians_filename = "medians_2012-2016_toc_totn_no3.csv",
     selected_vars = vars,
     tree_formula = 'log_median_tocton ~ .'  ,                                     # change here
-    logistic_formula = form)
+    logistic_formula = form,
+    extra_pairwise_plots = 'TOC,NO3; slope_dep_vs_time,TOTN_dep; altitude,decid_mixed; '
 )
 
 

@@ -298,16 +298,10 @@ df_climate_mean <- read_csv(fn) %>%
 
 ```
 ## Rows: 1112 Columns: 8
-```
-
-```
 ## ── Column specification ───────────────────────────────────────────────────────────────────────
 ## Delimiter: ","
 ## chr (3): variable, mk_trend, sen_trend
 ## dbl (5): station_id, median, mk_p_val, sen_slp, sen_incpt
-```
-
-```
 ## 
 ## ℹ Use `spec()` to retrieve the full column specification for this data.
 ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
@@ -324,16 +318,10 @@ df_climate_slope <- read_csv(fn) %>%
 
 ```
 ## Rows: 1112 Columns: 8
-```
-
-```
 ## ── Column specification ───────────────────────────────────────────────────────────────────────
 ## Delimiter: ","
 ## chr (3): variable, mk_trend, sen_trend
 ## dbl (5): station_id, median, mk_p_val, sen_slp, sen_incpt
-```
-
-```
 ## 
 ## ℹ Use `spec()` to retrieve the full column specification for this data.
 ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
@@ -524,7 +512,9 @@ table(dat$country, complete)
 df_analysis <- df_analysis_allrows[complete.cases(df_analysis_allrows),]
 
 # Save to excel
-fn <- paste0(substr(params$document_title, 1, 5), "_data.xlsx")
+fn <- paste0(
+  stringr::str_extract(params$document_title, "[^[[:blank:]]]+"),
+  "_data.xlsx")
 writexl::write_xlsx(df_analysis, paste0("Data_analysed/", fn))
 
 # Remove variables defined as 'vars_for_excel' in function above
@@ -759,17 +749,57 @@ importance <- measure_importance(model1)
 
 
 ```r
-plot_multi_way_importance(importance, size_measure = "no_of_nodes", no_of_labels = 12)  
+plot_multi_way_importance(importance, size_measure = "no_of_nodes", no_of_labels = 6)  
 ```
 
 ![](162c2_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-22-1.png)<!-- -->
 
 ```r
 plot_multi_way_importance(importance, x_measure = "mse_increase", y_measure = "node_purity_increase",
-                          size_measure = "p_value", no_of_labels = 12)
+                          size_measure = "p_value", no_of_labels = 6)
 ```
 
 ![](162c2_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-22-2.png)<!-- -->
+
+```r
+importance %>%
+  arrange(desc(times_a_root))
+```
+
+```
+##                  variable mean_min_depth no_of_nodes mse_increase node_purity_increase
+## 1          log_median_toc       1.166000        5723 0.0383124671           4.30099716
+## 2             bare_sparse       3.296672        1525 0.0049138192           1.19759175
+## 3          log_median_ton       2.538000        3965 0.0049410771           1.08590202
+## 4                altitude       2.857292        3589 0.0021465995           0.81247555
+## 5            total_forest       3.290584        3299 0.0039298931           0.63768438
+## 6  total_shrub_herbaceous       3.289292        3116 0.0024650815           0.40898910
+## 7                 wetland       4.372000        2825 0.0004077334           0.21504307
+## 8              lake_water       2.546000        3999 0.0029327389           0.73940662
+## 9       slope_dep_vs_time       3.111292        3631 0.0019698528           0.46819216
+## 10                    tmp       3.961292        2919 0.0012754442           0.26961312
+## 11               TOTN_dep       2.976000        3758 0.0022081777           0.53784872
+## 12                    pre       4.178584        2870 0.0007655173           0.18939998
+## 13                  urban       5.091504        1934 0.0007004749           0.12794187
+## 14         catchment_area       3.882000        3254 0.0002652921           0.20107263
+## 15             cultivated       5.973432        1145 0.0002516283           0.08397881
+##    no_of_trees times_a_root      p_value
+## 1          500          156 0.000000e+00
+## 2          484          109 1.000000e+00
+## 3          500           79 2.094873e-45
+## 4          499           54 2.260926e-14
+## 5          498           50 9.437167e-03
+## 6          499           16 8.424119e-01
+## 7          500            9 1.000000e+00
+## 8          500            8 4.632065e-49
+## 9          499            6 5.822003e-17
+## 10         499            5 9.999986e-01
+## 11         500            5 3.750540e-26
+## 12         498            2 1.000000e+00
+## 13         488            1 1.000000e+00
+## 14         500            0 6.312029e-02
+## 15         454            0 1.000000e+00
+```
 
 
 
@@ -830,11 +860,11 @@ ranges <- plotdata %>% purrr::map_dfc(~range(.$yhat))
 
 ```
 ## New names:
-## * NA -> ...1
-## * NA -> ...2
-## * NA -> ...3
-## * NA -> ...4
-## * NA -> ...5
+## * `` -> ...1
+## * `` -> ...2
+## * `` -> ...3
+## * `` -> ...4
+## * `` -> ...5
 ## * ...
 ```
 
@@ -853,6 +883,14 @@ for (i in 1:length(plotdata)){
     print(gg)
 
   }
+  
+  # Save gg object for later plotting / changes
+  # Saved in Figures/Partial_plots' with name e.g. "gg_164a1_7.rds" for plot number 7
+  fn <- paste0(
+    "Figures/Partial_plots/gg_",
+    stringr::str_extract(params$document_title, "([^[[:blank:]]]+)"),   # extract e.g. "164a1"
+    "_", i, ".rds")
+  saveRDS(gg, fn)
   
 }
 ```

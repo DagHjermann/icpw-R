@@ -298,16 +298,10 @@ df_climate_mean <- read_csv(fn) %>%
 
 ```
 ## Rows: 1112 Columns: 8
-```
-
-```
 ## ── Column specification ───────────────────────────────────────────────────────────────────────
 ## Delimiter: ","
 ## chr (3): variable, mk_trend, sen_trend
 ## dbl (5): station_id, median, mk_p_val, sen_slp, sen_incpt
-```
-
-```
 ## 
 ## ℹ Use `spec()` to retrieve the full column specification for this data.
 ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
@@ -324,16 +318,10 @@ df_climate_slope <- read_csv(fn) %>%
 
 ```
 ## Rows: 1112 Columns: 8
-```
-
-```
 ## ── Column specification ───────────────────────────────────────────────────────────────────────
 ## Delimiter: ","
 ## chr (3): variable, mk_trend, sen_trend
 ## dbl (5): station_id, median, mk_p_val, sen_slp, sen_incpt
-```
-
-```
 ## 
 ## ℹ Use `spec()` to retrieve the full column specification for this data.
 ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
@@ -759,17 +747,59 @@ importance <- measure_importance(model1)
 
 
 ```r
-plot_multi_way_importance(importance, size_measure = "no_of_nodes", no_of_labels = 12)  
+plot_multi_way_importance(importance, size_measure = "no_of_nodes", no_of_labels = 6)  
 ```
 
 ![](162c1_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-22-1.png)<!-- -->
 
 ```r
 plot_multi_way_importance(importance, x_measure = "mse_increase", y_measure = "node_purity_increase",
-                          size_measure = "p_value", no_of_labels = 12)
+                          size_measure = "p_value", no_of_labels = 6)
 ```
 
 ![](162c1_Currentstatus_TOCTON_allvars_files/figure-html/unnamed-chunk-22-2.png)<!-- -->
+
+```r
+importance %>%
+  arrange(desc(times_a_root))
+```
+
+```
+##                  variable mean_min_depth no_of_nodes mse_increase node_purity_increase
+## 1          log_median_toc       1.152000        5428 0.0365326288           4.24017596
+## 2             bare_sparse       3.577356        1418 0.0034915638           1.09741307
+## 3          log_median_ton       2.572000        3711 0.0048694671           1.05535049
+## 4              coniferous       3.345828        2745 0.0039557769           0.82168450
+## 5                altitude       2.968000        3433 0.0017258920           0.73922443
+## 6  total_shrub_herbaceous       3.354000        2899 0.0024716897           0.39114646
+## 7              lake_water       2.541828        3907 0.0029603738           0.75239673
+## 8                 wetland       4.301656        2674 0.0002939778           0.19201765
+## 9             decid_mixed       4.085828        2856 0.0009597183           0.25587826
+## 10               TOTN_dep       2.866000        3502 0.0025267985           0.51819044
+## 11                    pre       4.287828        2658 0.0007100785           0.18541066
+## 12      slope_dep_vs_time       3.149828        3391 0.0020925378           0.43480601
+## 13                    tmp       4.063828        2694 0.0009091902           0.24197607
+## 14                  urban       5.386624        1807 0.0006007350           0.10872683
+## 15         catchment_area       4.039828        3089 0.0002217692           0.19544006
+## 16             cultivated       5.810604        1069 0.0002125682           0.08774258
+##    no_of_trees times_a_root      p_value
+## 1          500          170 0.000000e+00
+## 2          473           89 1.000000e+00
+## 3          500           75 7.427363e-44
+## 4          499           69 9.999737e-01
+## 5          500           43 4.003312e-19
+## 6          500           13 8.588298e-01
+## 7          499           12 3.382140e-67
+## 8          498            9 1.000000e+00
+## 9          499            7 9.712085e-01
+## 10         500            5 2.568600e-24
+## 11         499            3 1.000000e+00
+## 12         499            2 2.818164e-16
+## 13         499            2 9.999998e-01
+## 14         492            1 1.000000e+00
+## 15         499            0 5.860185e-03
+## 16         457            0 1.000000e+00
+```
 
 
 
@@ -830,11 +860,11 @@ ranges <- plotdata %>% purrr::map_dfc(~range(.$yhat))
 
 ```
 ## New names:
-## * NA -> ...1
-## * NA -> ...2
-## * NA -> ...3
-## * NA -> ...4
-## * NA -> ...5
+## * `` -> ...1
+## * `` -> ...2
+## * `` -> ...3
+## * `` -> ...4
+## * `` -> ...5
 ## * ...
 ```
 
@@ -854,10 +884,18 @@ for (i in 1:length(plotdata)){
 
   }
   
+  # Save gg object for later plotting / changes
+  # Saved in Figures/Partial_plots' with name e.g. "gg_164a1_7.rds" for plot number 7
+  fn <- paste0(
+    "Figures/Partial_plots/gg_",
+    stringr::str_extract(params$document_title, "([^[[:blank:]]]+)"),   # extract e.g. "164a1"
+    "_", i, ".rds")
+  saveRDS(gg, fn)
+  
 }
 ```
 
-![](162c1_Currentstatus_TOCTON_allvars_files/figure-html/5c3_plot_partial_effects2-1.png)<!-- -->![](162c1_Currentstatus_TOCTON_allvars_files/figure-html/5c3_plot_partial_effects2-2.png)<!-- -->![](162c1_Currentstatus_TOCTON_allvars_files/figure-html/5c3_plot_partial_effects2-3.png)<!-- -->![](162c1_Currentstatus_TOCTON_allvars_files/figure-html/5c3_plot_partial_effects2-4.png)<!-- -->![](162c1_Currentstatus_TOCTON_allvars_files/figure-html/5c3_plot_partial_effects2-5.png)<!-- -->![](162c1_Currentstatus_TOCTON_allvars_files/figure-html/5c3_plot_partial_effects2-6.png)<!-- -->![](162c1_Currentstatus_TOCTON_allvars_files/figure-html/5c3_plot_partial_effects2-7.png)<!-- -->![](162c1_Currentstatus_TOCTON_allvars_files/figure-html/5c3_plot_partial_effects2-8.png)<!-- -->
+![](162c1_Currentstatus_TOCTON_allvars_files/figure-html/5c3_plot_partial_effects2-1.png)<!-- -->![](162c1_Currentstatus_TOCTON_allvars_files/figure-html/5c3_plot_partial_effects2-2.png)<!-- -->![](162c1_Currentstatus_TOCTON_allvars_files/figure-html/5c3_plot_partial_effects2-3.png)<!-- -->![](162c1_Currentstatus_TOCTON_allvars_files/figure-html/5c3_plot_partial_effects2-4.png)<!-- -->![](162c1_Currentstatus_TOCTON_allvars_files/figure-html/5c3_plot_partial_effects2-5.png)<!-- -->![](162c1_Currentstatus_TOCTON_allvars_files/figure-html/5c3_plot_partial_effects2-6.png)<!-- -->![](162c1_Currentstatus_TOCTON_allvars_files/figure-html/5c3_plot_partial_effects2-7.png)<!-- -->![](162c1_Currentstatus_TOCTON_allvars_files/figure-html/5c3_plot_partial_effects2-8.png)<!-- -->![](162c1_Currentstatus_TOCTON_allvars_files/figure-html/5c3_plot_partial_effects2-9.png)<!-- -->
 
 
 

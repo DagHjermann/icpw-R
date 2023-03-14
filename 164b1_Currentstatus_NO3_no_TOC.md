@@ -9,6 +9,7 @@ output:
     keep_md: true
 params:
   document_title: 
+<<<<<<< HEAD
     value: '164a1 Analyse NO3 medians 2012-2016 - all variables'
   text_line1: 
     value: 'Analysis of NO3 medians (2012-2016)'
@@ -22,6 +23,21 @@ params:
     value: 'median_no3 ~ .'
   extra_pairwise_plots:
     value: 'TOC,NO3; slope_dep_vs_time,TOTN_dep'
+=======
+    value: '164x Analyse NO3 status - test run'
+  text_line1: 
+    value: 'Analysis of NO3 medians (2012-2016)'
+  text_line2: 
+    value: 'Data with NO3, TOTN_dep, slope_dep_vs_time, TOC, tmp (temperature), pre (precipitation)'
+  medians_filename:
+    value: 'medians_2012-2016_no3.csv'        
+  selected_vars: 
+    value: 'median_no3,catchment_area, median_toc,slope_dep_vs_time, TOTN_dep, latitude, longitude, pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse'
+  tree_formula:
+    value: 'median_no3 ~ .'
+  extra_pairwise_plots:
+    value: 'TOC,NO3; TOTN_dep,slope_dep_vs_time'
+>>>>>>> e5a7972e37222771881a7ff3ac9997f6a8a047b5
   pairwise_plots_same_scale:
     value: 'FALSE'
   logistic_formula: 
@@ -32,7 +48,10 @@ params:
 
 
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> e5a7972e37222771881a7ff3ac9997f6a8a047b5
 **Analysis of NO3 medians (2012-2016)**   
 
 **Dataset: NO3 medians data set excl. TOC and catchment_area**   
@@ -41,7 +60,11 @@ params:
 
 * Response variable: 'Current NO3 level' (locations with signif. *increase* are *not* excluded)  
 * Data from https://github.com/JamesSample/icpw2/tree/master/thematic_report_2020/results      
+<<<<<<< HEAD
 * Sen slope of NO3, TOTN, TOC/TON etc. 1992-2016
+=======
+* Sen slope of NO3, TON, TOC/TON etc. 1992-2016
+>>>>>>> e5a7972e37222771881a7ff3ac9997f6a8a047b5
 * Response variable in all analyses are *whether NO3 decreases or not*     
 * Predictors:
     - slope_dep_vs_time: Trend in Tot-N deposition 1992-2016    
@@ -83,6 +106,10 @@ my_map <- map_data("world")
 library(effects)    # handles lme models  
 library(readxl)
 library(readr)
+<<<<<<< HEAD
+=======
+library(stringr)    # str_extract
+>>>>>>> e5a7972e37222771881a7ff3ac9997f6a8a047b5
 
 source("002_Functions.R")
 source("160parm_functions.R")
@@ -96,7 +123,11 @@ options(width = 95)
 
 
 ## 2. Data  
+<<<<<<< HEAD
 * The data part (part 2) is quite similar in scripts 160-164 
+=======
+* The data part (part 2) is quite similar in scripts 160 - 165 
+>>>>>>> e5a7972e37222771881a7ff3ac9997f6a8a047b5
 
 ### Available files
 
@@ -166,14 +197,24 @@ Using medians
 
 # Medians 2012-2016  
 df1 <- df_medians %>%
+<<<<<<< HEAD
   select(station_id, `NO3.N_µg.l.N`, `TOTN_µg.l.N`, `TON_µg.l.N`, `TOC_mg.C.l`, TOC.TON) %>%
   rename(median_no3 = `NO3.N_µg.l.N`,
          median_totn = `TOTN_µg.l.N`,
+=======
+  select(station_id, `NO3.N_µg.l.N`, `TON_µg.l.N`, `TON_µg.l.N`, `TOC_mg.C.l`, TOC.TON) %>%
+  rename(median_no3 = `NO3.N_µg.l.N`,
+         median_ton = `TON_µg.l.N`,
+>>>>>>> e5a7972e37222771881a7ff3ac9997f6a8a047b5
          median_ton = `TON_µg.l.N`,
          median_toc = `TOC_mg.C.l`,
          median_tocton = `TOC.TON`) %>%
   mutate(log_median_no3 = log10(median_no3 + 0.1),
+<<<<<<< HEAD
          log_median_totn = log10(median_totn),
+=======
+         log_median_ton = log10(median_ton),
+>>>>>>> e5a7972e37222771881a7ff3ac9997f6a8a047b5
          log_median_ton = log10(median_ton),
          log_median_toc = log10(median_toc),
          log_median_tocton = log10(median_tocton))
@@ -191,20 +232,55 @@ cat("\n")
 cat("df1, n =", nrow(df1), "\n")
 cat("df2, n =", nrow(df2), "\n")
 
+<<<<<<< HEAD
 dat_1 <- df1 %>%
   left_join(df2, by = "station_id")
 
 cat("dat_1, n =", nrow(dat_1), "\n")
+=======
+dat_1_allrows <- df1 %>%
+  left_join(df2, by = "station_id")
+
+response_var <- str_extract(params$tree_formula, "[^[[:blank:]]]+")
+
+cat("dat_1_allrows, n =", nrow(dat_1_allrows), 
+    " (may include series where", response_var,  "= NA)\n")
+
+sel <- !is.na(dat_1_allrows[[response_var]])
+
+dat_1 <- dat_1_allrows[sel,]
+
+cat("dat_1, n =", nrow(dat_1), 
+    " (series where", response_var,  "has values)\n")
+>>>>>>> e5a7972e37222771881a7ff3ac9997f6a8a047b5
 ```
 
 ```
 ## 
 ## df1, n = 494 
 ## df2, n = 498 
+<<<<<<< HEAD
 ## dat_1, n = 494
 ```
 
 
+=======
+## dat_1_allrows, n = 494  (may include series where median_no3 = NA)
+## dat_1, n = 494  (series where median_no3 has values)
+```
+
+
+```r
+sum(is.na(dat_1$log_median_no3))
+sum(is.na(dat_1$log_median_tocton))
+```
+
+```
+## [1] 0
+## [1] 267
+```
+
+>>>>>>> e5a7972e37222771881a7ff3ac9997f6a8a047b5
 ### Deposition trends and median 1992-2006     
 
 ```r
@@ -237,7 +313,11 @@ dat_2 <- dat_1 %>%
 
 ```
 ## Variables before join: 
+<<<<<<< HEAD
 ## 'station_id', 'median_no3', 'median_totn', 'median_ton', 'median_toc', 'median_tocton', 'log_median_no3', 'log_median_totn', 'log_median_ton', 'log_median_toc', 'log_median_tocton', 'trend_NO3', 'trend_TOC', 'trend_TOTN'
+=======
+## 'station_id', 'median_no3', 'median_ton', 'median_toc', 'median_tocton', 'log_median_no3', 'log_median_ton', 'log_median_toc', 'log_median_tocton', 'trend_NO3', 'trend_TOC', 'trend_TOTN'
+>>>>>>> e5a7972e37222771881a7ff3ac9997f6a8a047b5
 ## 
 ## Variables used to join: 
 ## 'station_id'
@@ -280,7 +360,11 @@ df_climate_mean <- read_csv(fn) %>%
 ```
 
 ```
+<<<<<<< HEAD
 ## -- Column specification -----------------------------------------------------------------------
+=======
+## ── Column specification ───────────────────────────────────────────────────────────────────────
+>>>>>>> e5a7972e37222771881a7ff3ac9997f6a8a047b5
 ## Delimiter: ","
 ## chr (3): variable, mk_trend, sen_trend
 ## dbl (5): station_id, median, mk_p_val, sen_slp, sen_incpt
@@ -288,8 +372,13 @@ df_climate_mean <- read_csv(fn) %>%
 
 ```
 ## 
+<<<<<<< HEAD
 ## i Use `spec()` to retrieve the full column specification for this data.
 ## i Specify the column types or set `show_col_types = FALSE` to quiet this message.
+=======
+## ℹ Use `spec()` to retrieve the full column specification for this data.
+## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+>>>>>>> e5a7972e37222771881a7ff3ac9997f6a8a047b5
 ```
 
 ```r
@@ -298,7 +387,11 @@ cat("\n")
 
 df_climate_slope <- read_csv(fn) %>%
   select(station_id, variable, sen_slp) %>%
+<<<<<<< HEAD
   pivot_wider(names_from = "variable", values_from = "sen_slp", names_prefix = "Slope_")
+=======
+  pivot_wider(names_from = "variable", values_from = "sen_slp", names_prefix = "slope_")
+>>>>>>> e5a7972e37222771881a7ff3ac9997f6a8a047b5
 ```
 
 ```
@@ -306,7 +399,11 @@ df_climate_slope <- read_csv(fn) %>%
 ```
 
 ```
+<<<<<<< HEAD
 ## -- Column specification -----------------------------------------------------------------------
+=======
+## ── Column specification ───────────────────────────────────────────────────────────────────────
+>>>>>>> e5a7972e37222771881a7ff3ac9997f6a8a047b5
 ## Delimiter: ","
 ## chr (3): variable, mk_trend, sen_trend
 ## dbl (5): station_id, median, mk_p_val, sen_slp, sen_incpt
@@ -314,8 +411,13 @@ df_climate_slope <- read_csv(fn) %>%
 
 ```
 ## 
+<<<<<<< HEAD
 ## i Use `spec()` to retrieve the full column specification for this data.
 ## i Specify the column types or set `show_col_types = FALSE` to quiet this message.
+=======
+## ℹ Use `spec()` to retrieve the full column specification for this data.
+## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+>>>>>>> e5a7972e37222771881a7ff3ac9997f6a8a047b5
 ```
 
 ```r
@@ -328,7 +430,11 @@ dat_3 <- dat_2 %>%
 ```
 ## 
 ## Variables before join: 
+<<<<<<< HEAD
 ## 'station_id', 'median_no3', 'median_totn', 'median_ton', 'median_toc', 'median_tocton', 'log_median_no3', 'log_median_totn', 'log_median_ton', 'log_median_toc', 'log_median_tocton', 'trend_NO3', 'trend_TOC', 'trend_TOTN', 'TOTN_dep', 'slope_dep_vs_time', 'p_dep_vs_time'
+=======
+## 'station_id', 'median_no3', 'median_ton', 'median_toc', 'median_tocton', 'log_median_no3', 'log_median_ton', 'log_median_toc', 'log_median_tocton', 'trend_NO3', 'trend_TOC', 'trend_TOTN', 'TOTN_dep', 'slope_dep_vs_time', 'p_dep_vs_time'
+>>>>>>> e5a7972e37222771881a7ff3ac9997f6a8a047b5
 ## 
 ## Variables used to join: 
 ## 'station_id'
@@ -336,13 +442,21 @@ dat_3 <- dat_2 %>%
 ## Variables added: 
 ## 'pre', 'tmp'
 ## Variables before join: 
+<<<<<<< HEAD
 ## 'station_id', 'median_no3', 'median_totn', 'median_ton', 'median_toc', 'median_tocton', 'log_median_no3', 'log_median_totn', 'log_median_ton', 'log_median_toc', 'log_median_tocton', 'trend_NO3', 'trend_TOC', 'trend_TOTN', 'TOTN_dep', 'slope_dep_vs_time', 'p_dep_vs_time', 'pre', 'tmp'
+=======
+## 'station_id', 'median_no3', 'median_ton', 'median_toc', 'median_tocton', 'log_median_no3', 'log_median_ton', 'log_median_toc', 'log_median_tocton', 'trend_NO3', 'trend_TOC', 'trend_TOTN', 'TOTN_dep', 'slope_dep_vs_time', 'p_dep_vs_time', 'pre', 'tmp'
+>>>>>>> e5a7972e37222771881a7ff3ac9997f6a8a047b5
 ## 
 ## Variables used to join: 
 ## 'station_id'
 ## 
 ## Variables added: 
+<<<<<<< HEAD
 ## 'Slope_pre', 'Slope_tmp'
+=======
+## 'slope_pre', 'slope_tmp'
+>>>>>>> e5a7972e37222771881a7ff3ac9997f6a8a047b5
 ```
 
 ### Combine land cover types   
@@ -376,7 +490,11 @@ dat_4 <- left_join2(dat_3,
 
 ```
 ## Variables before join: 
+<<<<<<< HEAD
 ## 'station_id', 'median_no3', 'median_totn', 'median_ton', 'median_toc', 'median_tocton', 'log_median_no3', 'log_median_totn', 'log_median_ton', 'log_median_toc', 'log_median_tocton', 'trend_NO3', 'trend_TOC', 'trend_TOTN', 'TOTN_dep', 'slope_dep_vs_time', 'p_dep_vs_time', 'pre', 'tmp', 'Slope_pre', 'Slope_tmp'
+=======
+## 'station_id', 'median_no3', 'median_ton', 'median_toc', 'median_tocton', 'log_median_no3', 'log_median_ton', 'log_median_toc', 'log_median_tocton', 'trend_NO3', 'trend_TOC', 'trend_TOTN', 'TOTN_dep', 'slope_dep_vs_time', 'p_dep_vs_time', 'pre', 'tmp', 'slope_pre', 'slope_tmp'
+>>>>>>> e5a7972e37222771881a7ff3ac9997f6a8a047b5
 ## 
 ## Variables used to join: 
 ## 'station_id'
@@ -385,6 +503,7 @@ dat_4 <- left_join2(dat_3,
 ## 'station_code', 'station_name', 'latitude', 'longitude', 'altitude', 'continent', 'country', 'region', 'group', 'catchment_area', 'urban', 'cultivated', 'total_forest', 'coniferous', 'total_shrub_herbaceous', 'grasslands', 'heathlands', 'transitional_woodland_shrub', 'wetland', 'other', 'bare_sparse', 'decid_mixed', 'lake_water'
 ```
 
+<<<<<<< HEAD
 ### Drop locations with >10% cultivated    
 
 ```r
@@ -399,6 +518,33 @@ cat(nrow(dat_4) - nrow(dat_5), "stations with > 10% cultivated deleted \n")
 ```
 
 
+=======
+
+
+### Drop locations with >5% cultivated and >5% urban     
+- also excluding stations 23517, 38273    
+
+```r
+cultivated_threshold <- 5
+urban_threshold <- 5
+
+dat_5 <- dat_4 %>%
+  filter2(!station_id %in% c(23517, 38273), text = "Deleted stations 23517, 38273") %>%
+  filter2(cultivated <= cultivated_threshold, 
+          text = paste("Deleted stations with >", cultivated_threshold, "% cultivated")) %>%
+  filter2(urban <= urban_threshold, 
+          text = paste("Deleted stations with >", urban_threshold, "% urban"))
+```
+
+```
+## Removed 1 rows (Deleted stations 23517, 38273)
+## Removed 40 rows (Deleted stations with > 5 % cultivated)
+## Removed 6 rows (Deleted stations with > 5 % urban)
+```
+
+
+
+>>>>>>> e5a7972e37222771881a7ff3ac9997f6a8a047b5
 ### Data set used  
 
 ```r
@@ -406,12 +552,19 @@ dat <- dat_5
 ```
 
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> e5a7972e37222771881a7ff3ac9997f6a8a047b5
 ## 3. Plot data      
 
 
 ```r
+<<<<<<< HEAD
 gg <- ggplot(dat, aes(TOTN_dep, log_median_no3)) + 
+=======
+gg <- ggplot(dat, aes(TOTN_dep, median_no3)) + 
+>>>>>>> e5a7972e37222771881a7ff3ac9997f6a8a047b5
   geom_point(aes(color = country)) +
   geom_hline(yintercept = 0, linetype = 2) + 
   geom_vline(xintercept = 0, linetype = 2) 
@@ -419,7 +572,11 @@ gg <- ggplot(dat, aes(TOTN_dep, log_median_no3)) +
 gg
 ```
 
+<<<<<<< HEAD
 ![](164b1_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-14-1.png)<!-- -->
+=======
+![](164b1_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-15-1.png)<!-- -->
+>>>>>>> e5a7972e37222771881a7ff3ac9997f6a8a047b5
 
 
 ## 4. Select data   
@@ -429,7 +586,11 @@ gg
 * Also remove PL05, which has dubious values   
 
 ```r
+<<<<<<< HEAD
 get_data_for_analysis <- function(data, variable_string){
+=======
+add_flag_variable <- function(data, variable_string){
+>>>>>>> e5a7972e37222771881a7ff3ac9997f6a8a047b5
   variable_string <- gsub(" ", "", variable_string)
   variables <- strsplit(variable_string, split = ",")[[1]]
   # Check if all variables are there
@@ -439,6 +600,20 @@ get_data_for_analysis <- function(data, variable_string){
       paste(variables[!found], collapse = " ,"), 
       "\n")
   # Data for analyses
+<<<<<<< HEAD
+=======
+  complete <- complete.cases(data[variables])
+  data$Row_excluded <- !complete
+  variables %>% 
+    purrr::map_dfr(~data.frame(Var = .x, Missing = sum(is.na(data[[.x]])))) %>%
+    print()
+  data
+}
+
+delete_unused_variables <- function(data, variable_string){
+  variable_string <- gsub(" ", "", variable_string)
+  variables <- strsplit(variable_string, split = ",")[[1]]
+>>>>>>> e5a7972e37222771881a7ff3ac9997f6a8a047b5
   data[variables]
 }
 
@@ -447,6 +622,7 @@ cat("Variables: \n")
 cat(params$selected_vars)
 cat("\n-------------------------------------------------------------\n")
 
+<<<<<<< HEAD
 sel <- dat$station_code %in% "PL05"
 dat <- dat[!sel,]
 message(sum(sel), " station removed - station PL05 (has dubious NO3 data)")  
@@ -488,6 +664,44 @@ df_analysis <- df_analysis[complete.cases(df_analysis),]
 cat("\n\n")
 cat("Original data: n =", nrow(dat), "\n")
 cat("Analysis: n =", nrow(df_analysis), "\n")
+=======
+dat <- dat %>%
+  filter2(!station_code %in% "PL05", text = "station PL05 (has dubious NO3 data)")
+
+# debugonce(add_flag_variable)
+# df_analysis <- add_flag_variable(dat, vars)  
+df_analysis_allrows <- add_flag_variable(dat, params$selected_vars)  
+
+# Save to excel
+fn <- paste0(substr(params$document_title, 1, 3), "_", response_var, "_data.xlsx")
+writexl::write_xlsx(df_analysis_allrows, paste0("Data_analysed/", fn))
+cat("\nDataset after removing urban, cultivated, PL05 saved as", sQuote(fn), "\n\n")
+
+cat("Number of rows that will be excluded: \n")
+table(df_analysis_allrows$Row_excluded)
+
+cat("\n\n")
+cat("Number of complete observations by country: \n")
+xtabs(~country + Row_excluded, df_analysis_allrows)
+
+# Keep only complete cases
+df_analysis <- df_analysis_allrows %>%
+  filter(!Row_excluded)
+
+# Save to excel
+fn <- paste0(
+  stringr::str_extract(params$document_title, "[^[[:blank:]]]+"),
+  "_data.xlsx")
+writexl::write_xlsx(df_analysis, paste0("Data_analysed/", fn))
+
+# Remove variables that will note be used
+df_analysis <- delete_unused_variables(df_analysis, params$selected_vars)
+
+cat("\n\n")
+cat("Data before removing PL05: n =", nrow(dat_5), "\n")
+cat("Data after removing PL05: n =", nrow(df_analysis_allrows), "\n")
+cat("Data after removing missing predictors: n =", nrow(df_analysis), "\n")
+>>>>>>> e5a7972e37222771881a7ff3ac9997f6a8a047b5
 ```
 
 ```
@@ -495,6 +709,7 @@ cat("Analysis: n =", nrow(df_analysis), "\n")
 ## Variables: 
 ## median_no3,slope_dep_vs_time, TOTN_dep, latitude, longitude,pre, tmp, urban, cultivated, coniferous, decid_mixed, total_shrub_herbaceous,wetland, lake_water, bare_sparse
 ## -------------------------------------------------------------
+<<<<<<< HEAD
 ## Number of missing values per variable: 
 ##             median_no3      slope_dep_vs_time               TOTN_dep               latitude 
 ##                      0                      0                      0                      0 
@@ -533,6 +748,57 @@ cat("Analysis: n =", nrow(df_analysis), "\n")
 ## 
 ## Original data: n = 462 
 ## Analysis: n = 454
+=======
+## Removed 1 rows (station PL05 (has dubious NO3 data))
+##                       Var Missing
+## 1              median_no3       0
+## 2       slope_dep_vs_time       0
+## 3                TOTN_dep       0
+## 4                latitude       0
+## 5               longitude       0
+## 6                     pre       0
+## 7                     tmp       0
+## 8                   urban       0
+## 9              cultivated       0
+## 10             coniferous      12
+## 11            decid_mixed      12
+## 12 total_shrub_herbaceous       0
+## 13                wetland       0
+## 14             lake_water       0
+## 15            bare_sparse       0
+## 
+## Dataset after removing urban, cultivated, PL05 saved as '164_median_no3_data.xlsx' 
+## 
+## Number of rows that will be excluded: 
+## 
+## FALSE  TRUE 
+##   434    12 
+## 
+## 
+## Number of complete observations by country: 
+##                 Row_excluded
+## country          FALSE TRUE
+##   Canada           103    4
+##   Czech Republic     8    0
+##   Finland           22    0
+##   Germany            3    0
+##   Ireland           10    0
+##   Italy              3    0
+##   Latvia             1    0
+##   Netherlands        3    0
+##   Norway            80    0
+##   Poland             7    0
+##   Slovakia          12    0
+##   Sweden            87    0
+##   Switzerland        0    8
+##   United Kingdom    22    0
+##   United States     73    0
+## 
+## 
+## Data before removing PL05: n = 447 
+## Data after removing PL05: n = 446 
+## Data after removing missing predictors: n = 434
+>>>>>>> e5a7972e37222771881a7ff3ac9997f6a8a047b5
 ```
 
 
@@ -543,7 +809,11 @@ gg <- GGally::ggcorr(df_analysis, method = c("complete.obs", "kendall"), label =
 gg + theme(plot.margin = unit(c(.8, 2, .8, 2.5), "cm"))
 ```
 
+<<<<<<< HEAD
 ![](164b1_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-16-1.png)<!-- -->
+=======
+![](164b1_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-17-1.png)<!-- -->
+>>>>>>> e5a7972e37222771881a7ff3ac9997f6a8a047b5
 
 ```r
 # SHOULD also workaccording to ?element_rect (update ggplot2?)
@@ -584,7 +854,11 @@ full_set <- df_analysis  %>%
 ### a. Tree classification using 'party'   
 
 ```r
+<<<<<<< HEAD
 # train_set$X <- 10^train_set$log_median_no3
+=======
+# train_set$X <- 10^train_set$median_no3
+>>>>>>> e5a7972e37222771881a7ff3ac9997f6a8a047b5
 # (ct = ctree(X ~ ., data = train_set))
 
 (ct = ctree(as.formula(params$tree_formula), 
@@ -593,7 +867,11 @@ full_set <- df_analysis  %>%
 plot(ct, main="Conditional Inference Tree")
 ```
 
+<<<<<<< HEAD
 ![](164b1_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-18-1.png)<!-- -->
+=======
+![](164b1_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-19-1.png)<!-- -->
+>>>>>>> e5a7972e37222771881a7ff3ac9997f6a8a047b5
 
 ```
 ## 
@@ -607,6 +885,7 @@ plot(ct, main="Conditional Inference Tree")
 ## |   [2] TOTN_dep <= 743.05
 ## |   |   [3] wetland <= 39.918
 ## |   |   |   [4] slope_dep_vs_time <= -16.79619
+<<<<<<< HEAD
 ## |   |   |   |   [5] bare_sparse <= 0.071: 40.367 (n = 47, err = 29085.6)
 ## |   |   |   |   [6] bare_sparse > 0.071: 66.417 (n = 12, err = 44526.9)
 ## |   |   |   [7] slope_dep_vs_time > -16.79619
@@ -629,6 +908,26 @@ plot(ct, main="Conditional Inference Tree")
 ## 
 ## Number of inner nodes:    11
 ## Number of terminal nodes: 12
+=======
+## |   |   |   |   [5] bare_sparse <= 0.071: 39.582 (n = 46, err = 27751.6)
+## |   |   |   |   [6] bare_sparse > 0.071: 60.000 (n = 10, err = 33476.0)
+## |   |   |   [7] slope_dep_vs_time > -16.79619
+## |   |   |   |   [8] bare_sparse <= 33.792
+## |   |   |   |   |   [9] urban <= 0.001
+## |   |   |   |   |   |   [10] pre <= 1148.69995: 8.366 (n = 74, err = 3982.6)
+## |   |   |   |   |   |   [11] pre > 1148.69995: 17.184 (n = 53, err = 6220.3)
+## |   |   |   |   |   [12] urban > 0.001: 24.189 (n = 57, err = 15077.8)
+## |   |   |   |   [13] bare_sparse > 33.792: 33.706 (n = 17, err = 10535.0)
+## |   |   [14] wetland > 39.918: 243.750 (n = 8, err = 47187.5)
+## |   [15] TOTN_dep > 743.05
+## |   |   [16] TOTN_dep <= 1387.79
+## |   |   |   [17] bare_sparse <= 47.412: 116.073 (n = 139, err = 1496204.0)
+## |   |   |   [18] bare_sparse > 47.412: 275.487 (n = 13, err = 83773.4)
+## |   |   [19] TOTN_dep > 1387.79: 342.643 (n = 17, err = 1424544.8)
+## 
+## Number of inner nodes:     9
+## Number of terminal nodes: 10
+>>>>>>> e5a7972e37222771881a7ff3ac9997f6a8a047b5
 ```
 
 ### b. Evtree (Evolutionary Learning)   
@@ -640,7 +939,11 @@ ev.raw = evtree(as.formula(params$tree_formula),
 plot(ev.raw)
 ```
 
+<<<<<<< HEAD
 ![](164b1_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-19-1.png)<!-- -->
+=======
+![](164b1_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-20-1.png)<!-- -->
+>>>>>>> e5a7972e37222771881a7ff3ac9997f6a8a047b5
 
 
 ### c. Random forest  
@@ -663,8 +966,13 @@ model1
 ##                      Number of trees: 500
 ## No. of variables tried at each split: 5
 ## 
+<<<<<<< HEAD
 ##           Mean of squared residuals: 7750.005
 ##                     % Var explained: 46.79
+=======
+##           Mean of squared residuals: 7527.656
+##                     % Var explained: 46.37
+>>>>>>> e5a7972e37222771881a7ff3ac9997f6a8a047b5
 ```
 
 
@@ -697,14 +1005,56 @@ importance <- measure_importance(model1)
 plot_multi_way_importance(importance, size_measure = "no_of_nodes", no_of_labels = 6)  
 ```
 
+<<<<<<< HEAD
 ![](164b1_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-21-1.png)<!-- -->
+=======
+![](164b1_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-22-1.png)<!-- -->
+>>>>>>> e5a7972e37222771881a7ff3ac9997f6a8a047b5
 
 ```r
 plot_multi_way_importance(importance, x_measure = "mse_increase", y_measure = "node_purity_increase",
                           size_measure = "p_value", no_of_labels = 6)
 ```
 
+<<<<<<< HEAD
 ![](164b1_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-21-2.png)<!-- -->
+=======
+![](164b1_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-22-2.png)<!-- -->
+
+```r
+importance %>%
+  arrange(desc(times_a_root))
+```
+
+```
+##                  variable mean_min_depth no_of_nodes mse_increase node_purity_increase
+## 1                TOTN_dep       1.030000        8611   8987.72942           1684394.36
+## 2                     tmp       1.912000        7061   3430.12460            796987.57
+## 3       slope_dep_vs_time       1.934000        8734   3050.16476            796764.15
+## 4              coniferous       2.918000        6495    475.58691            513031.30
+## 5              lake_water       2.902000        7330    464.70900            439169.87
+## 6             decid_mixed       3.738000        6275    583.32909            227063.32
+## 7                 wetland       2.982000        6134   1193.47123            374995.05
+## 8             bare_sparse       3.302000        3466    880.57346            273423.00
+## 9  total_shrub_herbaceous       3.874000        5624    331.46039            216715.13
+## 10             cultivated       5.432776        1720     26.51543             30654.10
+## 11                    pre       3.240000        6800   1012.30157            334914.81
+## 12                  urban       5.209232        2489    210.15760             47526.72
+##    no_of_trees times_a_root       p_value
+## 1          500          202 3.053872e-265
+## 2          500           90  6.067696e-54
+## 3          500           89 3.220946e-288
+## 4          500           41  4.570801e-16
+## 5          500           29  1.125385e-79
+## 6          500           23  1.555884e-07
+## 7          500           13  6.234834e-04
+## 8          500            9  1.000000e+00
+## 9          500            4  9.998991e-01
+## 10         489            0  1.000000e+00
+## 11         500            0  1.111791e-33
+## 12         498            0  1.000000e+00
+```
+>>>>>>> e5a7972e37222771881a7ff3ac9997f6a8a047b5
 
 
 
@@ -789,6 +1139,7 @@ for (i in 1:length(plotdata)){
 
   }
   
+<<<<<<< HEAD
   # Save gg obkjct for later plotting / changes
   fn <- paste0(
     "Figures/Partial_plots/gg_",
@@ -796,12 +1147,27 @@ for (i in 1:length(plotdata)){
     "_", i, ".rds")
   saveRDS(gg, fn)
 
+=======
+  # Save gg object for later plotting / changes
+  # Saved in Figures/Partial_plots' with name e.g. "gg_164a1_7.rds" for plot number 7
+  fn <- paste0(
+    "Figures/Partial_plots/gg_",
+    stringr::str_extract(params$document_title, "([^[[:blank:]]]+)"),   # extract e.g. "164a1"
+    "_", i, ".rds")
+  saveRDS(gg, fn)
+  
+>>>>>>> e5a7972e37222771881a7ff3ac9997f6a8a047b5
 }
 ```
 
 ![](164b1_Currentstatus_NO3_no_TOC_files/figure-html/5c3_plot_partial_effects2-1.png)<!-- -->![](164b1_Currentstatus_NO3_no_TOC_files/figure-html/5c3_plot_partial_effects2-2.png)<!-- -->![](164b1_Currentstatus_NO3_no_TOC_files/figure-html/5c3_plot_partial_effects2-3.png)<!-- -->![](164b1_Currentstatus_NO3_no_TOC_files/figure-html/5c3_plot_partial_effects2-4.png)<!-- -->![](164b1_Currentstatus_NO3_no_TOC_files/figure-html/5c3_plot_partial_effects2-5.png)<!-- -->![](164b1_Currentstatus_NO3_no_TOC_files/figure-html/5c3_plot_partial_effects2-6.png)<!-- -->![](164b1_Currentstatus_NO3_no_TOC_files/figure-html/5c3_plot_partial_effects2-7.png)<!-- -->
 
 
+<<<<<<< HEAD
+=======
+
+
+>>>>>>> e5a7972e37222771881a7ff3ac9997f6a8a047b5
 ## 6. Linear regression      
 
 ```r
@@ -843,6 +1209,7 @@ subset(dredged_models, delta < 2)
 ##     na.action = "na.fail")
 ## ---
 ## Model selection table 
+<<<<<<< HEAD
 ##          (Int) bar_spr      cnf dcd_mxd lak_wtr      pre slp_dep_vs_tim    tmp TOT_dep
 ## 298  -4.704000   1.413                   -2.533                  1.7260         0.2120
 ## 810 -18.330000   1.425                   -2.341                  1.2080         0.2251
@@ -873,13 +1240,24 @@ subset(dredged_models, delta < 2)
 ## 316                         8 -2702.965 5422.3  1.77  0.052
 ## 300                         7 -2704.045 5422.3  1.85  0.049
 ## 816              0.0004976  9 -2701.974 5422.4  1.87  0.049
+=======
+##      (Int)    cnf dcd_mxd lak_wtr       pre slp_dep_vs_tim    tmp ttl_shr_hrb TOT_dep
+## 1007 113.1 -1.405  -1.447  -3.473                    1.167 -6.091      -1.342  0.2815
+## 1023 122.3 -1.454  -1.442  -3.507 -0.008982          1.121 -5.466      -1.315  0.2788
+##      slp_dep_vs_tim:TOT_dep df    logLik   AICc delta weight
+## 1007               0.001036 10 -2570.347 5161.2  0.00   0.68
+## 1023               0.001039 11 -2570.048 5162.7  1.51   0.32
+>>>>>>> e5a7972e37222771881a7ff3ac9997f6a8a047b5
 ## Models ranked by AICc(x)
 ```
 
 
+<<<<<<< HEAD
 
 
 
+=======
+>>>>>>> e5a7972e37222771881a7ff3ac9997f6a8a047b5
 ### Plots  
 
 ```r
@@ -894,7 +1272,15 @@ if (length(modelvars$interaction_list) > 0){
     ~visreg(mod1, .x[1], by = .x[2], scale = "response")
   )
 }
+<<<<<<< HEAD
 
+=======
+```
+
+![](164b1_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-26-1.png)<!-- -->
+
+```r
+>>>>>>> e5a7972e37222771881a7ff3ac9997f6a8a047b5
 # Additive effects: 1D plot
 if (length(modelvars$additive_vars) > 0){
   par(mfrow = c(2,3), mar = c(4,5,2,1), oma = c(0,0,2,0))
@@ -903,7 +1289,49 @@ if (length(modelvars$additive_vars) > 0){
 }
 ```
 
+<<<<<<< HEAD
 ![](164b1_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-25-1.png)<!-- -->
+=======
+![](164b1_Currentstatus_NO3_no_TOC_files/figure-html/unnamed-chunk-26-2.png)<!-- -->
+
+```
+## Conditions used in construction of plot
+## decid_mixed: 14.1175
+## lake_water: 11.707
+## slope_dep_vs_time: -15.26935
+## tmp: 5.420833
+## total_shrub_herbaceous: 2.087125
+## TOTN_dep: 597.5785
+## Conditions used in construction of plot
+## coniferous: 17.617
+## lake_water: 11.707
+## slope_dep_vs_time: -15.26935
+## tmp: 5.420833
+## total_shrub_herbaceous: 2.087125
+## TOTN_dep: 597.5785
+## Conditions used in construction of plot
+## coniferous: 17.617
+## decid_mixed: 14.1175
+## slope_dep_vs_time: -15.26935
+## tmp: 5.420833
+## total_shrub_herbaceous: 2.087125
+## TOTN_dep: 597.5785
+## Conditions used in construction of plot
+## coniferous: 17.617
+## decid_mixed: 14.1175
+## lake_water: 11.707
+## slope_dep_vs_time: -15.26935
+## total_shrub_herbaceous: 2.087125
+## TOTN_dep: 597.5785
+## Conditions used in construction of plot
+## coniferous: 17.617
+## decid_mixed: 14.1175
+## lake_water: 11.707
+## slope_dep_vs_time: -15.26935
+## tmp: 5.420833
+## TOTN_dep: 597.5785
+```
+>>>>>>> e5a7972e37222771881a7ff3ac9997f6a8a047b5
 
 
 
